@@ -1,11 +1,10 @@
 package io.slychat.messenger.services.files
 
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.reset
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.whenever
+import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.testutils.thenResolveUnit
+import org.junit.Before
 import org.junit.Test
 import rx.subjects.PublishSubject
 
@@ -27,6 +26,12 @@ class TransferManagerImplTest {
             downloader,
             networkStatus
         )
+    }
+
+    @Before
+    fun before() {
+        whenever(downloader.remove(any())).thenResolveUnit()
+        whenever(uploader.remove(any())).thenResolveUnit()
     }
 
     @Test
@@ -72,7 +77,7 @@ class TransferManagerImplTest {
     }
 
     @Test
-    fun `removeCompletedDownloads should remove completed and cancelled downloads`() {
+    fun `removeCompleted should remove completed and cancelled downloads`() {
         val completed = randomDownloadStatus(TransferState.COMPLETE)
         val cancelled = randomDownloadStatus(TransferState.CANCELLED)
 
@@ -88,7 +93,7 @@ class TransferManagerImplTest {
 
         val manager = newManager()
 
-        manager.removeCompletedDownloads()
+        manager.removeCompleted().get()
 
         verify(downloader).remove(listOf(completed.download.id, cancelled.download.id))
     }
@@ -109,7 +114,7 @@ class TransferManagerImplTest {
 
         val manager = newManager()
 
-        manager.removeCompletedUploads()
+        manager.removeCompleted().get()
 
         verify(uploader).remove(listOf(completed.upload.id))
     }

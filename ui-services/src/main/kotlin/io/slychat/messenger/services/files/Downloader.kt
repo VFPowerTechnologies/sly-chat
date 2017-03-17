@@ -26,4 +26,6 @@ interface Downloader {
     fun cancel(downloadId: String): Boolean
 
     fun clearError(downloadId: String): Promise<Unit, Exception>
+
+    fun contains(transferId: String): Boolean
 }

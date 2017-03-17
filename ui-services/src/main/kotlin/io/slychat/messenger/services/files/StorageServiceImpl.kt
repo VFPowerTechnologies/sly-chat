@@ -182,26 +182,14 @@ class StorageServiceImpl(
         return fileListPersistenceManager.getFilesAt(startingAt, count, true, path)
     }
 
+    //TODO move this into some method on TransferManager?
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
         val s = HashSet(fileIds)
-        val uploads = ArrayList<String>()
-        val downloads = ArrayList<String>()
+        val transfers = transferManager.transfers
+            .filter { it.file.id in s }
+            .map { it.id }
 
-        for (status in transferManager.transfers) {
-            if (status.file.id !in s)
-                continue
-
-            val l = when (status.transfer) {
-                is Transfer.D -> downloads
-                is Transfer.U -> uploads
-            }
-
-            l.add(status.id)
-        }
-
-        return transferManager.removeUploads(uploads) bindUi {
-            transferManager.removeDownloads(downloads)
-        } bind {
+        return transferManager.remove(transfers) bind {
             fileListPersistenceManager.deleteFiles(fileIds) mapUi {
                 fileEventsSubject.onNext(RemoteFileEvent.Deleted(it))
                 sync()
@@ -301,33 +289,19 @@ class StorageServiceImpl(
         }
     }
 
-    override fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception> {
-        return transferManager.removeUploads(uploadIds)
+    override fun remove(transferIds: List<String>): Promise<Unit, Exception> {
+        return transferManager.remove(transferIds)
     }
 
-    override fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception> {
-        return transferManager.removeDownloads(downloadIds)
+    override fun retry(transferId: String): Promise<Unit, Exception> {
+        return transferManager.clearError(transferId)
     }
 
-    override fun retryDownload(downloadId: String): Promise<Unit, Exception> {
-        return transferManager.clearDownloadError(downloadId)
+    override fun removeCompleted(): Promise<Unit, Exception> {
+        return transferManager.removeCompleted()
     }
 
-    override fun retryUpload(uploadId: String): Promise<Unit, Exception> {
-        return transferManager.clearUploadError(uploadId)
-    }
-
-    override fun cancelDownloads(downloadIds: List<String>) {
-        downloadIds.forEach {
-            transferManager.cancelDownload(it)
-        }
-    }
-
-    override fun removeCompletedDownloads(): Promise<Unit, Exception> {
-        return transferManager.removeCompletedDownloads()
-    }
-
-    override fun removeCompletedUploads(): Promise<Unit, Exception> {
-        return transferManager.removeCompletedUploads()
+    override fun cancel(transferIds: List<String>) {
+        transferManager.cancel(transferIds)
     }
 }

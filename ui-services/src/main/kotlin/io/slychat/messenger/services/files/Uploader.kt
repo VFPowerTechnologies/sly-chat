@@ -25,4 +25,6 @@ interface Uploader {
     fun clearError(uploadId: String): Promise<Unit, Exception>
 
     fun remove(uploadIds: List<String>): Promise<Unit, Exception>
+
+    fun contains(transferId: String): Boolean
 }

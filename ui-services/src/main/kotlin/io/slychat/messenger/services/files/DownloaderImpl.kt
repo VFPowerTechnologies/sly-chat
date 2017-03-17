@@ -281,6 +281,10 @@ class DownloaderImpl(
         }
     }
 
+    override fun contains(transferId: String): Boolean {
+        return transferId in list.all
+    }
+
     private fun updateTransferState(downloadId: String, newState: TransferState) {
         val status = list.updateStatus(downloadId) {
             it.copy(state = newState)

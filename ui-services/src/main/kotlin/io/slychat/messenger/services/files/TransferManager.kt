@@ -19,22 +19,15 @@ interface TransferManager {
 
     fun upload(info: UploadInfo): Promise<Unit, Exception>
 
-    fun clearUploadError(uploadId: String): Promise<Unit, Exception>
-
-    fun clearDownloadError(downloadId: String): Promise<Unit, Exception>
+    fun clearError(transferId: String): Promise<Unit, Exception>
 
     fun download(info: DownloadInfo): Promise<Unit, Exception>
 
-    fun cancelDownload(downloadId: String): Boolean
+    fun cancel(transferIds: List<String>)
 
-    fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception>
+    fun remove(transferIds: List<String>): Promise<Unit, Exception>
 
-    fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception>
-
-    /** Removes downloads in COMPLETE or CANCELLED state. */
-    fun removeCompletedDownloads(): Promise<Unit, Exception>
-
-    /** Removes uploads in COMPLETE state. */
-    fun removeCompletedUploads(): Promise<Unit, Exception>
+    /** Removes transfers in COMPLETE or CANCELLED state. */
+    fun removeCompleted(): Promise<Unit, Exception>
 }
 

@@ -36,20 +36,14 @@ interface StorageService {
 
     fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception>
 
-    fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception>
+    fun remove(transferIds: List<String>): Promise<Unit, Exception>
 
-    fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception>
+    fun retry(transferId: String): Promise<Unit, Exception>
 
-    fun retryDownload(downloadId: String): Promise<Unit, Exception>
+    fun cancel(transferIds: List<String>)
 
-    fun retryUpload(uploadId: String): Promise<Unit, Exception>
-
-    fun cancelDownloads(downloadIds: List<String>)
+    fun removeCompleted(): Promise<Unit, Exception>
 
     /** Must not be called during a sync. */
     fun clearSyncError()
-
-    fun removeCompletedDownloads(): Promise<Unit, Exception>
-
-    fun removeCompletedUploads(): Promise<Unit, Exception>
 }

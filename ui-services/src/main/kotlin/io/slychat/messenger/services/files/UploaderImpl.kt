@@ -430,4 +430,8 @@ class UploaderImpl(
             subject.onNext(TransferEvent.Removed(statuses.map { Transfer.U(it.upload) }))
         }
     }
+
+    override fun contains(transferId: String): Boolean {
+        return transferId in list.all
+    }
 }

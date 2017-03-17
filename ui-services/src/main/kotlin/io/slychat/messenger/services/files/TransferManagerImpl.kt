@@ -4,6 +4,7 @@ import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
 import io.slychat.messenger.core.rx.plusAssign
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
 import nl.komponents.kovenant.Promise
@@ -59,6 +60,24 @@ class TransferManagerImpl(
         }
     }
 
+    private class ByType(val uploadIds: List<String>, val downloadIds: List<String>)
+
+    private fun separateByType(transferIds: List<String>): ByType {
+        val uploadIds = ArrayList<String>()
+        val downloadIds = ArrayList<String>()
+
+        transferIds.forEach {
+            if (uploader.contains(it))
+                uploadIds.add(it)
+            else if (downloader.contains(it))
+                downloadIds.add(it)
+            else
+                throw InvalidTransferException(it)
+        }
+
+        return ByType(uploadIds, downloadIds)
+    }
+
     override fun init() {
         uploader.init()
         downloader.init()
@@ -75,39 +94,42 @@ class TransferManagerImpl(
         return uploader.upload(info)
     }
 
-    override fun clearUploadError(uploadId: String): Promise<Unit, Exception> {
-        return uploader.clearError(uploadId)
-    }
-
-    override fun clearDownloadError(downloadId: String): Promise<Unit, Exception> {
-        return downloader.clearError(downloadId)
+    override fun clearError(transferId: String): Promise<Unit, Exception> {
+        return if (uploader.contains(transferId))
+            uploader.clearError(transferId)
+        else if (downloader.contains(transferId))
+            downloader.clearError(transferId)
+        else
+            throw InvalidTransferException(transferId)
     }
 
     override fun download(info: DownloadInfo): Promise<Unit, Exception> {
         return downloader.download(info)
     }
 
-    override fun cancelDownload(downloadId: String): Boolean {
-        return downloader.cancel(downloadId)
+    override fun cancel(transferIds: List<String>) {
+        transferIds.forEach {
+            downloader.cancel(it)
+        }
     }
 
-    override fun removeDownloads(downloadIds: List<String>): Promise<Unit, Exception> {
-        return downloader.remove(downloadIds)
+    override fun remove(transferIds: List<String>): Promise<Unit, Exception> {
+        val s = separateByType(transferIds)
+
+        return downloader.remove(s.downloadIds) bindUi {
+            uploader.remove(s.uploadIds)
+        }
     }
 
-    override fun removeUploads(uploadIds: List<String>): Promise<Unit, Exception> {
-        return uploader.remove(uploadIds)
-    }
-
-    override fun removeCompletedDownloads(): Promise<Unit, Exception> {
-        val toRemove = downloader.downloads.filter {
+    override fun removeCompleted(): Promise<Unit, Exception> {
+        val downloadsToRemove = downloader.downloads.filter {
             it.state == TransferState.COMPLETE || it.state == TransferState.CANCELLED
         }.map { it.download.id }
-        return downloader.remove(toRemove)
-    }
 
-    override fun removeCompletedUploads(): Promise<Unit, Exception> {
-        val toRemove = uploader.uploads.filter { it.state == TransferState.COMPLETE }.map { it.upload.id }
-        return uploader.remove(toRemove)
+        val uploadsToRemove = uploader.uploads.filter { it.state == TransferState.COMPLETE }.map { it.upload.id }
+
+        return downloader.remove(downloadsToRemove) bindUi {
+            uploader.remove(uploadsToRemove)
+        }
     }
 }

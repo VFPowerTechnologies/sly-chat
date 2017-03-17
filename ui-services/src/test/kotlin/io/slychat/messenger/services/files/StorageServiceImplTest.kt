@@ -87,8 +87,7 @@ class StorageServiceImplTest {
         whenever(transferManager.events).thenReturn(transferEvents)
         whenever(transferManager.quota).thenReturn(quotaEvents)
         whenever(transferManager.transfers).thenReturn(emptyList())
-        whenever(transferManager.removeDownloads(any())).thenResolveUnit()
-        whenever(transferManager.removeUploads(any())).thenResolveUnit()
+        whenever(transferManager.remove(any())).thenResolveUnit()
         whenever(transferManager.upload(any())).thenResolveUnit()
         whenever(fileAccess.getFileInfo(any())).thenReturn(FileInfo("displayName", randomLong(), "*/*"))
 
@@ -396,7 +395,7 @@ class StorageServiceImplTest {
 
         service.deleteFiles(fileIds).get()
 
-        verify(transferManager).removeDownloads(listOf(status.id))
+        verify(transferManager).remove(listOf(status.id))
         verify(fileListPersistenceManager).deleteFiles(fileIds)
     }
 
@@ -415,7 +414,7 @@ class StorageServiceImplTest {
 
         service.deleteFiles(fileIds).get()
 
-        verify(transferManager).removeUploads(listOf(status.id))
+        verify(transferManager).remove(listOf(status.id))
         verify(fileListPersistenceManager).deleteFiles(fileIds)
     }
 }
