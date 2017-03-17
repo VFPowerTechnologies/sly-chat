@@ -12,6 +12,7 @@ import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.sqlite.loadSQLiteLibraryFromResources
+import io.slychat.messenger.desktop.debug.TransferTestWindow
 import io.slychat.messenger.desktop.jfx.jsconsole.ConsoleMessageAdded
 import io.slychat.messenger.desktop.osx.AppleEventHandler
 import io.slychat.messenger.desktop.osx.GlassEventHandler
@@ -305,6 +306,10 @@ class DesktopApp : Application() {
 
         primaryStage.addEventHandler(KeyEvent.KEY_RELEASED) { event ->
             handleKeyEvent(event)
+        }
+
+        TransferTestWindow(primaryStage, app).apply {
+            show()
         }
     }
 
