@@ -8,8 +8,6 @@ import rx.Observable
 interface StorageService {
     val quota: Observable<Quota>
 
-    val updates: Observable<List<RemoteFile>>
-
     val transferEvents: Observable<TransferEvent>
 
     val syncEvents: Observable<FileListSyncEvent>

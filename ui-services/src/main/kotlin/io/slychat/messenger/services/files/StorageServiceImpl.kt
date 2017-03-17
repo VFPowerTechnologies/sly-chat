@@ -42,11 +42,6 @@ class StorageServiceImpl(
     override val quota: Observable<Quota>
         get() = quotaSubject
 
-    private val updatesSubject = PublishSubject.create<List<RemoteFile>>()
-
-    override val updates: Observable<List<RemoteFile>>
-        get() = updatesSubject
-
     private val syncEventsSubject = BehaviorSubject.create<FileListSyncEvent>()
 
     override val syncEvents: Observable<FileListSyncEvent>
