@@ -53,6 +53,11 @@ class StorageServiceImplTest {
             if (!wasCalled)
                 fail("StorageSyncJob.run() not called")
         }
+
+        fun assertRunNotCalled() {
+            if (wasCalled)
+                fail("StorageSyncJob.run() was called")
+        }
     }
 
     private val fileListPersistenceManager: FileListPersistenceManager = mock()
@@ -241,13 +246,18 @@ class StorageServiceImplTest {
     fun `it should sync when receiving an upload completion event`() {
         val service = newService(true)
 
-        //since we sync on startup
-        syncJob.clearCalls()
-        syncJob.d.resolve(FileListSyncResult(0, FileListMergeResults.empty, 0, randomQuota()))
-
-        transferEvents.onNext(TransferEvent.UploadStateChanged(randomUpload(), TransferState.COMPLETE))
+        transferEvents.onNext(TransferEvent.StateChanged(randomUpload(), TransferState.COMPLETE))
 
         syncJob.assertRunCalled()
+    }
+
+    @Test
+    fun `it should not sync when receiving a download completion event`() {
+        val service = newService(true)
+
+        transferEvents.onNext(TransferEvent.StateChanged(randomDownload(), TransferState.COMPLETE))
+
+        syncJob.assertRunNotCalled()
     }
 
     @Test

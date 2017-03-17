@@ -98,7 +98,7 @@ class DownloaderImpl(
             else
                 list.inactive.add(download.id)
 
-            subject.onNext(TransferEvent.DownloadAdded(download, initialState))
+            subject.onNext(TransferEvent.Added(download, initialState))
         }
 
         startNextDownload()
@@ -122,7 +122,7 @@ class DownloaderImpl(
             val newState = TransferState.ACTIVE
             list.setStatus(nextId, next.copy(state = newState))
 
-            subject.onNext(TransferEvent.DownloadStateChange(next.download, newState))
+            subject.onNext(TransferEvent.StateChanged(next.download, newState))
 
             startDownload(nextId)
         }
@@ -248,7 +248,7 @@ class DownloaderImpl(
             it.copy(progress = it.progress.add(transferedBytes))
         }
 
-        subject.onNext(TransferEvent.DownloadProgress(status.download, status.progress))
+        subject.onNext(TransferEvent.Progress(status.download, status.progress))
     }
 
     override fun shutdown() {
@@ -275,7 +275,7 @@ class DownloaderImpl(
                 )
             }
 
-            subject.onNext(TransferEvent.DownloadStateChange(status.download, status.state))
+            subject.onNext(TransferEvent.StateChanged(status.download, status.state))
 
             startNextDownload()
         }
@@ -286,7 +286,7 @@ class DownloaderImpl(
             it.copy(state = newState)
         }
 
-        subject.onNext(TransferEvent.DownloadStateChange(status.download, newState))
+        subject.onNext(TransferEvent.StateChanged(status.download, newState))
     }
 
     private fun moveUploadToErrorState(downloadId: String, downloadError: DownloadError) {
@@ -338,7 +338,7 @@ class DownloaderImpl(
         return downloadPersistenceManager.remove(ids) successUi {
             ids.forEach { list.all.remove(it) }
 
-            subject.onNext(TransferEvent.DownloadRemoved(statuses.map { it.download }))
+            subject.onNext(TransferEvent.Removed(statuses.map { Transfer.D(it.download) }))
         }
     }
 }

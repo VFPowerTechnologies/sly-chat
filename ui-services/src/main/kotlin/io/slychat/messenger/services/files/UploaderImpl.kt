@@ -105,7 +105,7 @@ class UploaderImpl(
             else
                 list.inactive.add(upload.id)
 
-            subject.onNext(TransferEvent.UploadAdded(upload, initialState))
+            subject.onNext(TransferEvent.Added(upload, initialState))
         }
 
         startNextUpload()
@@ -135,7 +135,7 @@ class UploaderImpl(
             val newState = TransferState.ACTIVE
             list.setStatus(nextId, next.copy(state = newState))
 
-            subject.onNext(TransferEvent.UploadStateChanged(next.upload, newState))
+            subject.onNext(TransferEvent.StateChanged(next.upload, newState))
 
             nextStep(nextId)
         }
@@ -214,7 +214,7 @@ class UploaderImpl(
             it.copy(state = newState)
         }
 
-        subject.onNext(TransferEvent.UploadStateChanged(status.upload, newState))
+        subject.onNext(TransferEvent.StateChanged(status.upload, newState))
     }
 
     private fun moveUploadToErrorState(uploadId: String, uploadError: UploadError) {
@@ -246,7 +246,7 @@ class UploaderImpl(
         }
 
         val progress = UploadTransferProgress(status.progress, status.transferedBytes, status.totalBytes)
-        subject.onNext(TransferEvent.UploadProgress(status.upload, progress))
+        subject.onNext(TransferEvent.Progress(status.upload, progress))
     }
 
     private fun removeCancellationToken(downloadId: String) {
@@ -354,7 +354,7 @@ class UploaderImpl(
         ))
 
         val transferProgress = UploadTransferProgress(newProgress, status.transferedBytes, status.totalBytes)
-        subject.onNext(TransferEvent.UploadProgress(status.upload, transferProgress))
+        subject.onNext(TransferEvent.Progress(status.upload, transferProgress))
     }
 
     private fun createUpload(status: UploadStatus) {
@@ -399,7 +399,7 @@ class UploaderImpl(
                 )
             }
 
-            subject.onNext(TransferEvent.UploadStateChanged(status.upload, status.state))
+            subject.onNext(TransferEvent.StateChanged(status.upload, status.state))
 
             startNextUpload()
         }
@@ -427,7 +427,7 @@ class UploaderImpl(
         return uploadPersistenceManager.remove(ids) successUi {
             ids.forEach { list.all.remove(it) }
 
-            subject.onNext(TransferEvent.UploadRemoved(statuses.map { it.upload }))
+            subject.onNext(TransferEvent.Removed(statuses.map { Transfer.U(it.upload) }))
         }
     }
 }

@@ -6,6 +6,7 @@ import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
+
 interface TransferManager {
     val events: Observable<TransferEvent>
 

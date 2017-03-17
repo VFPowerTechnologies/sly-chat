@@ -176,7 +176,7 @@ class UploaderImplTest {
 
         val uploader = newUploader(true)
 
-        assertEventEmitted(uploader, TransferEvent.UploadAdded(upload, TransferState.ERROR)) {
+        assertEventEmitted(uploader, TransferEvent.Added(upload, TransferState.ERROR)) {
             uploader.init()
         }
     }
@@ -202,7 +202,7 @@ class UploaderImplTest {
 
         val uploader = newUploader(true)
 
-        assertEventEmitted(uploader, TransferEvent.UploadAdded(info.upload, TransferState.COMPLETE)) {
+        assertEventEmitted(uploader, TransferEvent.Added(info.upload, TransferState.COMPLETE)) {
             uploader.init()
         }
     }
@@ -224,7 +224,7 @@ class UploaderImplTest {
 
         val uploadInfo = randomUploadInfo()
 
-        val event = TransferEvent.UploadAdded(uploadInfo.upload, TransferState.QUEUED)
+        val event = TransferEvent.Added(uploadInfo.upload, TransferState.QUEUED)
         assertEventEmitted(uploader, event) {
             uploader.upload(uploadInfo).get()
         }
@@ -442,7 +442,7 @@ class UploaderImplTest {
             state = UploadState.COMPLETE
         )
 
-        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, TransferState.COMPLETE)) {
+        assertEventEmitted(uploader, TransferEvent.StateChanged(updated, TransferState.COMPLETE)) {
             uploader.upload(uploadInfo).get()
 
             uploadOperations.completeUploadPartOperation(1)
@@ -499,7 +499,7 @@ class UploaderImplTest {
         uploader.upload(info).get()
 
         val updated = info.upload.copy(error = UploadError.UNKNOWN)
-        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(updated, TransferState.ERROR)) {
+        assertEventEmitted(uploader, TransferEvent.StateChanged(updated, TransferState.ERROR)) {
             uploadOperations.createDeferred.reject(TestException())
         }
     }
@@ -547,7 +547,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        assertEventEmitted(uploader, TransferEvent.UploadStateChanged(info.upload.copy(error = null), TransferState.QUEUED)) {
+        assertEventEmitted(uploader, TransferEvent.StateChanged(info.upload.copy(error = null), TransferState.QUEUED)) {
             uploader.clearError(info.upload.id).get()
         }
     }
@@ -581,7 +581,7 @@ class UploaderImplTest {
             info.file.remoteFileSize
         )
 
-        val event = TransferEvent.UploadProgress(info.upload, progress)
+        val event = TransferEvent.Progress(info.upload, progress)
         assertEventEmitted(uploader, event) {
             scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
         }
@@ -631,7 +631,7 @@ class UploaderImplTest {
 
         val uploader = newUploaderWithUpload(info)
 
-        val ev = TransferEvent.UploadRemoved(listOf(info.upload))
+        val ev = TransferEvent.Removed(listOf(Transfer.U(info.upload)))
 
         assertEventEmitted(uploader, ev) {
             uploader.remove(listOf(info.upload.id)).get()

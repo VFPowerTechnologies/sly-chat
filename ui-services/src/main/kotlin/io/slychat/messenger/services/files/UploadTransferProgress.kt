@@ -2,6 +2,6 @@ package io.slychat.messenger.services.files
 
 data class UploadTransferProgress(
     val progress: List<UploadPartTransferProgress>,
-    val transferedBytes: Long,
-    val totalBytes: Long
-)
+    override val transferedBytes: Long,
+    override val totalBytes: Long
+) : TransferProgress

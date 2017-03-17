@@ -77,12 +77,12 @@ class StorageServiceImpl(
 
     init {
         subscriptions += networkStatus.subscribe { onNetworkStatusChange(it) }
-        subscriptions += transferEvents.subscribe { onTransferEvent(it) }
+        subscriptions += transferEvents.ofType(TransferEvent.StateChanged::class.java).subscribe { onTransferEvent(it) }
         subscriptions += transferManager.quota.subscribe { quotaSubject.onNext(it) }
     }
 
-    private fun onTransferEvent(event: TransferEvent) {
-        if (event !is TransferEvent.UploadStateChanged)
+    private fun onTransferEvent(event: TransferEvent.StateChanged) {
+        if (!event.transfer.isUpload)
             return
 
         if (event.state == TransferState.COMPLETE)

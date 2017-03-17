@@ -103,7 +103,7 @@ class DownloaderImplTest {
 
         val download = downloadInfo.download
 
-        val event = TransferEvent.DownloadStateChange(download.copy(error = expectedError), TransferState.ERROR)
+        val event = TransferEvent.StateChanged(download.copy(error = expectedError), TransferState.ERROR)
         assertEventEmitted(downloader, event) {
             downloadOperations.errorDownload(download.id, e)
         }
@@ -181,7 +181,7 @@ class DownloaderImplTest {
         whenever(downloadPersistenceManager.getAll()).thenResolve(listOf(downloadInfo))
 
         val downloader = newDownloader()
-        val event = TransferEvent.DownloadAdded(downloadInfo.download, TransferState.ERROR)
+        val event = TransferEvent.Added(downloadInfo.download, TransferState.ERROR)
         assertEventEmitted(downloader, event) {
             downloader.init()
         }
@@ -204,7 +204,7 @@ class DownloaderImplTest {
 
         val downloadInfo = randomDownloadInfo()
 
-        val event = TransferEvent.DownloadAdded(downloadInfo.download, TransferState.QUEUED)
+        val event = TransferEvent.Added(downloadInfo.download, TransferState.QUEUED)
         assertEventEmitted(downloader, event) {
             downloader.download(downloadInfo).get()
         }
@@ -232,7 +232,7 @@ class DownloaderImplTest {
 
         val download = downloadInfo.download
 
-        val event = TransferEvent.DownloadStateChange(download.copy(state = DownloadState.COMPLETE), TransferState.COMPLETE)
+        val event = TransferEvent.StateChanged(download.copy(state = DownloadState.COMPLETE), TransferState.COMPLETE)
         assertEventEmitted(downloader, event) {
             downloadOperations.completeDownload(download.id)
         }
@@ -282,7 +282,7 @@ class DownloaderImplTest {
 
         val download = downloadInfo.download
 
-        val event = TransferEvent.DownloadStateChange(download.copy(state = DownloadState.CANCELLED), TransferState.CANCELLED)
+        val event = TransferEvent.StateChanged(download.copy(state = DownloadState.CANCELLED), TransferState.CANCELLED)
         assertEventEmitted(downloader, event) {
             downloadOperations.errorDownload(download.id, CancellationException())
         }
@@ -316,7 +316,7 @@ class DownloaderImplTest {
 
         downloader.init()
 
-        assertEventEmitted(downloader, TransferEvent.DownloadStateChange(info.download.copy(error = null), TransferState.QUEUED)) {
+        assertEventEmitted(downloader, TransferEvent.StateChanged(info.download.copy(error = null), TransferState.QUEUED)) {
             downloader.clearError(info.download.id).get()
         }
     }
@@ -340,7 +340,7 @@ class DownloaderImplTest {
         downloadOperations.sendDownloadProgress(downloadId, 500L)
         downloadOperations.sendDownloadProgress(downloadId, 500L)
 
-        val event = TransferEvent.DownloadProgress(info.download, DownloadTransferProgress(1000, info.file.remoteFileSize))
+        val event = TransferEvent.Progress(info.download, DownloadTransferProgress(1000, info.file.remoteFileSize))
         assertEventEmitted(downloader, event) {
             scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
         }
@@ -421,7 +421,7 @@ class DownloaderImplTest {
 
         val downloader = newDownloaderWithDownload(info)
 
-        val ev = TransferEvent.DownloadRemoved(listOf(info.download))
+        val ev = TransferEvent.Removed(listOf(Transfer.D(info.download)))
 
         assertEventEmitted(downloader, ev) {
             downloader.remove(listOf(info.download.id)).get()

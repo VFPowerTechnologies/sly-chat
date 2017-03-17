@@ -3,190 +3,157 @@ package io.slychat.messenger.services.files
 import io.slychat.messenger.core.persistence.Download
 import io.slychat.messenger.core.persistence.Upload
 
+sealed class Transfer {
+    abstract val isUpload: Boolean
+
+    class U(val upload: Upload) : Transfer() {
+        override val isUpload: Boolean = true
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as U
+
+            if (upload != other.upload) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return upload.hashCode()
+        }
+
+        override fun toString(): String {
+            return "$upload"
+        }
+    }
+
+    class D(val download: Download) : Transfer() {
+        override val isUpload: Boolean = false
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as D
+
+            if (download != other.download) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return download.hashCode()
+        }
+
+
+        override fun toString(): String {
+            return "$download"
+        }
+    }
+}
+
 sealed class TransferEvent {
-    class UploadAdded(val upload: Upload, val state: TransferState) : TransferEvent() {
+    class Added(val transfer: Transfer, val state: TransferState) : TransferEvent() {
+        constructor(upload: Upload, state: TransferState) : this(Transfer.U(upload), state)
+        constructor(download: Download, state: TransferState) : this(Transfer.D(download), state)
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
-            other as UploadAdded
+            other as Added
 
-            if (upload != other.upload) return false
+            if (transfer != other.transfer) return false
             if (state != other.state) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = upload.hashCode()
+            var result = transfer.hashCode()
             result = 31 * result + state.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "UploadAdded(upload=$upload, state=$state)"
+            return "Added(transfer=$transfer, state=$state)"
         }
     }
 
-    class UploadRemoved(val uploads: List<Upload>) : TransferEvent() {
+    class Removed(val transfers: List<Transfer>) : TransferEvent() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
-            other as UploadRemoved
+            other as Removed
 
-            if (uploads != other.uploads) return false
+            if (transfers != other.transfers) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            return uploads.hashCode()
+            return transfers.hashCode()
         }
 
         override fun toString(): String {
-            return "UploadRemoved(uploads=$uploads)"
+            return "Removed(transfers=$transfers)"
         }
     }
 
-    class UploadProgress(val upload: Upload, val transferProgress: UploadTransferProgress) : TransferEvent() {
+    class Progress(val transfer: Transfer, val progress: TransferProgress) : TransferEvent() {
+        constructor(upload: Upload, progress: UploadTransferProgress) : this(Transfer.U(upload), progress)
+        constructor(download: Download, progress: DownloadTransferProgress) : this(Transfer.D(download), progress)
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
-            other as UploadProgress
+            other as Progress
 
-            if (upload != other.upload) return false
-            if (transferProgress != other.transferProgress) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = upload.hashCode()
-            result = 31 * result + transferProgress.hashCode()
-            return result
-        }
-
-        override fun toString(): String {
-            return "UploadProgress(upload=$upload, transferProgress=$transferProgress)"
-        }
-    }
-
-    class UploadStateChanged(val upload: Upload, val state: TransferState) : TransferEvent() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other?.javaClass != javaClass) return false
-
-            other as UploadStateChanged
-
-            if (upload != other.upload) return false
-            if (state != other.state) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = upload.hashCode()
-            result = 31 * result + state.hashCode()
-            return result
-        }
-
-        override fun toString(): String {
-            return "UploadStateChanged(upload=$upload, state=$state)"
-        }
-    }
-
-    class DownloadAdded(val download: Download, val state: TransferState) : TransferEvent() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other?.javaClass != javaClass) return false
-
-            other as DownloadAdded
-
-            if (download != other.download) return false
-            if (state != other.state) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = download.hashCode()
-            result = 31 * result + state.hashCode()
-            return result
-        }
-
-        override fun toString(): String {
-            return "DownloadAdded(download=$download, state=$state)"
-        }
-    }
-
-    class DownloadRemoved(val downloads: List<Download>) : TransferEvent() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other?.javaClass != javaClass) return false
-
-            other as DownloadRemoved
-
-            if (downloads != other.downloads) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return downloads.hashCode()
-        }
-
-        override fun toString(): String {
-            return "DownloadRemoved(downloads=$downloads)"
-        }
-    }
-
-    class DownloadProgress(val download: Download, val progress: DownloadTransferProgress) : TransferEvent() {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other?.javaClass != javaClass) return false
-
-            other as DownloadProgress
-
-            if (download != other.download) return false
+            if (transfer != other.transfer) return false
             if (progress != other.progress) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = download.hashCode()
+            var result = transfer.hashCode()
             result = 31 * result + progress.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "DownloadProgress(download=$download, progress=$progress)"
+            return "Progress(transfer=$transfer, progress=$progress)"
         }
     }
 
-    class DownloadStateChange(val download: Download, val state: TransferState) : TransferEvent() {
+    class StateChanged(val transfer: Transfer, val state: TransferState) : TransferEvent() {
+        constructor(upload: Upload, state: TransferState) : this(Transfer.U(upload), state)
+        constructor(download: Download, state: TransferState) : this(Transfer.D(download), state)
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != javaClass) return false
 
-            other as DownloadStateChange
+            other as StateChanged
 
-            if (download != other.download) return false
+            if (transfer != other.transfer) return false
             if (state != other.state) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = download.hashCode()
+            var result = transfer.hashCode()
             result = 31 * result + state.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "DownloadStateChange(download=$download, state=$state)"
+            return "StateChanged(transfer=$transfer, state=$state)"
         }
     }
 }
