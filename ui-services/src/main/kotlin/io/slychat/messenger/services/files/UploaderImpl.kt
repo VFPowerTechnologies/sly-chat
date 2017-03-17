@@ -2,6 +2,8 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.enforceExhaustive
+import io.slychat.messenger.core.http.api.upload.NewUploadError
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.services.bindUi
@@ -259,6 +261,8 @@ class UploaderImpl(
 
             is InsufficientQuotaException -> UploadError.INSUFFICIENT_QUOTA
 
+            is DuplicateFilePathException -> UploadError.DUPLICATE_FILE
+
             is UploadCorruptedException -> UploadError.CORRUPTED
 
             else -> {
@@ -355,12 +359,20 @@ class UploaderImpl(
 
     private fun createUpload(status: UploadStatus) {
         val uploadId = status.upload.id
+        val file = status.file
 
-        uploadOperations.create(status.upload, status.file) bindUi {
+        uploadOperations.create(status.upload, file) bindUi {
             quotaSubject.onNext(it.quota)
 
-            if (!it.hadSufficientQuota)
-                throw InsufficientQuotaException()
+            when (it.error) {
+                NewUploadError.INSUFFICIENT_QUOTA ->
+                    throw InsufficientQuotaException()
+
+                NewUploadError.DUPLICATE_FILE ->
+                    throw DuplicateFilePathException(file.userMetadata.directory, file.userMetadata.fileName)
+
+                null -> {}
+            }.enforceExhaustive()
 
             val nextState = if (status.upload.isEncrypted)
                 UploadState.CACHING

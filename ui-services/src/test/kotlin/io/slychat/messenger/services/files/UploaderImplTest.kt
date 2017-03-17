@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.crypto.generateUploadId
+import io.slychat.messenger.core.http.api.upload.NewUploadError
 import io.slychat.messenger.core.http.api.upload.NewUploadResponse
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomQuota
@@ -307,7 +308,7 @@ class UploaderImplTest {
 
         val testSubscriber = uploader.quota.testSubscriber()
 
-        uploadOperations.createDeferred.resolve(NewUploadResponse(false, quota))
+        uploadOperations.createDeferred.resolve(NewUploadResponse(NewUploadError.INSUFFICIENT_QUOTA, quota))
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
     }
@@ -324,7 +325,7 @@ class UploaderImplTest {
 
         val testSubscriber = uploader.quota.testSubscriber()
 
-        uploadOperations.createDeferred.resolve(NewUploadResponse(true, quota))
+        uploadOperations.createDeferred.resolve(NewUploadResponse(null, quota))
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
     }
@@ -511,7 +512,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.resolve(NewUploadResponse(false, randomQuota()))
+        uploadOperations.createDeferred.resolve(NewUploadResponse(NewUploadError.INSUFFICIENT_QUOTA, randomQuota()))
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 

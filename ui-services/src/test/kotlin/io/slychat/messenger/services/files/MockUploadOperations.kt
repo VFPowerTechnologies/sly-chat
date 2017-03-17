@@ -34,7 +34,7 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
 
     override fun create(upload: Upload, file: RemoteFile): Promise<NewUploadResponse, Exception> {
         if (autoResolveCreate)
-            return Promise.of(NewUploadResponse(true, randomQuota()))
+            return Promise.of(NewUploadResponse(null, randomQuota()))
 
         createArgs = CreateArgs(upload, file)
         return createDeferred.promise
