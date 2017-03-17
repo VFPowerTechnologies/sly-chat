@@ -5,6 +5,7 @@ import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 import javax.net.ssl.SSLHandshakeException
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -21,8 +22,9 @@ class CoreUtilsTest {
     }
 
     @Test
-    fun `isNotNetworkError should return false for SSLHandshakeException`() {
+    fun `isNotNetworkError should return false for SSLException`() {
         assertFalse(isNotNetworkError(SSLHandshakeException("SSL handshake aborted: ssl=0x942d9800: I/O error during system call, Connection timed out")))
+        assertFalse(isNotNetworkError(SSLException("Read error: ssl=0xed54eca0: I/O error during system call, Software caused connection abort")))
     }
 
     @Test
