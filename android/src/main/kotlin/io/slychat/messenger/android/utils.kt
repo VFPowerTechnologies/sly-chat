@@ -56,7 +56,7 @@ fun formatTimeStamp (time: Long?): String {
 
     return if (timestamp.isEmpty())
         ""
-    else if (timestamp == "moments ago")
+    else if (timestamp == "moments ago" || timestamp == "moments from now")
         "now"
     else
         timestamp

@@ -35,19 +35,16 @@
                 android:layout_height="match_parent"
                 android:layout_above="@+id/chat_input_container"
                 android:layout_alignParentStart="true">
-
-                <ScrollView
+                <ListView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scrollbars="none"
-                    android:id="@+id/chat_list_scrollview">
-                    <LinearLayout
-                        android:id="@+id/chat_list"
-                        android:orientation="vertical"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                    </LinearLayout>
-                </ScrollView>
+                    android:divider="@null"
+                    android:dividerHeight="0dp"
+                    android:listSelector="@android:color/transparent"
+                    android:cacheColorHint="@android:color/transparent"
+                    android:stackFromBottom="true"
+                    android:transcriptMode="normal"
+                    android:id="@+id/chat_list"/>
                 <LinearLayout
                     android:id="@+id/jump_to_recent_messages"
                     android:orientation="horizontal"

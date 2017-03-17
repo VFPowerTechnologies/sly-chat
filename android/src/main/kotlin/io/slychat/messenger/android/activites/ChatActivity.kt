@@ -2,7 +2,6 @@ package io.slychat.messenger.android.activites
 
 import android.content.*
 import android.os.Bundle
-import android.os.Handler
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.DrawerLayout
@@ -29,6 +28,9 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import io.slychat.messenger.services.config.ConvoTTLSettings
 import android.view.ContextMenu.ContextMenuInfo
+import io.slychat.messenger.android.activites.services.AndroidUIMessageInfo
+import io.slychat.messenger.android.activites.services.ChatListAdapter
+import io.slychat.messenger.android.activites.services.OnScrollFinishListener
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.isNotNetworkError
 
@@ -38,7 +40,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val EXTRA_CONVERSTATION_ID = "io.slychat.messenger.android.activities.ChatActivity.converstationId"
         val LOAD_COUNT = 30
     }
-    val log = LoggerFactory.getLogger(javaClass)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     private lateinit var app: AndroidApp
     lateinit var messengerService: AndroidMessengerServiceImpl
@@ -47,7 +49,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private lateinit var configService: AndroidConfigServiceImpl
 
     private lateinit var actionBar: Toolbar
-    private lateinit var chatList: LinearLayout
+    private lateinit var chatList: ListView
     private lateinit var chatInput: EditText
     private lateinit var submitBtn: ImageButton
     private lateinit var expireBtn: ImageButton
@@ -57,26 +59,25 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private lateinit var jumpToRecentBtn: LinearLayout
     private lateinit var jumpToRecentLabel: TextView
     private lateinit var rootView: LinearLayout
-    private lateinit var chatScrollView: ScrollView
+
+    private lateinit var chatListAdapter: ChatListAdapter
 
     private lateinit var contactInfo: ContactInfo
     private lateinit var groupInfo: GroupInfo
-
-    private var groupMembers: Map<UserId, ContactInfo>? = null
-
-    private var messagesCache = mutableMapOf<MessageId, ConversationMessageInfo>()
+    var groupMembers = mapOf<UserId, ContactInfo>()
 
     lateinit var conversationId: ConversationId
-    private var chatDataLink: MutableMap<String, Int> = mutableMapOf()
     private var contextMenuMessageId: String? = null
 
     private var expireToggled = false
     private var expireDelay: Long? = null
 
-    private var currentScrollDiff = 0
+    private var lastVisibleMessagePosition = 0
+    private var firstVisibleMessagePosition = 0
 
     private var initialized = false
     private var lastMessageLoaded = 0
+    private var loadingMoreMessage = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +101,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         setContentView(R.layout.activity_chat)
 
-        chatList = findViewById(R.id.chat_list) as LinearLayout
+        chatList = findViewById(R.id.chat_list) as ListView
         submitBtn = findViewById(R.id.submit_chat_btn) as ImageButton
         expireBtn = findViewById(R.id.expire_chat_btn) as ImageButton
         expireSlider = findViewById(R.id.expiration_slider) as SeekBar
@@ -109,8 +110,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         jumpToRecentBtn = findViewById(R.id.jump_to_recent_messages) as LinearLayout
         jumpToRecentLabel = jumpToRecentBtn.findViewById(R.id.jump_to_recent_label) as TextView
         rootView = findViewById(R.id.chat_root_view) as LinearLayout
-        chatScrollView = findViewById(R.id.chat_list_scrollview) as ScrollView
         actionBar = findViewById(R.id.chat_toolbar) as Toolbar
+
+        resetChatListAdapter()
 
         actionBar.title = ""
         setSupportActionBar(actionBar)
@@ -217,29 +219,29 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             if (heightDiff > dpToPx(200F))
                 handleKeyboardOpen()
         }
+        
+        chatList.setOnScrollListener(object : OnScrollFinishListener() {
+            override fun onScrollFinished() {
+                if (firstVisibleMessagePosition <= 5 && initialized && !loadingMoreMessage) {
+                    loadMoreMessage()
+                    return
+                }
 
-        chatScrollView.viewTreeObserver.addOnScrollChangedListener {
-            val height = chatScrollView.getChildAt(0).height
-            val diff = height - (chatScrollView.scrollY + chatScrollView.height)
-
-            if (diff > 300) {
-                val handler = Handler()
-                handler.postDelayed(object : Runnable {
-                    override fun run() {
-                        if (currentScrollDiff > 300)
-                            showJumpToRecent()
-                    }
-                }, 500)
+                if (lastVisibleMessagePosition >= chatListAdapter.count - 1)
+                    hideJumpToRecent()
+                else if(lastVisibleMessagePosition < chatListAdapter.count - 2)
+                    showJumpToRecent()
             }
-            else if (diff < 200)
-                hideJumpToRecent()
 
-            currentScrollDiff = diff
-        }
+            override fun onScroll(view: AbsListView, firstVisibleItem: Int, visibleItemCount: Int, totalItemCount: Int) {
+                lastVisibleMessagePosition = chatList.lastVisiblePosition
+                firstVisibleMessagePosition = chatList.firstVisiblePosition
+                super.onScroll(view, firstVisibleItem, visibleItemCount, totalItemCount)
+            }
+        })
 
         jumpToRecentBtn.setOnClickListener {
             scrollToBottom()
-            hideJumpToRecent()
         }
 
         submitBtn.setOnClickListener {
@@ -278,9 +280,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun fetchAndDisplayOnStart() {
+        log.debug("Fetch and display on start")
         val cId = conversationId
         messengerService.fetchMessageFor(conversationId, 0, LOAD_COUNT) successUi { messages ->
-            cacheMessages(messages)
             lastMessageLoaded = messages.count()
             if (cId is ConversationId.Group) {
                 groupService.getMembersInfo(cId.id) successUi { members ->
@@ -296,28 +298,33 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun fetchAndDisplayUnreed() {
+        log.debug("Fetch and display unread")
         messengerService.fetchMessageFor(conversationId, 0, LOAD_COUNT) successUi { messages ->
-            val notSeen = mutableListOf<ConversationMessageInfo>()
-            messages.forEach { message ->
-                if (!chatDataLink.containsKey(message.info.id))
-                    notSeen.add(message)
-            }
+            chatListAdapter.addMessageIfInexistent(messages)
+            scrollOnNewMessage(false)
+        } failUi {
+            log.error("Something failed: {}", it.message, it)
+        }
+    }
 
-            notSeen.sortBy { it.info.timestamp }
+    private fun loadMoreMessage() {
+        loadingMoreMessage = true
 
-            notSeen.forEach {
-                chatList.addView(createMessageNode(it))
-                scrollOnNewMessage(it.info.isSent)
-            }
+        messengerService.fetchMessageFor(conversationId, chatListAdapter.count - 1, LOAD_COUNT) successUi { messages ->
+            chatListAdapter.addMessagesToTop(messages.sortedBy { it.timestamp })
+
+            val firstView = chatList.getChildAt(0)
+            val top = firstView?.top ?: 0
+
+            chatList.setSelectionFromTop(firstVisibleMessagePosition + messages.size - 1, top)
+            loadingMoreMessage = false
         } failUi {
             log.error("Something failed: {}", it.message, it)
         }
     }
 
     private fun handleKeyboardOpen() {
-        if (currentScrollDiff < 200)
-            scrollToBottom()
-        else
+        if (chatList.lastVisiblePosition < chatListAdapter.count - 2)
             showJumpToRecent()
     }
 
@@ -329,16 +336,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         jumpToRecentBtn.visibility = View.GONE
         jumpToRecentLabel.visibility = View.GONE
         jumpToRecentLabel.text = ""
-    }
-
-    private fun cacheMessages(messages: List<ConversationMessageInfo>) {
-        messages.forEach { message ->
-            addMessageToCache(message)
-        }
-    }
-
-    private fun addMessageToCache(message: ConversationMessageInfo) {
-        messagesCache.put(MessageId(message.info.id), message)
     }
 
     private fun displayExpireSliderOnStart() {
@@ -390,23 +387,11 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         expireToggled = false
     }
 
-    private fun displayMessages(messages: List<ConversationMessageInfo>) {
-        chatList.removeAllViews()
-        messages.reversed().forEach { message ->
-            chatList.addView(createMessageNode(message))
-
-            if (!initialized)
-                scrollToBottom()
-        }
+    private fun displayMessages(messages: List<AndroidUIMessageInfo>) {
+        chatList.adapter = chatListAdapter
+        chatListAdapter.addAllMessages(messages.reversed())
 
         initialized = true
-    }
-
-    private fun createMessageNode(messageInfo: ConversationMessageInfo): View {
-        val messageNode = ChatMessage(messageInfo, this).create(conversationId, groupMembers)
-        chatDataLink.put(messageInfo.info.id, messageNode.id)
-
-        return messageNode
     }
 
     override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenuInfo?) {
@@ -429,7 +414,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             }
             R.id.view_message_info -> {
                 if (messageId != null) {
-                    val messageInfo = messagesCache[MessageId(messageId)]
+                    val messageInfo = chatListAdapter.getMessageInfo(messageId)
                     if (messageInfo != null)
                         startMessageInfoActivity(messageInfo)
                 }
@@ -437,9 +422,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             }
             R.id.copy_message_text -> {
                 if (messageId != null) {
-                    val messageInfo = messagesCache[MessageId(messageId)]
+                    val messageInfo = chatListAdapter.getMessageInfo(messageId)
                     if (messageInfo != null) {
-                        copyMessageText(messageInfo.info.message)
+                        copyMessageText(messageInfo.message)
                     }
                 }
                 return true
@@ -452,18 +437,9 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         val dialog = android.app.AlertDialog.Builder(this)
                 .setTitle(resources.getString(R.string.delete_message_title))
                 .setMessage(resources.getString(R.string.delete_message_text))
-                .setPositiveButton(resources.getString(R.string.ok_button), object : DialogInterface.OnClickListener {
-                    override fun onClick(dialog: DialogInterface?, which: Int) {
-                        messengerService.deleteMessage(conversationId, messageId) successUi {
-                            val nodeId = chatDataLink[messageId]
-                            if (nodeId != null) {
-                                val messageView = chatList.findViewById(nodeId)
-                                chatList.removeView(messageView)
-                                chatDataLink.remove(messageId)
-                            }
-                        } failUi {
-                            log.error("Something failed: {}", it.message, it)
-                        }
+                .setPositiveButton(resources.getString(R.string.ok_button), {  dialog, id ->
+                    messengerService.deleteMessage(conversationId, messageId) failUi {
+                        log.error("Something failed: {}", it.message, it)
                     }
                 })
                 .create()
@@ -471,13 +447,13 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         dialog.show()
     }
 
-    private fun startMessageInfoActivity(messageInfo: ConversationMessageInfo) {
+    private fun startMessageInfoActivity(messageInfo: AndroidUIMessageInfo) {
         val intent = Intent(baseContext, MessageInfoActivity::class.java)
-        intent.putExtra(MessageInfoActivity.EXTRA_SENT_TIME, messageInfo.info.timestamp)
-        intent.putExtra(MessageInfoActivity.EXTRA_MESSAGE_ID, messageInfo.info.id)
-        intent.putExtra(MessageInfoActivity.EXTRA_IS_SENT, messageInfo.info.isSent)
-        intent.putExtra(MessageInfoActivity.EXTRA_RECEIVED_TIME, messageInfo.info.receivedTimestamp)
-        intent.putExtra(MessageInfoActivity.EXTRA_SPEAKER_ID, messageInfo.speaker?.long)
+        intent.putExtra(MessageInfoActivity.EXTRA_SENT_TIME, messageInfo.timestamp)
+        intent.putExtra(MessageInfoActivity.EXTRA_MESSAGE_ID, messageInfo.messageId)
+        intent.putExtra(MessageInfoActivity.EXTRA_IS_SENT, messageInfo.isSent)
+        intent.putExtra(MessageInfoActivity.EXTRA_RECEIVED_TIME, messageInfo.receivedTimestamp)
+        intent.putExtra(MessageInfoActivity.EXTRA_SPEAKER_ID, messageInfo.speakerId?.long)
 
         val cId = conversationId
         intent.putExtra(MessageInfoActivity.EXTRA_CONVERSTATION_ID, cId.asString())
@@ -492,19 +468,6 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         clipboardManager.primaryClip = clipData
     }
-
-//    private fun showExpiringMessage(node: View, messageInfo: ConversationMessageInfo) {
-//        messengerService.startMessageExpiration(conversationId, messageInfo.info.id) successUi {
-//            val messageLayout = node.findViewById(R.id.message_node_layout)
-//            val expireLayout = node.findViewById(R.id.expiring_message_layout)
-//
-//            expireLayout.visibility = View.GONE
-//            messageLayout.visibility = View.VISIBLE
-//            node.clearAnimation()
-//        } failUi {
-//            log.error("Something failed: {}", it.message, it)
-//        }
-//    }
 
     private fun handleNewMessageSubmit() {
         var ttl = 0L
@@ -526,15 +489,15 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun scrollToBottom() {
-        chatScrollView.post {
-            chatScrollView.fullScroll(View.FOCUS_DOWN)
+        chatList.post{
+            chatList.setSelection(chatListAdapter.count - 1)
+            hideJumpToRecent()
         }
     }
 
     private fun onNewMessage(newMessageInfo: ConversationMessage) {
         val cId = newMessageInfo.conversationId
         if (cId == conversationId) {
-            addMessageToCache(newMessageInfo.conversationMessageInfo)
             handleNewMessageDisplay(newMessageInfo)
         }
     }
@@ -563,78 +526,53 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     }
 
     private fun handleMessageExpiringEvent(event: MessageUpdateEvent.Expiring) {
-        val nodeId = chatDataLink[event.messageId]
-        if (nodeId != null) {
-            val mMessageNode = findViewById(nodeId) as ChatMessage
-            mMessageNode.startMessageExpirationCountdown(event.ttl)
-        }
+        if (event.conversationId == conversationId)
+            chatListAdapter.displayExpiringMessage(event)
     }
 
     private fun handleDeliveredMessageEvent(event: MessageUpdateEvent.Delivered) {
-        val cId = event.conversationId
-        if (cId == conversationId) {
-            updateMessageDelivered(event)
-        }
+        chatListAdapter.updateMessageDelivered(event)
     }
 
     private fun handleFailedDelivery(event: MessageUpdateEvent.DeliveryFailed) {
-        val nodeId = chatDataLink[event.messageId]
-        if (nodeId === null)
-            return
-
-        val node = findViewById(nodeId) as ChatMessage
-        node.markFailedDelivery()
+        chatListAdapter.updateMessageDeliveryFailed(event)
     }
 
     private fun handleDeletedAllMessage(event: MessageUpdateEvent.DeletedAll) {
         val cId = event.conversationId
         if (cId == conversationId) {
-            chatList.removeAllViews()
-            messagesCache.clear()
+            resetChatListAdapter()
         }
+    }
+
+    private fun resetChatListAdapter() {
+        chatListAdapter = ChatListAdapter(this, mutableListOf<AndroidUIMessageInfo>(), this)
     }
 
     private fun handleDeletedMessage(event: MessageUpdateEvent.Deleted) {
         val cId = event.conversationId
         if (cId == conversationId) {
-            event.messageIds.forEach {
-                val messageId = MessageId(it)
-                messagesCache.remove(messageId)
-
-                val nodeId = chatDataLink[it]
-                if (nodeId != null) {
-                    chatList.removeView(findViewById(nodeId))
-                }
-            }
+            chatListAdapter.deleteMessages(event.messageIds)
         }
     }
 
     private fun handleExpiredMessage(event: MessageUpdateEvent.Expired) {
-        val nodeId = chatDataLink[event.messageId]
-        if (nodeId === null)
-            return
-
-        val messageNode = findViewById(nodeId) as ChatMessage
-        messageNode.setMessageExpired()
-    }
-
-    private fun updateMessageDelivered(event: MessageUpdateEvent.Delivered) {
-        val nodeId = chatDataLink[event.messageId]
-        if (nodeId === null)
-            return
-
-        val node = findViewById(nodeId) as ChatMessage
-        node.updateTimeStamp(event.deliveredTimestamp)
+        chatListAdapter.updateMessageExpired(event)
     }
 
     private fun handleNewMessageDisplay(newMessage: ConversationMessage) {
-        chatList.addView(createMessageNode(newMessage.conversationMessageInfo))
-
+        chatListAdapter.add(AndroidUIMessageInfo(newMessage.conversationMessageInfo))
         scrollOnNewMessage(newMessage.conversationMessageInfo.info.isSent)
     }
 
+    fun displayExpiringMessage(messageId: String) {
+        messengerService.startMessageExpiration(conversationId, messageId) failUi {
+            log.error("Something failed: {}", it.message, it)
+        }
+    }
+
     private fun scrollOnNewMessage(isSent: Boolean) {
-        if (currentScrollDiff < 300)
+        if (chatList.lastVisiblePosition >= chatListAdapter.count - 2)
             scrollToBottom()
         else if (jumpToRecentBtn.visibility == View.VISIBLE && !isSent) {
             val currentText = jumpToRecentLabel.text.toString()
@@ -746,7 +684,7 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     private fun openConfirmationDialog(title: String, message: String, callBack: () -> Unit) {
         AlertDialog.Builder(this).setTitle(title).setMessage(message)
             .setIcon(android.R.drawable.ic_dialog_alert)
-            .setPositiveButton(android.R.string.yes, DialogInterface.OnClickListener { dialog: DialogInterface, whichButton: Int ->
+            .setPositiveButton(android.R.string.yes, { dialog, id ->
                 callBack()
         }).setNegativeButton(android.R.string.no, null).show()
     }

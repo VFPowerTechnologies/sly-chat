@@ -24,7 +24,7 @@ interface AndroidMessengerService {
 
     fun clearListeners()
 
-    fun fetchMessageFor(conversationId: ConversationId, from: Int, to: Int): Promise<List<ConversationMessageInfo>, Exception>
+    fun fetchMessageFor(conversationId: ConversationId, from: Int, to: Int): Promise<List<AndroidUIMessageInfo>, Exception>
 
     fun sendMessageTo(conversationId: ConversationId, message: String, ttl: Long): Promise<Unit, Exception>
 

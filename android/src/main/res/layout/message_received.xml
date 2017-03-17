@@ -90,7 +90,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/chat_message_expire_time_layout"
-                android:gravity="end"
+                android:layout_gravity="end"
                 android:layout_marginTop="2dp"
                 android:visibility="gone">
             <TextView

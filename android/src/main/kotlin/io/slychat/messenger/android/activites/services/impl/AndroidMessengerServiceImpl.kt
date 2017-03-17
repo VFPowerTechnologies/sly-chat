@@ -3,6 +3,7 @@ package io.slychat.messenger.android.activites.services.impl
 import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.activites.services.AndroidMessengerService
+import io.slychat.messenger.android.activites.services.AndroidUIMessageInfo
 import io.slychat.messenger.android.activites.services.RecentChatInfo
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.*
@@ -144,8 +145,15 @@ class AndroidMessengerServiceImpl(activity: AppCompatActivity): AndroidMessenger
         newMessageUIListener = null
     }
 
-    override fun fetchMessageFor (conversationId: ConversationId, from: Int, to: Int): Promise<List<ConversationMessageInfo>, Exception> {
-        return messageService.getLastMessages(conversationId, from, to)
+    override fun fetchMessageFor (conversationId: ConversationId, from: Int, to: Int): Promise<List<AndroidUIMessageInfo>, Exception> {
+        return messageService.getLastMessages(conversationId, from, to) map {
+            val uiMessages = mutableListOf<AndroidUIMessageInfo>()
+            it.forEach {
+                uiMessages.add(AndroidUIMessageInfo(it))
+            }
+
+            uiMessages
+        }
     }
 
     override fun sendMessageTo (conversationId: ConversationId, message: String, ttl: Long): Promise<Unit, Exception> {

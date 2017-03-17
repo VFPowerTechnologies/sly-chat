@@ -110,6 +110,7 @@ dependencies {
     compile "org.ocpsoft.prettytime:prettytime:$versions.prettyTime"
 
     //Added to prevent unresolved reference in IDEA
+    compile "nl.komponents.kovenant:kovenant-functional:$versions.kovenant"
     compile "com.googlecode.libphonenumber:libphonenumber:$versions.libphonenumber"
     compile "com.almworks.sqlite4java:sqlite4java:$versions.sqlite4java"
     compile "org.slf4j:slf4j-api:$versions.slf4j"
