@@ -252,8 +252,8 @@ class DownloaderImpl(
     }
 
     override fun shutdown() {
-        cancellationTokens.forEach { t, u ->
-            u.set(true)
+        cancellationTokens.forEach { e ->
+            e.value.set(true)
         }
     }
 
