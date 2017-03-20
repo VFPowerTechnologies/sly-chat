@@ -611,6 +611,6 @@ class UserModule(
         messengerService: MessengerService,
         storageService: StorageService
     ): FileListSyncWatcher {
-        return FileListSyncWatcherImpl(storageService.syncEvents, messengerService)
+        return FileListSyncWatcherImpl(storageService.syncEvents, storageService.transferEvents, messengerService)
     }
 }
