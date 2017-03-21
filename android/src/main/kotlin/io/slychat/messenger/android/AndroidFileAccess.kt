@@ -34,7 +34,7 @@ class AndroidFileAccess(private val context: Context) : PlatformFileAccess {
                 val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
 
                 //don't think this can happen since these cols are required
-                require(displayNameIdx < 0 || sizeIdx < 0) { "Unable to resolve col indexes: displayNameIdx=$displayNameIdx; sizeIdx=$sizeIdx" }
+                require(displayNameIdx >= 0 && sizeIdx >= 0) { "Unable to resolve col indexes: displayNameIdx=$displayNameIdx; sizeIdx=$sizeIdx" }
 
                 if (!cursor.moveToFirst())
                     throw FileNotFoundException()
