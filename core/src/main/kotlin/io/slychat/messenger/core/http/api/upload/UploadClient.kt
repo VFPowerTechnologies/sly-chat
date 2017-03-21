@@ -2,11 +2,10 @@ package io.slychat.messenger.core.http.api.upload
 
 import io.slychat.messenger.core.UserCredentials
 import java.io.InputStream
-import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 
 interface UploadClient {
-    fun getUpload(userCredentials : UserCredentials, uploadId: String): UploadInfo?
+    fun getUpload(userCredentials : UserCredentials, uploadId: String): GetUploadResponse
 
     fun getUploads(userCredentials: UserCredentials): GetUploadsResponse
 
@@ -18,6 +17,6 @@ interface UploadClient {
     fun completeUpload(userCredentials: UserCredentials, uploadId: String)
 
     //throws UploadInProgressException if an upload is still active
-    fun delete(userCredentials: UserCredentials, uploadId: String)
+    fun cancel(userCredentials: UserCredentials, uploadId: String)
 }
 

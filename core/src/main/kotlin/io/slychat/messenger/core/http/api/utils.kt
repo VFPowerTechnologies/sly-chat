@@ -86,3 +86,10 @@ fun <T> apiGetRequest(httpClient: HttpClient, url: String, userCredentials: User
     val resp = httpClient.get(url, params, headers)
     return valueFromApi(resp, typeReference)
 }
+
+fun <T> apiDeleteRequest(httpClient: HttpClient, url: String, userCredentials: UserCredentials?, typeReference: TypeReference<ApiResult<T>>): T {
+    val headers = userCredentialsToHeaders(userCredentials)
+
+    val resp = httpClient.delete(url, headers)
+    return valueFromApi(resp, typeReference)
+}

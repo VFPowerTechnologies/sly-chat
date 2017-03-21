@@ -8,7 +8,7 @@ class JsonFileKeyVaultStorage(val path: File) : KeyVaultStorage {
     private val objectMapper = ObjectMapper()
 
     override fun read(): SerializedKeyVault {
-        val json = BufferedReader(InputStreamReader(FileInputStream(path), "UTF-8")).use { io.slychat.messenger.core.http.slurpInputStreamReader(it) }
+        val json = BufferedReader(InputStreamReader(FileInputStream(path), "UTF-8")).use { it.readText() }
         return objectMapper.readValue(json, SerializedKeyVault::class.java)
     }
 

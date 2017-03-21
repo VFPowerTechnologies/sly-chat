@@ -43,13 +43,13 @@ class WebApiUploadTest {
         )
     }
 
+    private fun newClient(): UploadClientImpl {
+        return UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
+    }
+
     @Before
     fun before() {
         devClient.clear()
-    }
-
-    private fun newClient(): UploadClientImpl {
-        return UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
     }
 
     @Test
@@ -76,7 +76,7 @@ class WebApiUploadTest {
         assertNull(resp.error, "Should have sufficient quota")
         assertEquals(fileSize, resp.quota.usedBytes, "Quota not updated")
 
-        val uploadInfo = assertNotNull(client.getUpload(authUser.userCredentials, uploadId), "No upload returned from server")
+        val uploadInfo = assertNotNull(client.getUpload(authUser.userCredentials, uploadId).upload, "No upload returned from server")
 
         assertEquals(uploadId, uploadInfo.id, "Invalid id")
         assertEquals(request.fileId, uploadInfo.fileId, "Invalid fileId")
@@ -201,6 +201,14 @@ class WebApiUploadTest {
         }
     }
 
+    private fun newUpload(client: UploadClient, userCredentials: UserCredentials): String {
+        val request = randomNewUploadRequest(1)
+        val resp = client.newUpload(userCredentials, request)
+        assertNull(resp.error, "Insufficient quota")
+
+        return request.uploadId
+    }
+
     @Test
     fun `getUploads should return all uploads`() {
         val authUser = devClient.newAuthUser(userManagement)
@@ -229,6 +237,27 @@ class WebApiUploadTest {
             describedAs("Should match uploads")
             containsOnly(expected)
         }
+    }
+
+    @Test
+    fun `cancel should cancel an inactive upload`() {
+        val authUser = devClient.newAuthUser(userManagement)
+        val client = newClient()
+        val uploadId = newUpload(client, authUser.userCredentials)
+
+        client.cancel(authUser.userCredentials, uploadId)
+
+        assertNull(client.getUpload(authUser.userCredentials, uploadId).upload, "Upload not cancelled")
+    }
+
+    @Test
+    fun `cancel should be idempotent`() {
+        val authUser = devClient.newAuthUser(userManagement)
+        val client = newClient()
+        val uploadId = newUpload(client, authUser.userCredentials)
+
+        client.cancel(authUser.userCredentials, uploadId)
+        client.cancel(authUser.userCredentials, uploadId)
     }
 }
 

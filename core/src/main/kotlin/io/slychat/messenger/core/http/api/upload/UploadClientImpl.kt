@@ -13,7 +13,7 @@ class UploadClientImpl(
     private val fileServerBaseUrl: String,
     private val httpClient: HttpClient
 ) : UploadClient {
-    override fun getUpload(userCredentials: UserCredentials, uploadId: String): UploadInfo? {
+    override fun getUpload(userCredentials: UserCredentials, uploadId: String): GetUploadResponse {
         val url = "$serverBaseUrl/v1/upload/$uploadId"
 
         return apiGetRequest(httpClient, url, userCredentials, emptyList(), typeRef())
@@ -51,7 +51,9 @@ class UploadClientImpl(
         apiPostRequest(httpClient, url, userCredentials, mapOf<String, String>(), typeRef<ApiResult<EmptyResponse>>())
     }
 
-    override fun delete(userCredentials: UserCredentials, uploadId: String) {
-        TODO()
+    override fun cancel(userCredentials: UserCredentials, uploadId: String) {
+        val url = "$serverBaseUrl/v1/upload/$uploadId"
+
+        apiDeleteRequest<EmptyResponse>(httpClient, url, userCredentials, typeRef())
     }
 }

@@ -8,36 +8,20 @@ import java.net.URL
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.HttpsURLConnection
 
-
-fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String {
-    val bufferSize = if (suggestedBufferSize > 0) suggestedBufferSize else 1024
-
-    val buffer = CharArray(bufferSize)
-    val builder = StringBuilder()
-    while (true) {
-        val readChars = reader.read(buffer, 0, buffer.size)
-        if (readChars <= 0)
-            break
-        builder.append(buffer, 0, readChars)
-    }
-
-    return builder.toString()
-}
-
-fun lowercaseHeaders(headers: Map<String, List<String>>): Map<String, List<String>> =
+private fun lowercaseHeaders(headers: Map<String, List<String>>): Map<String, List<String>> =
     //headers actually have a null key containing the http response line
     headers.mapKeys { e ->
         @Suppress("UNNECESSARY_SAFE_CALL")
         e.key?.toLowerCase()
     }
 
-fun slurpStreamAndClose(inputStream: InputStream, suggestedBufferSize: Int): String =
+private fun slurpStreamAndClose(inputStream: InputStream, suggestedBufferSize: Int): String =
     inputStream.use {
         val reader = BufferedReader(InputStreamReader(it, "utf-8"))
-        slurpInputStreamReader(reader, suggestedBufferSize)
+        reader.readText()
     }
 
-fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<String>>): String {
+private fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<String>>): String {
     val contentLength = headers["content-length"]?.first()?.toInt() ?: 1024
 
     val data = try {
@@ -61,10 +45,21 @@ class JavaHttpClient(
 
     private fun getHttpConnection(url: URL): HttpURLConnection {
         val connection = url.openConnection() as HttpURLConnection
+
+        connection.connectTimeout = config.connectTimeoutMs
+        connection.readTimeout = config.readTimeoutMs
+
         if (connection is HttpsURLConnection)
             sslConfigurator?.configure(connection)
 
         return connection
+    }
+
+    private fun readResponse(connection: HttpURLConnection): HttpResponse {
+        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+        val data = readStreamResponse(connection, headers)
+
+        return HttpResponse(connection.responseCode, headers, data)
     }
 
     override fun get(url: String, headers: List<Pair<String, String>>): HttpResponse {
@@ -73,18 +68,25 @@ class JavaHttpClient(
         connection.requestMethod = "GET"
         connection.useCaches = false
 
-        connection.connectTimeout = config.connectTimeoutMs
-        connection.readTimeout = config.readTimeoutMs
+        for (header in headers)
+            connection.setRequestProperty(header.first, header.second)
+
+        connection.connect()
+
+        return readResponse(connection)
+    }
+
+    override fun delete(url: String, headers: List<Pair<String, String>>): HttpResponse {
+        val connection = getHttpConnection(url)
+        connection.doInput = true
+        connection.requestMethod = "DELETE"
 
         for (header in headers)
             connection.setRequestProperty(header.first, header.second)
 
         connection.connect()
 
-        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
-        val data = readStreamResponse(connection, headers)
-
-        return HttpResponse(connection.responseCode, headers, data)
+        return readResponse(connection)
     }
 
     override fun postJSON(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse {
@@ -109,10 +111,7 @@ class JavaHttpClient(
 
         connection.outputStream.use { it.write(body) }
 
-        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
-        val data = readStreamResponse(connection, headers)
-
-        return HttpResponse(connection.responseCode, headers, data)
+        return readResponse(connection)
     }
 
     //TODO write multipart support for builtin HttpServer to test this

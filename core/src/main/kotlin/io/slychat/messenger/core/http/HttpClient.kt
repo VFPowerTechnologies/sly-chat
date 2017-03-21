@@ -1,6 +1,5 @@
 package io.slychat.messenger.core.http
 
-import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Simple HTTP Client. */
@@ -10,6 +9,8 @@ interface HttpClient {
 
     /** Post without a set content type. */
     fun post(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse
+
+    fun delete(url: String, headers: List<Pair<String, String>>): HttpResponse
 
     /** Post the given data as application/json. */
     fun postJSON(url: String, body: ByteArray, headers: List<Pair<String, String>>): HttpResponse
