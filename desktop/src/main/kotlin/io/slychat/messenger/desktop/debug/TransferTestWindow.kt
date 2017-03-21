@@ -16,6 +16,7 @@ import javafx.scene.control.cell.PropertyValueFactory
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
+import javafx.stage.FileChooser
 import javafx.stage.Stage
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -27,6 +28,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
 
     private val singlePartUploadBtn: Button
     private val multiPartUploadBtn: Button
+    private val customUploadBtn: Button
 
     private val doCacheCheckBox: CheckBox
 
@@ -68,6 +70,12 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
         multiPartUploadBtn.maxWidth = Double.MAX_VALUE
         multiPartUploadBtn.setOnAction { onMultiPartUploadClicked() }
         root.children.add(multiPartUploadBtn)
+
+        customUploadBtn = Button("Upload custom file")
+        customUploadBtn.isDisable = true
+        customUploadBtn.maxWidth = Double.MAX_VALUE
+        customUploadBtn.setOnAction { onCustomFileUploadClicked() }
+        root.children.add(customUploadBtn)
 
         doCacheCheckBox = CheckBox("Cache file")
         doCacheCheckBox.isSelected = false
@@ -387,6 +395,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     private fun enableUIInteraction(isEnabled: Boolean) {
         singlePartUploadBtn.isDisable = !isEnabled
         multiPartUploadBtn.isDisable = !isEnabled
+        customUploadBtn.isDisable = !isEnabled
     }
 
     private fun onStorageSyncEvent(ev: FileListSyncEvent) {
@@ -428,10 +437,9 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     }
 
     private fun doUpload(fileName: String) {
-        val userComponent = uc
         println("Starting upload")
 
-        userComponent.storageService.uploadFile(
+        uc.storageService.uploadFile(
             (File(System.getProperty("user.home")) / "sly-dummy-files" / fileName).path,
             "/testing",
             fileName,
@@ -447,5 +455,22 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
 
     private fun onSinglePartUploadClicked() {
         doUpload("singlepart.png")
+    }
+
+    private fun onCustomFileUploadClicked() {
+        val file = FileChooser().apply {
+            title = "Select file to upload"
+            extensionFilters.add(FileChooser.ExtensionFilter("All Files", "*.*"))
+            initialDirectory = File(System.getProperty("user.home"))
+        }.showOpenDialog(this) ?: return
+
+        uc.storageService.uploadFile(
+            file.path,
+            "/testing",
+            file.name,
+            doCacheCheckBox.isSelected
+        ) fail {
+            log.error("Failed to start upload: {}", it.message, it)
+        }
     }
 }
