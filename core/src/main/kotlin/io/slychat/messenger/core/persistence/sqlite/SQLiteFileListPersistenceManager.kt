@@ -6,10 +6,7 @@ import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
-import io.slychat.messenger.core.persistence.FileListMergeResults
-import io.slychat.messenger.core.persistence.FileListPersistenceManager
-import io.slychat.messenger.core.persistence.FileListUpdate
-import io.slychat.messenger.core.persistence.InvalidFileException
+import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
 
@@ -89,13 +86,17 @@ OFFSET
         }
     }
 
-    override fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, path: String): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+    private fun selectFiles(connection: SQLiteConnection, path: String, startingAt: Int, count: Int, includePending: Boolean): List<RemoteFile> {
         val sql = getFileSelectQuery(startingAt, count, path, includePending)
 
-        it.withPrepared(sql) {
+        return connection.withPrepared(sql) {
             it.bind(1, path)
             it.map { fileUtils.rowToRemoteFile(it) }
         }
+    }
+
+    override fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, path: String): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+        selectFiles(it, path, startingAt, count, includePending)
     }
 
     private fun updateFile(connection: SQLiteConnection, file: RemoteFile) {
@@ -389,7 +390,7 @@ ON
         }
     }
 
-    internal fun getDirectoriesAt(path: String): Promise<List<String>, Exception> = sqlitePersistenceManager.runQuery {
+    private fun getDirectoriesAt(connection: SQLiteConnection, path: String, startingAt: Int, count: Int): List<String> {
         //language=SQLite
         val sql = """
 SELECT
@@ -398,11 +399,69 @@ FROM
     directory_index
 WHERE
     path = :path
+ORDER BY
+    sub_dir
+LIMIT
+    $count
+OFFSET
+    $startingAt
 """
 
-        it.withPrepared(sql) {
+        return connection.withPrepared(sql) {
             it.bind(":path", path)
             it.map { it.columnString(0) }
         }
+    }
+
+    //test use only
+    internal fun getDirectoriesAt(path: String): Promise<List<String>, Exception> = sqlitePersistenceManager.runQuery {
+        getDirectoriesAt(it, path, 0, 1000)
+    }
+
+    private fun getSubDirCount(connection: SQLiteConnection, path: String): Int {
+        //language=SQLite
+        val sql = """
+SELECT
+    count(*)
+FROM
+    directory_index
+WHERE
+    path = :path
+"""
+
+        return connection.withPrepared(sql) {
+            it.bind(":path", path)
+            it.step()
+            it.columnInt(0)
+        }
+    }
+
+    override fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception> = sqlitePersistenceManager.runQuery {
+        val entries = ArrayList<DirEntry>()
+
+        val prependPath = if (path == "/")
+            ""
+        else
+            path
+
+        val directories = getDirectoriesAt(it, path, startingAt, count)
+        entries.addAll(directories.map {
+            DirEntry.D("$prependPath/$it", it)
+        })
+
+        val remainingCount = count - entries.size
+
+        if (remainingCount > 0) {
+            val s = if (directories.isNotEmpty())
+                0
+            else
+                startingAt - getSubDirCount(it, path)
+
+            entries.addAll(
+                selectFiles(it, path, s, remainingCount, true).map { DirEntry.F(it) }
+            )
+        }
+
+        entries
     }
 }

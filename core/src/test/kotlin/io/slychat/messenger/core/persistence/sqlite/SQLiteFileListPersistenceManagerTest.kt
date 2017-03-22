@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.persistence.DirEntry
 import io.slychat.messenger.core.persistence.DuplicateFilePathException
 import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.core.persistence.InvalidFileException
@@ -496,5 +497,57 @@ class SQLiteFileListPersistenceManagerTest {
     @Test
     fun `getFileCount should return 0 when list is empty`() {
         assertEquals(0, fileListPersistenceManager.getFileCount().get(), "Invalid empty file list count")
+    }
+
+    @Test
+    fun `getEntriesAt should return both files and directories`() {
+        val file = insertFile(directory = "/")
+        insertFile(directory = "/a")
+
+        val expected = listOf(
+            DirEntry.D("/a", "a"),
+            DirEntry.F(file)
+        )
+
+        assertThat(fileListPersistenceManager.getEntriesAt(0, 100, "/").get()).desc("Should contain both files and directory entries") {
+            containsAll(expected)
+        }
+    }
+
+    @Test
+    fun `getEntriesAt should handle startingAt being non-zero for joint file directory results`() {
+        val file = insertFile(directory = "/")
+        insertFile(directory = "/a")
+        insertFile(directory = "/b")
+
+        val expected = listOf(
+            DirEntry.D("/b", "b"),
+            DirEntry.F(file)
+        )
+
+        assertThat(fileListPersistenceManager.getEntriesAt(1, 2, "/").get()).desc("Should contain both files and directory entries") {
+            containsAll(expected)
+        }
+    }
+
+    @Test
+    fun `getEntriesAt should not return files when directories max out the count`() {
+        val file = insertFile(directory = "/")
+        insertFile(directory = "/a")
+        val file2 = insertFile(directory = "/")
+
+        val dir = DirEntry.D("/a", "a")
+
+        assertThat(fileListPersistenceManager.getEntriesAt(0, 1, "/").get()).desc("Should only contain the first item") {
+            containsOnly(dir)
+        }
+
+        assertThat(fileListPersistenceManager.getEntriesAt(1, 1, "/").get()).desc("Should only contain the second item") {
+            containsOnly(DirEntry.F(file))
+        }
+
+        assertThat(fileListPersistenceManager.getEntriesAt(2, 1, "/").get()).desc("Should only contain the third item") {
+            containsOnly(DirEntry.F(file2))
+        }
     }
 }

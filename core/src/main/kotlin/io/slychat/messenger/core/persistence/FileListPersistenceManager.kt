@@ -28,4 +28,7 @@ interface FileListPersistenceManager {
     fun getRemoteUpdates(): Promise<List<FileListUpdate>, Exception>
 
     fun removeRemoteUpdates(fileIds: List<String>): Promise<Unit, Exception>
+
+    //lists directories first
+    fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception>
 }
