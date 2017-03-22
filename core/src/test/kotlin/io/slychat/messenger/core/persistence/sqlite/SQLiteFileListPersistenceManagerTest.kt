@@ -54,20 +54,20 @@ class SQLiteFileListPersistenceManagerTest {
         return fileListPersistenceManager.getFilesAt(0, 100, includePending, path).get()
     }
 
-    private fun assertDirIndexContains(paths: List<Pair<String, String>>) {
+    private fun assertDirIndexContains(paths: List<Pair<String, String>>, message: String? = null) {
         paths.forEach {
             val (parent, sub) = it
-            assertThat(fileListPersistenceManager.getDirectoriesAt(parent).get()).desc("Should contain subdirs") {
+            assertThat(fileListPersistenceManager.getDirectoriesAt(parent).get()).desc(message ?: "Should contain subdirs") {
                 containsOnly(sub)
             }
         }
     }
 
-    private fun assertDirIndexNotContains(paths: List<Pair<String, String>>) {
+    private fun assertDirIndexNotContains(paths: List<Pair<String, String>>, message: String? = null) {
         require(paths.isNotEmpty())
         paths.forEach {
             val (parent, sub) = it
-            assertThat(fileListPersistenceManager.getDirectoriesAt(parent).get()).desc("Should not contain subdirs") {
+            assertThat(fileListPersistenceManager.getDirectoriesAt(parent).get()).desc(message ?: "Should not contain subdirs") {
                 doesNotContain(sub)
             }
         }
@@ -280,7 +280,7 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
-    fun `mergeUpdates should update directory index`() {
+    fun `mergeUpdates should update the directory index when a file is removed`() {
         val file = insertFile(directory = "/a")
         val updated = file.copy(isDeleted = true)
 
@@ -306,6 +306,17 @@ class SQLiteFileListPersistenceManagerTest {
         assertThat(result.deleted).desc("Should be empty") { isEmpty() }
 
         assertThat(result.updated).desc("Should contain the updated file") { containsOnly(updated) }
+    }
+
+    @Test
+    fun `mergeUpdates should update the directory index when a file path is modified`() {
+        val file = insertFile(directory = "/a")
+        val updated = file.copy(userMetadata = file.userMetadata.moveTo("/b"))
+
+        fileListPersistenceManager.mergeUpdates(listOf(updated), 2).get()
+
+        assertDirIndexNotContains(listOf("/" to "a"), "Should not contain the old path")
+        assertDirIndexContains(listOf("/" to "b"), "Should contain the new path")
     }
 
     @Test

@@ -270,28 +270,36 @@ WHERE
             val deleted = ArrayList<RemoteFile>()
             val updated = ArrayList<RemoteFile>()
 
-            var hadDeleted = false
-            updates.forEach {
+            var isIndexModified = false
+            updates.forEach { remote ->
                 //kinda bad but w/e
-                if (isFilePresent(connection, it.id)) {
-                    if (it.isDeleted) {
-                        hadDeleted = true
-                        fileUtils.updateIndexRemove(connection, it.userMetadata.directory)
-                        deleteFile(connection, it.id)
-                        deleted.add(it)
+                val local = selectFile(connection, remote.id)
+
+                if (local != null) {
+                    if (remote.isDeleted) {
+                        isIndexModified = true
+                        fileUtils.updateIndexRemove(connection, remote.userMetadata.directory)
+                        deleteFile(connection, remote.id)
+                        deleted.add(remote)
                     }
                     else {
-                        updateFile(connection, it)
-                        updated.add(it)
+                        if (local.userMetadata.directory != remote.userMetadata.directory) {
+                            fileUtils.updateIndexRemove(connection, local.userMetadata.directory)
+                            fileUtils.updateIndexAdd(connection, remote.userMetadata.directory)
+                            isIndexModified = true
+                        }
+
+                        updateFile(connection, remote)
+                        updated.add(remote)
                     }
                 }
                 else {
-                    fileUtils.insertFile(connection, it)
-                    added.add(it)
+                    fileUtils.insertFile(connection, remote)
+                    added.add(remote)
                 }
             }
 
-            if (hadDeleted)
+            if (isIndexModified)
                 fileUtils.cleanupIndex(connection)
 
             setVersion(connection, latestVersion)
