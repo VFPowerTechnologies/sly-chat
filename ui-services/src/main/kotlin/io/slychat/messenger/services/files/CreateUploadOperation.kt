@@ -10,6 +10,7 @@ import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.NewUploadResponse
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.persistence.Upload
+import io.slychat.messenger.core.persistence.UploadState
 
 class CreateUploadOperation(
     private val userCredentials: UserCredentials,
@@ -18,6 +19,10 @@ class CreateUploadOperation(
     private val keyVault: KeyVault,
     private val uploadClient: UploadClient
 ) {
+    init {
+        require(upload.state == UploadState.PENDING) { "Expecting PENDING upload, got ${upload.state}" }
+    }
+
     fun run(): NewUploadResponse {
         val fileMetadata = file.fileMetadata ?: error("fileMetadata is null")
 
@@ -34,7 +39,7 @@ class CreateUploadOperation(
 
         val request = NewUploadRequest(
             upload.id,
-            upload.fileId,
+            upload.fileId!!,
             file.shareKey,
             file.remoteFileSize,
             firstPartSize,

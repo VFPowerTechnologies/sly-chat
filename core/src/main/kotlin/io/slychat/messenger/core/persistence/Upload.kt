@@ -2,7 +2,7 @@ package io.slychat.messenger.core.persistence
 
 data class Upload(
     val id: String,
-    val fileId: String,
+    val fileId: String?,
     val state: UploadState,
     //must be a string to handle differences in paths on diff platforms (eg: android URIs)
     val displayName: String,
@@ -34,6 +34,9 @@ data class Upload(
             error("isEncrypted is specified but cachePath is null")
         else if (cachePath == null && isEncrypted)
             error("cachePath is null but isEncrypted is true")
+
+        if (fileId == null && state != UploadState.CANCELLED)
+            error("fileId can only be null when in cancelled state")
 
         verifyParts(parts)
     }

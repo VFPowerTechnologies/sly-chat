@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS uploads (
     id TEXT PRIMARY KEY NOT NULL,
-    file_id TEXT NOT NULL,
+    file_id TEXT,
     state TEXT NOT NULL,
     -- file name as displayed in the upload dialog (needed mostly due to android content URIs)
     display_name TEXT NOT NULL,

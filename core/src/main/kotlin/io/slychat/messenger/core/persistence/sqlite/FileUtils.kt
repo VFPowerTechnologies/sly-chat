@@ -114,6 +114,48 @@ INSERT INTO
         }
     }
 
+    fun deleteFile(connection: SQLiteConnection, file: RemoteFile) {
+        //language=SQLite
+        val sql = """
+DELETE FROM
+    files
+WHERE
+    id = ?
+"""
+
+        connection.withPrepared(sql) {
+            it.bind(1, file.id)
+            it.step()
+        }
+
+        updateIndexRemove(connection, file.userMetadata.directory)
+    }
+
+    fun selectFile(connection: SQLiteConnection, fileId: String): RemoteFile? {
+        //language=SQLite
+        val sql = """
+SELECT
+    id, share_key, last_update_version,
+    is_deleted, creation_date, modification_date,
+    remote_file_size, file_key, file_name,
+    directory, cipher_id, chunk_size,
+    file_size, mime_type
+FROM
+    files
+WHERE
+    id = ?
+"""
+
+        return connection.withPrepared(sql) {
+            it.bind(1, fileId)
+            if (it.step())
+                rowToRemoteFile(it)
+            else
+                null
+        }
+    }
+
+
     internal fun withPathComponents(path: String, body: (parentPath:String, subDir: String) -> Unit)  {
         if (path == "/")
             return

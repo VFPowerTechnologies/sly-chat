@@ -7,6 +7,7 @@ interface UploadPersistenceManager {
 
     fun remove(uploadIds: List<String>): Promise<Unit, Exception>
 
+    //if state is CANCELLED, the associated file is removed
     fun setState(uploadId: String, newState: UploadState): Promise<Unit, Exception>
 
     fun completePart(uploadId: String, n: Int): Promise<Unit, Exception>

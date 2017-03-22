@@ -8,5 +8,9 @@ enum class UploadState {
     //needs to be written to local cache
     CACHING,
     //only complete once all parts are completed
-    COMPLETE
+    COMPLETE,
+    //not cancelled on server yet
+    CANCELLING,
+    //cancelled
+    CANCELLED
 }

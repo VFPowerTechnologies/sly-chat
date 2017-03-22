@@ -44,7 +44,7 @@ class SQLiteUploadPersistenceManagerTest {
         return "/path/file.ext"
     }
 
-    private fun insertUploadFull(error: UploadError?, directory: String? = null): UploadInfo {
+    private fun insertUploadFull(error: UploadError? = null, directory: String? = null): UploadInfo {
         val userMetadata = randomUserMetadata(directory)
         val file = randomRemoteFile(userMetadata = userMetadata)
         val upload = randomUpload(file.id, error)
@@ -145,6 +145,26 @@ class SQLiteUploadPersistenceManagerTest {
     fun `setState should throw InvalidUploadException if upload doesn't exist`() {
         assertFailsWith(InvalidUploadException::class) {
             uploadPersistenceManager.setState(generateUploadId(), UploadState.COMPLETE).get()
+        }
+    }
+
+    @Test
+    fun `setState should remove the associated file and set fileId to null when state is cancelled`() {
+        val info = insertUploadFull()
+
+        uploadPersistenceManager.setState(info.upload.id, UploadState.CANCELLED).get()
+
+        assertNull(fileListPersistenceManager.getFile(info.file.id).get(), "File not removed")
+    }
+
+    @Test
+    fun `setState should update the directory index when state is CANCELLED`() {
+        val info = insertUploadFull(directory = "/a")
+
+        uploadPersistenceManager.setState(info.upload.id, UploadState.CANCELLED).get()
+
+        assertThat(fileListPersistenceManager.getDirectoriesAt("/").get()).desc("Should remove subdir from index") {
+            doesNotContain("a")
         }
     }
 

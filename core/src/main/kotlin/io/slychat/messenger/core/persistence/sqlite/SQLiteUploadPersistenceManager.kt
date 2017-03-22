@@ -122,7 +122,7 @@ WHERE
         }
     }
 
-    override fun setState(uploadId: String, newState: UploadState): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
+    override fun setState(uploadId: String, newState: UploadState): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         //language=SQLite
         val sql = """
 UPDATE
@@ -132,14 +132,23 @@ SET
 WHERE
     id = ?
 """
-        it.withPrepared(sql) {
-            it.bind(1, newState)
-            it.bind(2, uploadId)
-            it.step()
-        }
+        connection.withTransaction {
+            it.withPrepared(sql) {
+                it.bind(1, newState)
+                it.bind(2, uploadId)
+                it.step()
+            }
 
-        if (it.changes <= 0)
-            throw InvalidUploadException(uploadId)
+            if (it.changes <= 0)
+                throw InvalidUploadException(uploadId)
+
+            if (newState == UploadState.CANCELLED) {
+                val upload = selectUpload(connection, uploadId)!!
+                val file = fileUtils.selectFile(connection, upload.fileId!!)!!
+                fileUtils.deleteFile(connection, file)
+                fileUtils.cleanupIndex(connection)
+            }
+        }
     }
 
     override fun setError(uploadId: String, error: UploadError?): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
@@ -211,9 +220,9 @@ ORDER BY n
         }
     }
 
-    override fun get(uploadId: String): Promise<Upload?, Exception> = sqlitePersistenceManager.runQuery {
-        val parts = getParts(it, uploadId)
-        if (parts.isEmpty())
+    private fun selectUpload(connection: SQLiteConnection, uploadId: String): Upload? {
+        val parts = getParts(connection, uploadId)
+        return if (parts.isEmpty())
             null
         else {
             //language=SQLite
@@ -226,7 +235,7 @@ WHERE
     id  = ?
 """
 
-            it.withPrepared(sql) {
+            connection.withPrepared(sql) {
                 it.bind(1, uploadId)
                 if (it.step())
                     rowToUpload(it, parts)
@@ -234,6 +243,10 @@ WHERE
                     null
             }
         }
+    }
+
+    override fun get(uploadId: String): Promise<Upload?, Exception> = sqlitePersistenceManager.runQuery {
+        selectUpload(it, uploadId)
     }
 
     private fun isUploadPresent(connection: SQLiteConnection, uploadId: String): Boolean {

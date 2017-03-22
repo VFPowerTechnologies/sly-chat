@@ -153,22 +153,6 @@ VALUES
         }
     }
 
-    private fun deleteFile(connection: SQLiteConnection, fileId: String) {
-        //language=SQLite
-        val sql = """
-DELETE FROM
-    files
-WHERE
-    id = ?
-"""
-
-        connection.withPrepared(sql) {
-            it.bind(1, fileId)
-            it.step()
-        }
-    }
-
-
     override fun deleteFiles(fileIds: List<String>): Promise<List<RemoteFile>, Exception> {
         if (fileIds.isEmpty())
             return Promise.ofSuccess(emptyList())
@@ -197,7 +181,7 @@ WHERE
                             throw InvalidFileException(fileId)
 
                         insertRemoteUpdate(connection, fileId, UPDATE_TYPE_DELETE)
-                        val file = selectFile(connection, fileId)!!
+                        val file = fileUtils.selectFile(connection, fileId)!!
                         fileUtils.updateIndexRemove(connection, file.userMetadata.directory)
                         updated.add(file)
                     }
@@ -236,32 +220,8 @@ WHERE
         }
     }
 
-    private fun selectFile(connection: SQLiteConnection, fileId: String): RemoteFile? {
-        //language=SQLite
-        val sql = """
-SELECT
-    id, share_key, last_update_version,
-    is_deleted, creation_date, modification_date,
-    remote_file_size, file_key, file_name,
-    directory, cipher_id, chunk_size,
-    file_size, mime_type
-FROM
-    files
-WHERE
-    id = ?
-"""
-
-        return connection.withPrepared(sql) {
-            it.bind(1, fileId)
-            if (it.step())
-                fileUtils.rowToRemoteFile(it)
-            else
-                null
-        }
-    }
-
     override fun getFile(fileId: String): Promise<RemoteFile?, Exception> = sqlitePersistenceManager.runQuery {
-        selectFile(it, fileId)
+        fileUtils.selectFile(it, fileId)
     }
 
     override fun mergeUpdates(updates: List<RemoteFile>, latestVersion: Long): Promise<FileListMergeResults, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -273,13 +233,12 @@ WHERE
             var isIndexModified = false
             updates.forEach { remote ->
                 //kinda bad but w/e
-                val local = selectFile(connection, remote.id)
+                val local = fileUtils.selectFile(connection, remote.id)
 
                 if (local != null) {
                     if (remote.isDeleted) {
                         isIndexModified = true
-                        fileUtils.updateIndexRemove(connection, remote.userMetadata.directory)
-                        deleteFile(connection, remote.id)
+                        fileUtils.deleteFile(connection, remote)
                         deleted.add(remote)
                     }
                     else {
