@@ -177,6 +177,10 @@ class StorageServiceImpl(
         return fileListPersistenceManager.getFilesAt(startingAt, count, true, path)
     }
 
+    override fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception> {
+        return fileListPersistenceManager.getEntriesAt(startingAt, count, path)
+    }
+
     //TODO move this into some method on TransferManager?
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
         val s = HashSet(fileIds)

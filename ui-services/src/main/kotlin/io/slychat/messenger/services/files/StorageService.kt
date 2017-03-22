@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.persistence.DirEntry
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
@@ -44,4 +45,7 @@ interface StorageService {
 
     /** Must not be called during a sync. */
     fun clearSyncError()
+
+    /** Will list directories, then files. */
+    fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception>
 }
