@@ -264,6 +264,18 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
+    fun `mergeUpdates should update the directory index when adding new files`() {
+        val userMetadata = randomUserMetadata(directory = "/a")
+        val file = randomRemoteFile(userMetadata = userMetadata)
+
+        fileListPersistenceManager.mergeUpdates(listOf(file), 2).get()
+
+        assertDirIndexContains(listOf(
+            "/" to "a"
+        ))
+    }
+
+    @Test
     fun `mergeUpdates should remove deleted files`() {
         val file = insertFile()
         val updated = file.copy(isDeleted = true)
