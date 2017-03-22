@@ -27,8 +27,9 @@ class SQLiteFileListPersistenceManagerTest {
     private lateinit var persistenceManager: SQLitePersistenceManager
     private lateinit var fileListPersistenceManager: SQLiteFileListPersistenceManager
 
-    private fun insertFile(lastUpdateVersion: Long = 1): RemoteFile {
-        val file = randomRemoteFile().copy(lastUpdateVersion = lastUpdateVersion)
+    private fun insertFile(lastUpdateVersion: Long = 1, directory: String? = null): RemoteFile {
+        val userMetadata = randomUserMetadata(directory = directory)
+        val file = randomRemoteFile(userMetadata = userMetadata).copy(lastUpdateVersion = lastUpdateVersion)
 
         fileListPersistenceManager.addFile(file).get()
 
@@ -50,6 +51,25 @@ class SQLiteFileListPersistenceManagerTest {
         (0..1).forEach { insertFile() }
 
         return fileListPersistenceManager.getFilesAt(0, 100, includePending, path).get()
+    }
+
+    private fun assertDirIndexContains(paths: List<Pair<String, String>>) {
+        paths.forEach {
+            val (parent, sub) = it
+            assertThat(fileListPersistenceManager.getDirectoriesAt(parent).get()).desc("Should contain subdirs") {
+                containsOnly(sub)
+            }
+        }
+    }
+
+    private fun assertDirIndexNotContains(paths: List<Pair<String, String>>) {
+        require(paths.isNotEmpty())
+        paths.forEach {
+            val (parent, sub) = it
+            assertThat(fileListPersistenceManager.getDirectoriesAt(parent).get()).desc("Should not contain subdirs") {
+                doesNotContain(sub)
+            }
+        }
     }
 
     @Before
@@ -103,6 +123,19 @@ class SQLiteFileListPersistenceManagerTest {
         assertFailsWith(DuplicateFilePathException::class) {
             fileListPersistenceManager.addFile(modified).get()
         }
+    }
+
+    @Test
+    fun `addFile should update directory index`() {
+        val userMetadata = randomUserMetadata(directory = "/a/b")
+        val file = randomRemoteFile(userMetadata = userMetadata)
+
+        fileListPersistenceManager.addFile(file).get()
+
+        assertDirIndexContains(listOf(
+            "/" to "a",
+            "/a" to "b"
+        ))
     }
 
     @Test
@@ -246,6 +279,18 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
+    fun `mergeUpdates should update directory index`() {
+        val file = insertFile(directory = "/a")
+        val updated = file.copy(isDeleted = true)
+
+        fileListPersistenceManager.mergeUpdates(listOf(updated), 2).get()
+
+        assertDirIndexNotContains(listOf(
+            "/" to "a"
+        ))
+    }
+
+    @Test
     fun `mergeUpdates should update existing files`() {
         val file = insertFile()
         val updated = file.copy(userMetadata = file.userMetadata.rename("test-file"))
@@ -340,7 +385,7 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
-    fun `deletefiles should override metadata update`() {
+    fun `deleteFiles should override metadata update`() {
         val file = insertFile()
 
         val userMetadata = file.userMetadata.moveTo("/newDir", "newName")
@@ -350,6 +395,36 @@ class SQLiteFileListPersistenceManagerTest {
         fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
 
         assertRemoteUpdateExists(FileListUpdate.Delete(file.id), "Should add a delete remote update")
+    }
+
+    @Test
+    fun `deleteFiles should update the directory index`() {
+        val userMetadata = randomUserMetadata(directory = "/a/b")
+        val file = randomRemoteFile(userMetadata = userMetadata)
+
+        fileListPersistenceManager.addFile(file).get()
+        fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
+
+        assertDirIndexNotContains(listOf(
+            "/" to "a",
+            "/a" to "b"
+        ))
+    }
+
+    @Test
+    fun `deleteFiles should not remove index entries if some files still use it`() {
+        val userMetadata = randomUserMetadata(directory = "/a/b")
+        val file = randomRemoteFile(userMetadata = userMetadata)
+        val file2 = randomRemoteFile(userMetadata = userMetadata.copy(fileName = "2"))
+
+        fileListPersistenceManager.addFile(file).get()
+        fileListPersistenceManager.addFile(file2).get()
+        fileListPersistenceManager.deleteFiles(listOf(file.id)).get()
+
+        assertDirIndexContains(listOf(
+            "/" to "a",
+            "/a" to "b"
+        ))
     }
 
     @Test

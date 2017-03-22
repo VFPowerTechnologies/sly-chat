@@ -40,7 +40,9 @@ WHERE
     }
 
     override fun addFile(file: RemoteFile): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
-        fileUtils.insertFile(it, file)
+        it.withTransaction {
+            fileUtils.insertFile(it, file)
+        }
     }
 
     private fun getFileSelectQuery(startingAt: Int, count: Int, path: String?, includePending: Boolean): String {
@@ -194,9 +196,13 @@ WHERE
                             throw InvalidFileException(fileId)
 
                         insertRemoteUpdate(connection, fileId, UPDATE_TYPE_DELETE)
-                        updated.add(selectFile(connection, fileId)!!)
+                        val file = selectFile(connection, fileId)!!
+                        fileUtils.updateIndexRemove(connection, file.userMetadata.directory)
+                        updated.add(file)
                     }
                 }
+
+                fileUtils.cleanupIndex(connection)
             }
 
             updated
@@ -263,10 +269,13 @@ WHERE
             val deleted = ArrayList<RemoteFile>()
             val updated = ArrayList<RemoteFile>()
 
+            var hadDeleted = false
             updates.forEach {
                 //kinda bad but w/e
                 if (isFilePresent(connection, it.id)) {
                     if (it.isDeleted) {
+                        hadDeleted = true
+                        fileUtils.updateIndexRemove(connection, it.userMetadata.directory)
                         deleteFile(connection, it.id)
                         deleted.add(it)
                     }
@@ -280,6 +289,9 @@ WHERE
                     added.add(it)
                 }
             }
+
+            if (hadDeleted)
+                fileUtils.cleanupIndex(connection)
 
             setVersion(connection, latestVersion)
 
@@ -374,6 +386,23 @@ ON
         it.withPrepared("SELECT count(*) FROM files") { stmt ->
             stmt.step()
             stmt.columnInt(0)
+        }
+    }
+
+    internal fun getDirectoriesAt(path: String): Promise<List<String>, Exception> = sqlitePersistenceManager.runQuery {
+        //language=SQLite
+        val sql = """
+SELECT
+    sub_dir
+FROM
+    directory_index
+WHERE
+    path = :path
+"""
+
+        it.withPrepared(sql) {
+            it.bind(":path", path)
+            it.map { it.columnString(0) }
         }
     }
 }

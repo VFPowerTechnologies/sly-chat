@@ -4,6 +4,8 @@ import io.slychat.messenger.core.crypto.generateUploadId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomName
 import io.slychat.messenger.core.randomRemoteFile
+import io.slychat.messenger.core.randomUserMetadata
+import io.slychat.messenger.testutils.desc
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -22,6 +24,7 @@ class SQLiteUploadPersistenceManagerTest {
 
     private lateinit var persistenceManager: SQLitePersistenceManager
     private lateinit var uploadPersistenceManager: SQLiteUploadPersistenceManager
+    private lateinit var fileListPersistenceManager: SQLiteFileListPersistenceManager
 
     @Before
     fun before() {
@@ -29,6 +32,7 @@ class SQLiteUploadPersistenceManagerTest {
         persistenceManager.init()
 
         uploadPersistenceManager = SQLiteUploadPersistenceManager(persistenceManager)
+        fileListPersistenceManager = SQLiteFileListPersistenceManager(persistenceManager)
     }
 
     @After
@@ -40,8 +44,9 @@ class SQLiteUploadPersistenceManagerTest {
         return "/path/file.ext"
     }
 
-    private fun insertUploadFull(error: UploadError?): UploadInfo {
-        val file = randomRemoteFile()
+    private fun insertUploadFull(error: UploadError?, directory: String? = null): UploadInfo {
+        val userMetadata = randomUserMetadata(directory)
+        val file = randomRemoteFile(userMetadata = userMetadata)
         val upload = randomUpload(file.id, error)
         val info = UploadInfo(upload, file)
         uploadPersistenceManager.add(info).get()
@@ -90,6 +95,15 @@ class SQLiteUploadPersistenceManagerTest {
         assertThat(actual).apply {
             describedAs("Should match the inserted upload")
             isEqualToComparingFieldByField(upload)
+        }
+    }
+
+    @Test
+    fun `add should update directory index`() {
+        insertUploadFull(null, directory = "/a")
+
+        assertThat(fileListPersistenceManager.getDirectoriesAt("/").get()).desc("Should contain subdirs") {
+            containsOnly("a")
         }
     }
 

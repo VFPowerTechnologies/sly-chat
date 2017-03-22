@@ -30,6 +30,7 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "file_list_version",
             "files",
             "remote_file_updates",
+            "directory_index",
             "uploads",
             "upload_parts",
             "downloads"

@@ -109,6 +109,80 @@ INSERT INTO
 
                 throw e
             }
+
+            updateIndexAdd(connection, file.userMetadata.directory)
+        }
+    }
+
+    internal fun withPathComponents(path: String, body: (parentPath:String, subDir: String) -> Unit)  {
+        if (path == "/")
+            return
+
+        val components = path.split('/')
+        val n = components.size
+
+        for (i in 1..(n - 1)) {
+            val p = components.subList(0, i).joinToString("/")
+            val parent = if (p.isEmpty())
+                "/"
+            else
+                p
+            val sub = components[i]
+
+            body(parent, sub)
+        }
+    }
+
+    fun updateIndexAdd(connection: SQLiteConnection, path: String) {
+        //sqlite has nothing like ON DUPLICATE KEY UPDATE
+        //language=SQLite
+        val sql = """
+INSERT OR REPLACE INTO
+    directory_index
+    (path, sub_dir, ref_count)
+VALUES
+    (:path, :subDir, coalesce((SELECT ref_count + 1 FROM directory_index WHERE path = :path AND sub_dir = :subDir), 1))
+"""
+        connection.withPrepared(sql) { stmt ->
+            withPathComponents(path) { parent, sub ->
+                stmt.bind(":path", parent)
+                stmt.bind(":subDir", sub)
+                stmt.step()
+                stmt.reset()
+            }
+        }
+    }
+
+    fun cleanupIndex(connection: SQLiteConnection) {
+        //language=SQLite
+        val sql = """
+DELETE FROM
+    directory_index
+WHERE
+    ref_count = 0
+"""
+        connection.withPrepared(sql, SQLiteStatement::step)
+    }
+
+    fun updateIndexRemove(connection: SQLiteConnection, path: String) {
+        //language=SQLite
+        val sql = """
+UPDATE
+    directory_index
+SET
+    ref_count = ref_count - 1
+WHERE
+    path = :path
+AND
+    sub_dir = :subDir
+"""
+        connection.withPrepared(sql) { stmt ->
+            withPathComponents(path) { parent, sub ->
+                stmt.bind(":path", parent)
+                stmt.bind(":subDir", sub)
+                stmt.step()
+                stmt.reset()
+            }
         }
     }
 }
