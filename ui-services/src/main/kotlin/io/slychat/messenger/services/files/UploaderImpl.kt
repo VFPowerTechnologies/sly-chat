@@ -167,6 +167,8 @@ class UploaderImpl(
                 //shouldn't occur
                 moveUploadToErrorState(uploadId, UploadError.UNKNOWN)
             }
+
+            return
         }
 
         when (status.upload.state) {
@@ -176,8 +178,8 @@ class UploaderImpl(
             UploadState.CREATED -> uploadNextPart(status)
             UploadState.CANCELLING -> cancelUpload(status)
             //this shouldn't get here, but it's here for completion
-            UploadState.COMPLETE -> log.warn("nextStep called with state=COMPLETE")
-            UploadState.CANCELLED -> log.warn("nextStep called with state=CANCELLED")
+            UploadState.COMPLETE -> error("nextStep called with state=COMPLETE")
+            UploadState.CANCELLED -> error("nextStep called with state=CANCELLED")
         }.enforceExhaustive()
     }
 
@@ -345,6 +347,8 @@ class UploaderImpl(
                 uploadOperations.complete(status.upload)
 
             p successUi {
+                awaitingCancellation -= uploadId
+
                 updateUploadState(uploadId, UploadState.COMPLETE) mapUi {
                     markUploadComplete(status)
                 }
@@ -376,8 +380,6 @@ class UploaderImpl(
                 override fun onCompleted() {
                     removeCancellationToken(uploadId)
                     log.info("Upload $uploadId/${nextPart.n} completed")
-
-                    awaitingCancellation -= uploadId
 
                     uploadPersistenceManager.completePart(uploadId, nextPart.n) successUi {
                         completePart(uploadId, nextPart.n)
@@ -495,7 +497,7 @@ class UploaderImpl(
         return updateUploadState(uploadId, uploadState) mapUi {
             updateTransferState(uploadId, transferState)
         } fail {
-            log.error("Failed to move upload to CANCELLED state: {}", it.message, it)
+            log.error("Failed to move upload to transfer={}/upload={} state: {}", transferState, uploadState, it.message, it)
         }
     }
 
@@ -568,12 +570,10 @@ class UploaderImpl(
     }
 
     private fun requestTransferCancellation(uploadId: String) {
-        val isCancelled = cancellationTokens[uploadId]
+        cancellationTokens[uploadId]?.set(true)
 
-        if (isCancelled != null)
-            isCancelled.set(true)
-        else
-            awaitingCancellation += uploadId
+        //incase the transfer completes before reading the token, or if we're waiting on a persistence update
+        awaitingCancellation += uploadId
     }
 
     override fun cancel(uploadId: String) {

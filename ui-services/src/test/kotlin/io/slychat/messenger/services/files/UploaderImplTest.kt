@@ -791,6 +791,21 @@ class UploaderImplTest {
         assertCancellingState(uploader, info.upload.id)
     }
 
+    //basicly if the cancellation token is set after the upload completes but before the result is processed
+    @Test
+    fun `cancel should cause cancellation if called as upload part completes`() {
+        val info = randomMultipartUpload(false, false)
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploader.cancel(info.upload.id)
+
+        uploadOperations.completeUploadPartOperation(1)
+        uploadOperations.assertUploadPartNotCalled(info.upload.id, 2)
+
+        assertCancellingState(uploader, info.upload.id)
+    }
+
     @Test
     fun `cancel should do nothing if an active upload completes before cancellation can occur`() {
         val info = randomMultipartUpload(true, true)
