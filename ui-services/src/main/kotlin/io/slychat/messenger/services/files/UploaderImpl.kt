@@ -288,7 +288,6 @@ class UploaderImpl(
     }
 
     private fun removeCancellationToken(downloadId: String) {
-        log.debug("Removing cancellation token for {}", downloadId)
         cancellationTokens.remove(downloadId)
     }
 
@@ -346,6 +345,8 @@ class UploaderImpl(
         }
 
         val cancellationToken = AtomicBoolean()
+
+        log.info("Upload {}/{} starting", uploadId, nextPart.n)
 
         uploadOperations.uploadPart(status.upload, nextPart, status.file, cancellationToken)
             .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
@@ -556,8 +557,12 @@ class UploaderImpl(
     }
 
     private fun requestTransferCancellation(uploadId: String) {
-        //if this isn't set, we're completing the upload; in this case it's too late to cancel
-        cancellationTokens[uploadId]?.set(true)
+        val isCancelled = cancellationTokens[uploadId]
+
+        if (isCancelled != null)
+            isCancelled.set(true)
+        else
+            awaitingCancellation += uploadId
     }
 
     override fun cancel(uploadId: String) {

@@ -10,6 +10,7 @@ import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.testutils.*
+import nl.komponents.kovenant.deferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -750,6 +751,36 @@ class UploaderImplTest {
         uploadOperations.errorUploadPartOperation(1, CancellationException())
 
         assertCancellingState(uploader, uploadId)
+    }
+
+    //this also works if in between the last part and completing the upload
+    @Test
+    fun `cancel should cause cancellation if called before a transfer begins its next part`() {
+        val file = randomRemoteFile()
+
+        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.CREATED).copy(
+            parts = listOf(
+                UploadPart(1, 0, 1, 1, false),
+                UploadPart(2, 1, file.remoteFileSize - 1, file.remoteFileSize - 1, false)
+            )
+        )
+
+        val info = UploadInfo(upload, file)
+
+        //we need to get the cancel in before this completes
+        val d = deferred<Unit, Exception>()
+        whenever(uploadPersistenceManager.completePart(any(), any())).thenReturn(d.promise)
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.completeUploadPartOperation(1)
+
+        //here the cancellation token is null, since the transfer's done and we're just persisting the upload state
+        uploader.cancel(upload.id)
+
+        d.resolve(Unit)
+
+        assertCancellingState(uploader, upload.id)
     }
 
     @Test
