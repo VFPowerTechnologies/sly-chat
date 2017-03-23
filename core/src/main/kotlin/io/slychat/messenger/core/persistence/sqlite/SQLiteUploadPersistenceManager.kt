@@ -122,6 +122,22 @@ WHERE
         }
     }
 
+    private fun detachFileId(connection: SQLiteConnection, uploadId: String) {
+        //language=SQLite
+        val sql = """
+UPDATE
+    uploads
+SET
+    file_id = NULL
+WHERE
+    id = ?
+"""
+        connection.withPrepared(sql) {
+            it.bind(1, uploadId)
+            it.step()
+        }
+    }
+
     override fun setState(uploadId: String, newState: UploadState): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         //language=SQLite
         val sql = """
@@ -144,6 +160,8 @@ WHERE
 
             if (newState == UploadState.CANCELLED) {
                 val upload = selectUpload(connection, uploadId)!!
+                //always do this before deleting the file so we don't delete ourselves
+                detachFileId(connection, upload.id)
                 val file = fileUtils.selectFile(connection, upload.fileId!!)!!
                 fileUtils.deleteFile(connection, file)
                 fileUtils.cleanupIndex(connection)

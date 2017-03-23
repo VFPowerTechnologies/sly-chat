@@ -149,12 +149,21 @@ class SQLiteUploadPersistenceManagerTest {
     }
 
     @Test
-    fun `setState should remove the associated file and set fileId to null when state is cancelled`() {
+    fun `setState should remove the associated file when state is CANCELLED`() {
         val info = insertUploadFull()
 
         uploadPersistenceManager.setState(info.upload.id, UploadState.CANCELLED).get()
 
         assertNull(fileListPersistenceManager.getFile(info.file.id).get(), "File not removed")
+    }
+
+    @Test
+    fun `setState should set the fileId to null when state is CANCELLED`() {
+        val info = insertUploadFull()
+
+        uploadPersistenceManager.setState(info.upload.id, UploadState.CANCELLED).get()
+
+        assertNull(getUpload(info.upload.id).fileId, "fileId not set to null")
     }
 
     @Test
