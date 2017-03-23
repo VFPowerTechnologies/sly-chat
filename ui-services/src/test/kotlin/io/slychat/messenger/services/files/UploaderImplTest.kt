@@ -693,7 +693,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.PENDING)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         assertCurrentStates(uploader, uploadId, TransferState.ACTIVE, UploadState.PENDING)
@@ -704,7 +704,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.PENDING)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         uploadOperations.resolveCreateOperation(uploadId, NewUploadResponse(null, randomQuota()))
@@ -717,7 +717,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CACHING)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         assertCurrentStates(uploader, uploadId, TransferState.ACTIVE, UploadState.CACHING)
@@ -728,7 +728,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CACHING)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         uploadOperations.completeCacheOperation(uploadId)
@@ -741,10 +741,33 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CREATED)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         uploadOperations.assertUploadPartCancelled(uploadId, 1)
+    }
+
+    @Test
+    fun `cancel should attempt to cancel an ongoing cache operation`() {
+        val info = randomUploadInfo(state = UploadState.CACHING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info)
+        uploader.cancel(uploadId)
+
+        uploadOperations.assertCacheCancelled(uploadId)
+    }
+
+    @Test
+    fun `it should move a cancelled cache to CANCELLING STATE`() {
+        val info = randomUploadInfo(state = UploadState.CACHING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.errorCacheOperation(uploadId, CancellationException())
+
+        assertCancellingState(uploader, uploadId)
     }
 
     @Test
@@ -752,7 +775,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CREATED)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
 
         uploadOperations.errorUploadPartOperation(1, CancellationException())
 
@@ -763,7 +786,7 @@ class UploaderImplTest {
     fun `it should keep processing a cancelled ongoing transfer and cancel it remotely`() {
         val info = randomUploadInfo(state = UploadState.CREATED)
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
 
         uploadOperations.errorUploadPartOperation(1, CancellationException())
 
@@ -810,7 +833,7 @@ class UploaderImplTest {
     fun `cancel should do nothing if an active upload completes before cancellation can occur`() {
         val info = randomMultipartUpload(true, true)
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(info.upload.id)
 
         uploadOperations.completeCompleteUploadOperation()
@@ -823,7 +846,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CREATED, error = UploadError.FILE_DISAPPEARED)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         assertCancellingState(uploader, uploadId)
@@ -834,7 +857,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CREATED, error = UploadError.FILE_DISAPPEARED)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         verify(uploadPersistenceManager).setError(info.upload.id, null)
@@ -859,7 +882,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.PENDING, error = UploadError.FILE_DISAPPEARED)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         assertCancelledState(uploader, uploadId)
@@ -870,7 +893,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CANCELLED)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         verify(uploadPersistenceManager, never()).setState(uploadId, UploadState.CANCELLING)
@@ -881,7 +904,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.COMPLETE)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
         verify(uploadPersistenceManager, never()).setState(uploadId, UploadState.CANCELLING)
@@ -955,7 +978,7 @@ class UploaderImplTest {
         val info = randomUploadInfo(state = UploadState.CANCELLING)
         val uploadId = info.upload.id
 
-        val uploader = newUploaderWithUpload(info, true)
+        val uploader = newUploaderWithUpload(info)
 
         uploadOperations.rejectCancelOperation(uploadId, TestException())
 

@@ -205,8 +205,9 @@ class UploaderImpl(
     private fun cacheFile(status: UploadStatus) {
         val uploadId = status.upload.id
 
-        //TODO cancellation
-        uploadOperations.cache(status.upload, status.file!!)
+        val cancellationToken = AtomicBoolean()
+
+        uploadOperations.cache(status.upload, status.file!!, cancellationToken)
             .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
             .map { it.sum() }
             .observeOn(mainScheduler)
@@ -216,6 +217,7 @@ class UploaderImpl(
                 }
 
                 override fun onCompleted() {
+                    removeCancellationToken(uploadId)
                     log.info("Caching for $uploadId completed")
                     updateUploadState(uploadId, UploadState.CREATED) successUi {
                         nextStep(uploadId)
@@ -228,6 +230,8 @@ class UploaderImpl(
                     handleUploadException(uploadId, e, "cacheFile")
                 }
             })
+
+        cancellationTokens[uploadId] = cancellationToken
     }
 
     private fun markUploadComplete(status: UploadStatus) {
@@ -297,8 +301,8 @@ class UploaderImpl(
         subject.onNext(TransferEvent.Progress(status.upload, progress))
     }
 
-    private fun removeCancellationToken(downloadId: String) {
-        cancellationTokens.remove(downloadId)
+    private fun removeCancellationToken(uploadId: String) {
+        cancellationTokens.remove(uploadId)
     }
 
     private fun handleUploadException(uploadId: String, e: Throwable, origin: String) {
@@ -561,7 +565,7 @@ class UploaderImpl(
 
         when (status.upload.state) {
             UploadState.PENDING -> awaitingCancellation += uploadId
-            UploadState.CACHING -> awaitingCancellation += uploadId
+            UploadState.CACHING -> requestTransferCancellation(uploadId)
             UploadState.CREATED -> requestTransferCancellation(uploadId)
             UploadState.CANCELLING -> {}
             UploadState.COMPLETE -> error("COMPLETE upload in active list")

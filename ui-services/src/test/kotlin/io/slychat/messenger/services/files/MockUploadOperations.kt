@@ -25,6 +25,7 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
     private val cacheSubjects = HashMap<String, PublishSubject<Long>>()
 
     private val uploadPartCancellations = HashMap<Pair<String, Int>, AtomicBoolean>()
+    private val cacheCancellations = HashMap<String, AtomicBoolean>()
 
     var autoResolveCreate = false
 
@@ -64,6 +65,12 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
         val isCancelled = uploadPartCancellations[uploadId to partN] ?: fail("uploadPart($uploadId, $partN) not called")
 
         assertTrue(isCancelled.get(), "Upload part not cancelled")
+    }
+
+    fun assertCacheCancelled(uploadId: String) {
+        val isCancelled = cacheCancellations[uploadId] ?: fail("cache($uploadId) not called")
+
+        assertTrue(isCancelled.get(), "Cache not cancelled")
     }
 
     fun assertCreateNotCalled() {
@@ -150,9 +157,10 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
         completeDeferred.reject(e)
     }
 
-    override fun cache(upload: Upload, file: RemoteFile): Observable<Long> {
+    override fun cache(upload: Upload, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         val s = PublishSubject.create<Long>()
         cacheSubjects[upload.id] = s
+        cacheCancellations[upload.id] = isCancelled
 
         return s
     }
@@ -161,6 +169,13 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
         val s = cacheSubjects[uploadId] ?: fail("cache($uploadId) not called")
 
         s.onCompleted()
+        scheduler.triggerActions()
+    }
+
+    fun errorCacheOperation(uploadId: String, e: Exception) {
+        val s = cacheSubjects[uploadId] ?: fail("cache($uploadId) not called")
+
+        s.onError(e)
         scheduler.triggerActions()
     }
 

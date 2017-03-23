@@ -143,7 +143,6 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
 
         val cancel = MenuItem("Cancel")
         cancel.setOnAction {
-            //TODO currently doesn't work with cancelled uploads
             uc.storageService.cancel(getSelectedStatuses().map { it.id })
         }
 
@@ -246,6 +245,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
             TransferState.ACTIVE -> activeTransferContextMenu
             TransferState.CANCELLED -> cancelledTransferContextMenu
             TransferState.ERROR -> errorTransferContextMenu
+            TransferState.CANCELLING -> null
         }
     }
 
@@ -276,6 +276,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
 
         val stateCol = TableColumn<TransferStatus, String>("State")
         stateCol.setCellValueFactory { ReadOnlyObjectWrapper(it.value.state.toString()) }
+        stateCol.prefWidth = 110.0
 
         val errorCol = TableColumn<TransferStatus, String>("Error")
         errorCol.setCellValueFactory {

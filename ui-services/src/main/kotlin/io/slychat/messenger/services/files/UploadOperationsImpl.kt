@@ -49,9 +49,9 @@ class UploadOperationsImpl(
         }
     }
 
-    override fun cache(upload: Upload, file: RemoteFile): Observable<Long> {
+    override fun cache(upload: Upload, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         return observable<Long> {
-            CacheFileOperation(fileAccess, upload, file, it).run()
+            CacheFileOperation(fileAccess, upload, file, it, isCancelled).run()
         }.subscribeOn(subscribeScheduler)
     }
 
