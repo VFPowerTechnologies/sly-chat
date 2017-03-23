@@ -182,13 +182,17 @@ class UploaderImpl(
     }
 
     private fun cancelUpload(status: UploadStatus) {
-        log.info("Cancelling upload {}", status.upload.id)
+        val uploadId = status.upload.id
+        log.info("Cancelling upload {}", uploadId)
 
-        uploadOperations.cancel(status.upload) successUi {
+        uploadOperations.cancel(status.upload) bindUi {
             log.info("Upload successfully cancelled")
-            moveUploadToState(status.upload.id, TransferState.CANCELLED, UploadState.CANCELLED)
+            moveUploadToState(uploadId, TransferState.CANCELLED, UploadState.CANCELLED)
+        } mapUi {
+            list.active -= uploadId
+            list.inactive += uploadId
         } failUi {
-            handleUploadException(status.upload.id, it, "cancelUpload")
+            handleUploadException(uploadId, it, "cancelUpload")
         }
     }
 

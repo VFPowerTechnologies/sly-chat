@@ -903,6 +903,19 @@ class UploaderImplTest {
     }
 
     @Test
+    fun `remove should remove a cancelled upload`() {
+        val info = randomUploadInfo(UploadState.CANCELLING)
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.resolveCancelOperation(info.upload.id)
+
+        uploader.remove(listOf(info.upload.id)).get()
+
+        assertNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not removed from list")
+    }
+
+    @Test
     fun `it should move an upload from cancelling to cancelled state once cancellation process completes`() {
         val info = randomUploadInfo(state = UploadState.CANCELLING)
         val uploadId = info.upload.id
