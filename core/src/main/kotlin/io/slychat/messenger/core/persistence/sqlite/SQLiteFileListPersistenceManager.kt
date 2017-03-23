@@ -249,7 +249,12 @@ WHERE
                         }
 
                         updateFile(connection, remote)
-                        updated.add(remote)
+
+                        //treat pending files as new additions
+                        if (local.isPending)
+                            added.add(remote)
+                        else
+                            updated.add(remote)
                     }
                 }
                 else {
@@ -403,7 +408,7 @@ WHERE
         }
     }
 
-    override fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception> = sqlitePersistenceManager.runQuery {
+    override fun getEntriesAt(startingAt: Int, count: Int, includePending: Boolean, path: String): Promise<List<DirEntry>, Exception> = sqlitePersistenceManager.runQuery {
         val entries = ArrayList<DirEntry>()
 
         val prependPath = if (path == "/")
@@ -425,7 +430,7 @@ WHERE
                 startingAt - getSubDirCount(it, path)
 
             entries.addAll(
-                selectFiles(it, path, s, remainingCount, true).map { DirEntry.F(it) }
+                selectFiles(it, path, s, remainingCount, includePending).map { DirEntry.F(it) }
             )
         }
 

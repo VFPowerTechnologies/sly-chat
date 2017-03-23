@@ -172,15 +172,15 @@ class StorageServiceImpl(
     }
 
     override fun getFiles(startingAt: Int, count: Int): Promise<List<RemoteFile>, Exception> {
-        return fileListPersistenceManager.getFiles(startingAt, count, true)
+        return fileListPersistenceManager.getFiles(startingAt, count, false)
     }
 
     override fun getFilesAt(startingAt: Int, count: Int, path: String): Promise<List<RemoteFile>, Exception> {
-        return fileListPersistenceManager.getFilesAt(startingAt, count, true, path)
+        return fileListPersistenceManager.getFilesAt(startingAt, count, false, path)
     }
 
     override fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception> {
-        return fileListPersistenceManager.getEntriesAt(startingAt, count, path)
+        return fileListPersistenceManager.getEntriesAt(startingAt, count, false, path)
     }
 
     //TODO move this into some method on TransferManager?
@@ -261,9 +261,7 @@ class StorageServiceImpl(
                 file
             )
         } bindUi { info ->
-            transferManager.upload(info) successUi {
-                fileEventsSubject.onNext(RemoteFileEvent.Added(listOf(info.file!!)))
-            }
+            transferManager.upload(info)
         }
     }
 

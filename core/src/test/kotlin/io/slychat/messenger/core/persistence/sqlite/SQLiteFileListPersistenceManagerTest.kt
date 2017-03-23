@@ -264,6 +264,21 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
+    fun `mergeUpdates should treat updating a pending file as an addition in results`() {
+        val file = randomRemoteFile()
+
+        fileListPersistenceManager.addFile(file.copy(lastUpdateVersion = 0))
+
+        val result = fileListPersistenceManager.mergeUpdates(listOf(file), 2).get()
+
+        assertThat(result.added).desc("Should include the added file") { containsOnly(file) }
+
+        assertThat(result.deleted).desc("Should be empty") { isEmpty() }
+
+        assertThat(result.updated).desc("Should be empty") { isEmpty() }
+    }
+
+    @Test
     fun `mergeUpdates should update the directory index when adding new files`() {
         val userMetadata = randomUserMetadata(directory = "/a")
         val file = randomRemoteFile(userMetadata = userMetadata)
@@ -532,7 +547,7 @@ class SQLiteFileListPersistenceManagerTest {
             DirEntry.F(file)
         )
 
-        assertThat(fileListPersistenceManager.getEntriesAt(0, 100, "/").get()).desc("Should contain both files and directory entries") {
+        assertThat(fileListPersistenceManager.getEntriesAt(0, 100, false, "/").get()).desc("Should contain both files and directory entries") {
             containsAll(expected)
         }
     }
@@ -548,7 +563,7 @@ class SQLiteFileListPersistenceManagerTest {
             DirEntry.F(file)
         )
 
-        assertThat(fileListPersistenceManager.getEntriesAt(1, 2, "/").get()).desc("Should contain both files and directory entries") {
+        assertThat(fileListPersistenceManager.getEntriesAt(1, 2, false, "/").get()).desc("Should contain both files and directory entries") {
             containsAll(expected)
         }
     }
@@ -561,15 +576,15 @@ class SQLiteFileListPersistenceManagerTest {
 
         val dir = DirEntry.D("/a", "a")
 
-        assertThat(fileListPersistenceManager.getEntriesAt(0, 1, "/").get()).desc("Should only contain the first item") {
+        assertThat(fileListPersistenceManager.getEntriesAt(0, 1, false, "/").get()).desc("Should only contain the first item") {
             containsOnly(dir)
         }
 
-        assertThat(fileListPersistenceManager.getEntriesAt(1, 1, "/").get()).desc("Should only contain the second item") {
+        assertThat(fileListPersistenceManager.getEntriesAt(1, 1, false, "/").get()).desc("Should only contain the second item") {
             containsOnly(DirEntry.F(file))
         }
 
-        assertThat(fileListPersistenceManager.getEntriesAt(2, 1, "/").get()).desc("Should only contain the third item") {
+        assertThat(fileListPersistenceManager.getEntriesAt(2, 1, false, "/").get()).desc("Should only contain the third item") {
             containsOnly(DirEntry.F(file2))
         }
     }

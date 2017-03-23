@@ -113,7 +113,7 @@ class StorageServiceImplTest {
 
         val fileList = listOf(randomRemoteFile(), randomRemoteFile())
 
-        whenever(fileListPersistenceManager.getFiles(0, 1000, true)).thenResolve(fileList)
+        whenever(fileListPersistenceManager.getFiles(0, 1000, false)).thenResolve(fileList)
 
         assertThat(service.getFiles(0, 1000).get()).apply {
             describedAs("Should return the cached file list")
@@ -222,7 +222,7 @@ class StorageServiceImplTest {
         val count = 100
         val path = "/"
 
-        whenever(fileListPersistenceManager.getFilesAt(startingAt, count, true, path)).thenResolve(files)
+        whenever(fileListPersistenceManager.getFilesAt(startingAt, count, false, path)).thenResolve(files)
 
         assertEquals(files, service.getFilesAt(startingAt, count, path).get(), "Returned invalid files")
     }
@@ -236,7 +236,7 @@ class StorageServiceImplTest {
         val startingAt = 0
         val count = 100
 
-        whenever(fileListPersistenceManager.getFiles(startingAt, count, true)).thenResolve(files)
+        whenever(fileListPersistenceManager.getFiles(startingAt, count, false)).thenResolve(files)
 
         assertEquals(files, service.getFiles(startingAt, count).get(), "Returned invalid files")
     }
@@ -356,20 +356,6 @@ class StorageServiceImplTest {
     @Test
     fun `it should emit updated events when a sync has updated results`() {
         testSyncFileEvents(FileListMergeResults(emptyList(), emptyList(), listOf(randomRemoteFile())))
-    }
-
-    @Test
-    fun `it should emit a file added event when a successful upload store occurs`() {
-        val service = newService(true)
-
-        val testSubscriber = service.fileEvents.testSubscriber()
-
-        service.uploadFile("/localPath", "/remoteDir", "fileName", false).get()
-
-        val events = testSubscriber.onNextEvents.filter { it is RemoteFileEvent.Added }
-        assertThat(events).desc("It should emit an Added event") {
-            hasSize(1)
-        }
     }
 
     @Test
