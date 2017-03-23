@@ -101,12 +101,13 @@ class TransferManagerImplTest {
     @Test
     fun `removeCompletedUploads should remove completed uploads`() {
         val completed = randomUploadStatus(TransferState.COMPLETE)
+        val cancelled = randomUploadStatus(TransferState.CANCELLED)
 
         val statuses = listOf(
             completed,
             randomUploadStatus(TransferState.QUEUED),
             randomUploadStatus(TransferState.ACTIVE),
-            randomUploadStatus(TransferState.CANCELLED),
+            cancelled,
             randomUploadStatus(TransferState.ERROR)
         )
 
@@ -116,6 +117,6 @@ class TransferManagerImplTest {
 
         manager.removeCompleted().get()
 
-        verify(uploader).remove(listOf(completed.upload.id))
+        verify(uploader).remove(listOf(completed.upload.id, cancelled.upload.id))
     }
 }
