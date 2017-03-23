@@ -89,7 +89,9 @@ VALUES
     override fun add(info: UploadInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
         val upload = info.upload
         it.withTransaction {
-            fileUtils.insertFile(it, info.file)
+            if (info.file != null)
+                fileUtils.insertFile(it, info.file)
+
             insertUpload(it, upload)
             insertUploadParts(it, upload.id, upload.parts)
         }
@@ -203,7 +205,7 @@ SELECT
     f.file_size, f.mime_type
 FROM
     uploads AS u
-JOIN
+LEFT JOIN
     files AS f
 ON
     f.id = u.file_id
@@ -212,10 +214,14 @@ ON
             stmt.map {
                 val id = stmt.columnString(0)
                 val parts = getParts(connection, id)
-                UploadInfo(
-                    rowToUpload(stmt, parts),
+                val upload = rowToUpload(stmt, parts)
+
+                val file = if (upload.fileId != null)
                     fileUtils.rowToRemoteFile(stmt, 8)
-                )
+                else
+                    null
+
+                UploadInfo(upload, file)
             }
         }
     }

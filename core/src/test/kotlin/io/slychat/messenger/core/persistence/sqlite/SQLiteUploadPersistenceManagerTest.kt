@@ -154,7 +154,7 @@ class SQLiteUploadPersistenceManagerTest {
 
         uploadPersistenceManager.setState(info.upload.id, UploadState.CANCELLED).get()
 
-        assertNull(fileListPersistenceManager.getFile(info.file.id).get(), "File not removed")
+        assertNull(fileListPersistenceManager.getFile(info.file!!.id).get(), "File not removed")
     }
 
     @Test
@@ -257,6 +257,20 @@ class SQLiteUploadPersistenceManagerTest {
         assertThat(actual).apply {
             describedAs("Should return saved uploads")
             containsOnlyElementsOf(expected)
+        }
+    }
+
+    @Test
+    fun `getAll should handle null fileIds`() {
+        val info = insertUploadFull()
+
+        uploadPersistenceManager.setState(info.upload.id, UploadState.CANCELLED).get()
+
+        val updated = info.upload.copy(state = UploadState.CANCELLED, fileId = null)
+        val expected = UploadInfo(updated, null)
+
+        assertThat(uploadPersistenceManager.getAll().get()).desc("Should return uploads without associated files") {
+            containsOnly(expected)
         }
     }
 }
