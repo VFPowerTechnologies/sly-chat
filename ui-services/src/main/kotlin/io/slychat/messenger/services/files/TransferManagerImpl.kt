@@ -108,8 +108,13 @@ class TransferManagerImpl(
     }
 
     override fun cancel(transferIds: List<String>) {
-        transferIds.forEach {
+        val s = separateByType(transferIds)
+        s.downloadIds.forEach {
             downloader.cancel(it)
+        }
+
+        s.uploadIds.forEach {
+            uploader.cancel(it)
         }
     }
 

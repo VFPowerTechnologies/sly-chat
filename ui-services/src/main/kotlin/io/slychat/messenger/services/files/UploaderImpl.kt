@@ -18,6 +18,7 @@ import rx.Subscriber
 import rx.subjects.PublishSubject
 import java.io.FileNotFoundException
 import java.util.*
+import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -66,6 +67,8 @@ class UploaderImpl(
     override val events: Observable<TransferEvent>
         get() = subject
 
+    private val awaitingCancellation = HashSet<String>()
+
     override fun init() {
         uploadPersistenceManager.getAll() successUi {
             addUploads(it)
@@ -85,10 +88,14 @@ class UploaderImpl(
                 error("Upload ${upload.id} already in transfer list")
 
             val initialState = if (upload.error == null) {
-                if (upload.state == UploadState.COMPLETE)
-                    TransferState.COMPLETE
-                else
-                    TransferState.QUEUED
+                when (upload.state) {
+                    UploadState.PENDING -> TransferState.QUEUED
+                    UploadState.CREATED -> TransferState.QUEUED
+                    UploadState.CACHING -> TransferState.QUEUED
+                    UploadState.COMPLETE -> TransferState.COMPLETE
+                    UploadState.CANCELLING -> TransferState.QUEUED
+                    UploadState.CANCELLED -> TransferState.CANCELLED
+                }
             }
             else
                 TransferState.ERROR
@@ -132,7 +139,13 @@ class UploaderImpl(
             val nextId = next.upload.id
             list.active.add(nextId)
 
-            val newState = TransferState.ACTIVE
+            val status = list.getStatus(nextId)
+
+            val newState = if (status.upload.state != UploadState.CANCELLING)
+                TransferState.ACTIVE
+            else
+                TransferState.CANCELLING
+
             list.setStatus(nextId, next.copy(state = newState))
 
             subject.onNext(TransferEvent.StateChanged(next.upload, newState))
@@ -144,13 +157,38 @@ class UploaderImpl(
     private fun nextStep(uploadId: String) {
         val status = list.getStatus(uploadId)
 
+        if (uploadId in awaitingCancellation) {
+            awaitingCancellation -= uploadId
+
+            moveUploadToCancellingState(uploadId) successUi {
+                nextStep(uploadId)
+            } failUi {
+                log.error("Failed to move upload to cancelling state")
+                //shouldn't occur
+                moveUploadToErrorState(uploadId, UploadError.UNKNOWN)
+            }
+        }
+
         when (status.upload.state) {
             UploadState.PENDING -> createUpload(status)
             UploadState.CACHING -> cacheFile(status)
             //for now we just upload the next available part sequentially
             UploadState.CREATED -> uploadNextPart(status)
+            UploadState.CANCELLING -> cancelUpload(status)
             //this shouldn't get here, but it's here for completion
-            UploadState.COMPLETE -> log.warn("nextStep called with state=COMPLETE state")
+            UploadState.COMPLETE -> log.warn("nextStep called with state=COMPLETE")
+            UploadState.CANCELLED -> log.warn("nextStep called with state=CANCELLED")
+        }.enforceExhaustive()
+    }
+
+    private fun cancelUpload(status: UploadStatus) {
+        log.info("Cancelling upload {}", status.upload.id)
+
+        uploadOperations.cancel(status.upload) successUi {
+            log.info("Upload successfully cancelled")
+            moveUploadToState(status.upload.id, TransferState.CANCELLED, UploadState.CANCELLED)
+        } failUi {
+            handleUploadException(status.upload.id, it, "cancelUpload")
         }
     }
 
@@ -254,8 +292,12 @@ class UploaderImpl(
         cancellationTokens.remove(downloadId)
     }
 
-    //TODO cancellation error
     private fun handleUploadException(uploadId: String, e: Throwable, origin: String) {
+        if (e is CancellationException) {
+            moveUploadToCancellingState(uploadId)
+            return
+        }
+
         val uploadError = when (e) {
             is FileNotFoundException -> UploadError.FILE_DISAPPEARED
 
@@ -322,6 +364,8 @@ class UploaderImpl(
                 override fun onCompleted() {
                     removeCancellationToken(uploadId)
                     log.info("Upload $uploadId/${nextPart.n} completed")
+
+                    awaitingCancellation -= uploadId
 
                     uploadPersistenceManager.completePart(uploadId, nextPart.n) successUi {
                         completePart(uploadId, nextPart.n)
@@ -433,5 +477,121 @@ class UploaderImpl(
 
     override fun contains(transferId: String): Boolean {
         return transferId in list.all
+    }
+
+    private fun moveUploadToState(uploadId: String, transferState: TransferState, uploadState: UploadState): Promise<Unit, Exception> {
+        return updateUploadState(uploadId, uploadState) mapUi {
+            updateTransferState(uploadId, transferState)
+        } fail {
+            log.error("Failed to move upload to CANCELLED state: {}", it.message, it)
+        }
+    }
+
+    private fun moveUploadToCancellingState(uploadId: String): Promise<Unit, Exception> {
+        return moveUploadToState(uploadId, TransferState.CANCELLING, UploadState.CANCELLING)
+    }
+
+    //in this case we don't need to cancel running transfers/etc, we just need to alter the internal state
+    private fun attemptCancelQueued(status: UploadStatus) {
+        val uploadId = status.upload.id
+        log.info("Attempting to cancel queued upload: {}", uploadId)
+
+        @Suppress("IMPLICIT_CAST_TO_ANY")
+        when (status.upload.state) {
+            //hasn't been pushed remotely yet, so just cancel it
+            UploadState.PENDING -> moveUploadToState(uploadId, TransferState.CANCELLED, UploadState.CANCELLED)
+
+            UploadState.CREATED -> moveUploadToCancellingState(uploadId)
+
+            //TODO handle cached file deletion somehow
+            UploadState.CACHING -> moveUploadToCancellingState(uploadId)
+
+            //do nothing
+            UploadState.COMPLETE -> {}
+
+            //do nothing
+            UploadState.CANCELLING -> TODO()
+
+            //do nothing
+            UploadState.CANCELLED -> TODO()
+        }.enforceExhaustive()
+
+        list.queued.remove(uploadId)
+        list.inactive.add(uploadId)
+    }
+
+    private fun attemptCancelError(status: UploadStatus) {
+        val uploadId = status.upload.id
+        log.info("Attempting to cancel upload with error: {}", uploadId)
+
+        when (status.upload.state) {
+            UploadState.CACHING, UploadState.CREATED, UploadState.CANCELLING -> {
+                moveUploadToCancellingState(uploadId) successUi {
+                    clearError(uploadId) failUi {
+                        log.error("Failed to clear error for {}: {}", uploadId, it.message, it)
+                    }
+                }
+            }
+
+            UploadState.PENDING -> moveUploadToState(uploadId, TransferState.CANCELLED, UploadState.CANCELLED)
+
+            UploadState.CANCELLED -> error("Cancelled upload in ERROR state")
+
+            UploadState.COMPLETE -> error("Completed upload in ERROR state")
+        }.enforceExhaustive()
+    }
+
+    private fun attemptCancelActive(status: UploadStatus) {
+        val uploadId = status.upload.id
+        log.info("Attempting to cancel active upload: {}", uploadId)
+
+        when (status.upload.state) {
+            UploadState.PENDING -> awaitingCancellation += uploadId
+            UploadState.CACHING -> awaitingCancellation += uploadId
+            UploadState.CREATED -> requestTransferCancellation(uploadId)
+            UploadState.CANCELLING -> {}
+            UploadState.COMPLETE -> error("COMPLETE upload in active list")
+            UploadState.CANCELLED -> error("CANCELLED upload in active list")
+        }.enforceExhaustive()
+    }
+
+    private fun requestTransferCancellation(uploadId: String) {
+        //if this isn't set, we're completing the upload; in this case it's too late to cancel
+        cancellationTokens[uploadId]?.set(true)
+    }
+
+    override fun cancel(uploadId: String) {
+        val status = list.getStatus(uploadId)
+
+        //we let the move to cancelling state itself not persist for simplicity but that shouldn't generally be an issue
+
+        //cases:
+
+        //active: upload is either in PENDING(which we can't cancel so we need to wait until it's done), or CREATED, which means it's uploading and we can cancel it
+        //after PENDING finishes, or transfering is cancelled, we need to check if the upload is pending cancel (keep a set)
+        //however, if transfer is completed successfully (eg: we hit cancel when we're running the complete upload process), just remove the upload from the cancelled list and let it succeed
+        //if nextStep detects the upload is on the cancellation list, move to cancelling state, and then nextStep will handle remote cancellation
+        //once that's complete, move to cancelled state
+
+        //queued:
+        //if upload is just in PENDING state, just just delete from the list and remove its associated file; if it's queued we haven't registered the file remotely yet
+        //otherwise, move it to cancellation state
+
+        //error: just move to cancelling state (nothing to cancel)
+
+        when (status.state) {
+            TransferState.QUEUED -> attemptCancelQueued(status)
+            TransferState.ACTIVE -> attemptCancelActive(status)
+            TransferState.CANCELLING -> {}
+            TransferState.CANCELLED -> {}
+            TransferState.COMPLETE -> {}
+            //will always be in inactive
+            TransferState.ERROR -> attemptCancelError(status)
+        }.enforceExhaustive()
+    }
+
+    //for test purposes
+    internal fun get(uploadId: String): UploadStatus? {
+        return list.all[uploadId]
     }
 }

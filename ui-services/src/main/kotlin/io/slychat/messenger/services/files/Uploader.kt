@@ -27,4 +27,6 @@ interface Uploader {
     fun remove(uploadIds: List<String>): Promise<Unit, Exception>
 
     fun contains(transferId: String): Boolean
+
+    fun cancel(uploadId: String)
 }

@@ -5,6 +5,7 @@ import io.slychat.messenger.core.http.api.upload.NewUploadResponse
 import io.slychat.messenger.core.persistence.Upload
 import io.slychat.messenger.core.persistence.UploadPart
 import io.slychat.messenger.core.randomQuota
+import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
 import rx.Observable
@@ -13,13 +14,17 @@ import rx.subjects.PublishSubject
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperations {
-    var createDeferred = deferred<NewUploadResponse, Exception>()
-    var completeDeferred = deferred<Unit, Exception>()
-    var uploadSubjects = HashMap<Int, PublishSubject<Long>>()
-    val cacheSubjects = HashMap<String, PublishSubject<Long>>()
+    private var createDeferreds = HashMap<String, Deferred<NewUploadResponse, Exception>>()
+    private var completeDeferred = deferred<Unit, Exception>()
+    private var cancelDeferreds = HashMap<String, Deferred<Unit, Exception>>()
+    private var uploadSubjects = HashMap<Int, PublishSubject<Long>>()
+    private val cacheSubjects = HashMap<String, PublishSubject<Long>>()
+
+    private val uploadPartCancellations = HashMap<Pair<String, Int>, AtomicBoolean>()
 
     var autoResolveCreate = false
 
@@ -30,18 +35,21 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
     private var createArgs: CreateArgs? = null
     private var uploadArgs = HashMap<Pair<String, Int>, UploadArgs>()
     private var completeArgs: Upload? = null
-    private val unsubscriptions = HashSet<Pair<String, Int>>()
 
     override fun create(upload: Upload, file: RemoteFile): Promise<NewUploadResponse, Exception> {
         if (autoResolveCreate)
             return Promise.of(NewUploadResponse(null, randomQuota()))
 
+        val d = deferred<NewUploadResponse, Exception>()
+        createDeferreds[upload.id] = d
+
         createArgs = CreateArgs(upload, file)
-        return createDeferred.promise
+        return d.promise
     }
 
     override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         uploadArgs[upload.id to part.n] = UploadArgs(upload, part, file)
+        uploadPartCancellations[upload.id to part.n] = isCancelled
 
         if (part.n in uploadSubjects)
             throw RuntimeException("Attempted to upload part ${part.n} twice")
@@ -49,7 +57,13 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
         val s = PublishSubject.create<Long>()
         uploadSubjects[part.n] = s
 
-        return s.doOnUnsubscribe { unsubscriptions.add(upload.id to part.n) }
+        return s
+    }
+
+    fun assertUploadPartCancelled(uploadId: String, partN: Int) {
+        val isCancelled = uploadPartCancellations[uploadId to partN] ?: fail("uploadPart($uploadId, $partN) not called")
+
+        assertTrue(isCancelled.get(), "Upload part not cancelled")
     }
 
     fun assertCreateNotCalled() {
@@ -100,15 +114,15 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
         scheduler.triggerActions()
     }
 
+    fun errorUploadPartOperation(n: Int, e: Exception) {
+        getUploadPartSubject(n).onError(e)
+        scheduler.triggerActions()
+    }
+
     fun sendUploadProgress(uploadId: String, partN: Int, transferedBytes: Long) {
         val s = getUploadPartSubject(partN)
         s.onNext(transferedBytes)
         scheduler.triggerActions()
-    }
-
-    fun assertUnsubscribed(uploadId: String, partN: Int) {
-        if ((uploadId to partN) !in unsubscriptions)
-            fail("$uploadId/$partN was not unsubscribed")
     }
 
     override fun complete(upload: Upload): Promise<Unit, Exception> {
@@ -148,5 +162,36 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
 
         s.onCompleted()
         scheduler.triggerActions()
+    }
+
+    override fun cancel(upload: Upload): Promise<Unit, Exception> {
+        val d = deferred<Unit, Exception>()
+        cancelDeferreds[upload.id] = d
+        return d.promise
+    }
+
+    fun assertCancelCalled(uploadId: String) {
+        if (cancelDeferreds[uploadId] == null)
+            fail("cancel($uploadId) not called")
+    }
+
+    fun resolveCancelOperation(uploadId: String) {
+        val d = cancelDeferreds[uploadId] ?: fail("cancel($uploadId) not called")
+        d.resolve(Unit)
+    }
+
+    fun rejectCancelOperation(uploadId: String, e: Exception) {
+        val d = cancelDeferreds[uploadId] ?: fail("cancel($uploadId) not called")
+        d.reject(e)
+    }
+
+    fun resolveCreateOperation(uploadId: String, resp: NewUploadResponse) {
+        val d = createDeferreds[uploadId] ?: fail("create($uploadId) not called")
+        d.resolve(resp)
+    }
+
+    fun rejectCreateOperation(uploadId: String, e: Exception) {
+        val d = createDeferreds[uploadId] ?: fail("create($uploadId) not called")
+        d.reject(e)
     }
 }

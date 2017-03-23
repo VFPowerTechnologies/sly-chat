@@ -54,4 +54,11 @@ class UploadOperationsImpl(
             CacheFileOperation(fileAccess, upload, file, it).run()
         }.subscribeOn(subscribeScheduler)
     }
+
+    override fun cancel(upload: Upload): Promise<Unit, Exception> {
+        return authTokenManager.map {
+            val op = CancelUploadOperation(it, upload, uploadClientFactory.create())
+            op.run()
+        }
+    }
 }

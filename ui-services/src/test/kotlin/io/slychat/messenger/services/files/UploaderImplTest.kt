@@ -15,6 +15,7 @@ import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.schedulers.TestScheduler
+import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -49,7 +50,7 @@ class UploaderImplTest {
         whenever(uploadPersistenceManager.remove(any())).thenResolveUnit()
     }
 
-    private fun newUploader(isNetworkAvailable: Boolean = true): Uploader {
+    private fun newUploader(isNetworkAvailable: Boolean = true): UploaderImpl {
         return UploaderImpl(
             simulUploads,
             uploadPersistenceManager,
@@ -60,7 +61,7 @@ class UploaderImplTest {
         )
     }
 
-    private fun newUploaderWithUpload(info: UploadInfo, isNetworkAvailable: Boolean = true): Uploader {
+    private fun newUploaderWithUpload(info: UploadInfo, isNetworkAvailable: Boolean = true): UploaderImpl {
         val uploader = newUploader(isNetworkAvailable = isNetworkAvailable)
 
         whenever(uploadPersistenceManager.getAll()).thenResolve(listOf(info))
@@ -103,6 +104,25 @@ class UploaderImplTest {
         return info.copy(
             upload = info.upload.copy(error = null)
         )
+    }
+
+    private fun assertCurrentStates(uploader: UploaderImpl, uploadId: String, transferState: TransferState, uploadState: UploadState) {
+        val status = assertNotNull(uploader.get(uploadId), "No such upload")
+        assertEquals(transferState, status.state, "Invalid transfer state")
+        assertEquals(uploadState, status.upload.state, "Invalid upload state")
+    }
+
+    private fun assertStatesUpdated(uploader: UploaderImpl, uploadId: String, transferState: TransferState, uploadState: UploadState) {
+        verify(uploadPersistenceManager, description("Upload state not persisted")).setState(uploadId, uploadState)
+        assertCurrentStates(uploader, uploadId, transferState, uploadState)
+    }
+
+    private fun assertCancelledState(uploader: UploaderImpl, uploadId: String) {
+        assertStatesUpdated(uploader, uploadId, TransferState.CANCELLED, UploadState.CANCELLED)
+    }
+
+    private fun assertCancellingState(uploader: UploaderImpl, uploadId: String) {
+        assertStatesUpdated(uploader, uploadId, TransferState.CANCELLING, UploadState.CANCELLING)
     }
 
     @Test
@@ -308,7 +328,7 @@ class UploaderImplTest {
 
         val testSubscriber = uploader.quota.testSubscriber()
 
-        uploadOperations.createDeferred.resolve(NewUploadResponse(NewUploadError.INSUFFICIENT_QUOTA, quota))
+        uploadOperations.resolveCreateOperation(info.upload.id, NewUploadResponse(NewUploadError.INSUFFICIENT_QUOTA, quota))
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
     }
@@ -325,7 +345,7 @@ class UploaderImplTest {
 
         val testSubscriber = uploader.quota.testSubscriber()
 
-        uploadOperations.createDeferred.resolve(NewUploadResponse(null, quota))
+        uploadOperations.resolveCreateOperation(info.upload.id, NewUploadResponse(null, quota))
 
         testSubscriber.assertReceivedOnNext(listOf(quota))
     }
@@ -457,7 +477,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.reject(TestException())
+        uploadOperations.rejectCreateOperation(info.upload.id, TestException())
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
@@ -472,7 +492,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.reject(TestException())
+        uploadOperations.rejectCreateOperation(info.upload.id, TestException())
 
         verify(uploadPersistenceManager).setError(info.upload.id, UploadError.UNKNOWN)
     }
@@ -485,7 +505,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.reject(TestException())
+        uploadOperations.rejectCreateOperation(info.upload.id, TestException())
 
         uploadOperations.assertUploadPartNotCalled()
     }
@@ -500,7 +520,7 @@ class UploaderImplTest {
 
         val updated = info.upload.copy(error = UploadError.UNKNOWN)
         assertEventEmitted(uploader, TransferEvent.StateChanged(updated, TransferState.ERROR)) {
-            uploadOperations.createDeferred.reject(TestException())
+            uploadOperations.rejectCreateOperation(info.upload.id, TestException())
         }
     }
 
@@ -512,7 +532,7 @@ class UploaderImplTest {
 
         uploader.upload(info).get()
 
-        uploadOperations.createDeferred.resolve(NewUploadResponse(NewUploadError.INSUFFICIENT_QUOTA, randomQuota()))
+        uploadOperations.resolveCreateOperation(info.upload.id, NewUploadResponse(NewUploadError.INSUFFICIENT_QUOTA, randomQuota()))
 
         val status = assertNotNull(uploader.uploads.find { it.upload.id == info.upload.id }, "Upload not found in list")
 
@@ -636,5 +656,227 @@ class UploaderImplTest {
         assertEventEmitted(uploader, ev) {
             uploader.remove(listOf(info.upload.id)).get()
         }
+    }
+
+    //not yet pushed remotely
+    @Test
+    fun `cancel should move a queued pending upload to cancelled state`() {
+        val info = randomUploadInfo(state = UploadState.PENDING)
+
+        val uploader = newUploaderWithUpload(info, false)
+
+        val uploadId = info.upload.id
+        uploader.cancel(uploadId)
+
+        assertCancelledState(uploader, uploadId)
+    }
+
+    //if we've already sent a request over, wait until it finishes and then cancel it
+    @Test
+    fun `cancel should not modify upload state for an active PENDING upload until its operation completes`() {
+        val info = randomUploadInfo(state = UploadState.PENDING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        assertCurrentStates(uploader, uploadId, TransferState.ACTIVE, UploadState.PENDING)
+    }
+
+    @Test
+    fun `cancel should move an active PENDING upload to cancelling state after its operation completes`() {
+        val info = randomUploadInfo(state = UploadState.PENDING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        uploadOperations.resolveCreateOperation(uploadId, NewUploadResponse(null, randomQuota()))
+
+        assertCancellingState(uploader, uploadId)
+    }
+
+    @Test
+    fun `cancel should not modify upload state for an active CACHING upload until its operation completes`() {
+        val info = randomUploadInfo(state = UploadState.CACHING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        assertCurrentStates(uploader, uploadId, TransferState.ACTIVE, UploadState.CACHING)
+    }
+
+    @Test
+    fun `cancel should move an active CACHING upload to cancelling state after its operation completes`() {
+        val info = randomUploadInfo(state = UploadState.CACHING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        uploadOperations.completeCacheOperation(uploadId)
+
+        assertCancellingState(uploader, uploadId)
+    }
+
+    @Test
+    fun `cancel should attempt to cancel an ongoing transfer`() {
+        val info = randomUploadInfo(state = UploadState.CREATED)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        uploadOperations.assertUploadPartCancelled(uploadId, 1)
+    }
+
+    @Test
+    fun `it should move a cancelled ongoing transfer to CANCELLING state`() {
+        val info = randomUploadInfo(state = UploadState.CREATED)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+
+        uploadOperations.errorUploadPartOperation(1, CancellationException())
+
+        assertCancellingState(uploader, uploadId)
+    }
+
+    @Test
+    fun `cancel should do nothing if an active upload completes before cancellation can occur`() {
+        val file = randomRemoteFile()
+
+        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.CREATED).copy(
+            parts = listOf(
+                UploadPart(1, 0, 1, 1, true),
+                UploadPart(2, 1, file.remoteFileSize - 1, file.remoteFileSize - 1, true)
+            )
+        )
+
+        val info = UploadInfo(upload, file)
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(upload.id)
+
+        uploadOperations.completeCompleteUploadOperation()
+
+        assertStatesUpdated(uploader, upload.id, TransferState.COMPLETE, UploadState.COMPLETE)
+    }
+
+    @Test
+    fun `cancel should move a non-PENDING upload in error state to CANCELLING state`() {
+        val info = randomUploadInfo(state = UploadState.CREATED, error = UploadError.FILE_DISAPPEARED)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        assertCancellingState(uploader, uploadId)
+    }
+    
+    @Test
+    fun `cancel should clear any error for an upload in error state`() {
+        val info = randomUploadInfo(state = UploadState.CREATED, error = UploadError.FILE_DISAPPEARED)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        verify(uploadPersistenceManager).setError(info.upload.id, null)
+        assertNull(assertNotNull(uploader.get(uploadId)).upload.error, "Cached error not cleared")
+    }
+
+    @Test
+    fun `cancel should move a non-PENDING upload in ERROR state back to the queue`() {
+        val info = randomUploadInfo(state = UploadState.CREATED, error = UploadError.FILE_DISAPPEARED)
+
+        val uploader = newUploaderWithUpload(info)
+
+        val uploadId = info.upload.id
+
+        uploader.cancel(uploadId)
+
+        uploadOperations.assertCancelCalled(uploadId)
+    }
+
+    @Test
+    fun `cancel should move a PENDING upload in error state to CANCELLED state`() {
+        val info = randomUploadInfo(state = UploadState.PENDING, error = UploadError.FILE_DISAPPEARED)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        assertCancelledState(uploader, uploadId)
+    }
+
+    @Test
+    fun `cancel should do nothing for an already cancelled upload`() {
+        val info = randomUploadInfo(state = UploadState.CANCELLED)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        verify(uploadPersistenceManager, never()).setState(uploadId, UploadState.CANCELLING)
+    }
+
+    @Test
+    fun `cancel should do nothing for an inactive completed upload`() {
+        val info = randomUploadInfo(state = UploadState.COMPLETE)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+        uploader.cancel(uploadId)
+
+        verify(uploadPersistenceManager, never()).setState(uploadId, UploadState.CANCELLING)
+    }
+
+    @Test
+    fun `cancel should do nothing for an upload in CANCELLING STATE`() {
+        val info = randomUploadInfo(state = UploadState.CANCELLING)
+
+        val uploader = newUploaderWithUpload(info)
+
+        val uploadId = info.upload.id
+
+        uploader.cancel(uploadId)
+
+        verify(uploadPersistenceManager, never()).setState(any(), any())
+    }
+
+    @Test
+    fun `it should attempt to delete an upload remotely if an upload is in cancelling state`() {
+        val info = randomUploadInfo(state = UploadState.CANCELLING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.assertCancelCalled(uploadId)
+    }
+
+    @Test
+    fun `it should move an upload from cancelling to cancelled state once cancellation process completes`() {
+        val info = randomUploadInfo(state = UploadState.CANCELLING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.resolveCancelOperation(uploadId)
+
+        assertCancelledState(uploader, uploadId)
+    }
+
+    @Test
+    fun `it should move an upload from cancelling to error if an error occurs during the cancellation process`() {
+        val info = randomUploadInfo(state = UploadState.CANCELLING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info, true)
+
+        uploadOperations.rejectCancelOperation(uploadId, TestException())
+
+        assertEquals(TransferState.ERROR, assertNotNull(uploader.get(uploadId)).state, "Upload not moved to ERROR state")
     }
 }

@@ -5,6 +5,8 @@ enum class TransferState {
     QUEUED,
     //transferring data
     ACTIVE,
+    //active and pending cancel (typically required if something needs to be done remotely for cancellation)
+    CANCELLING,
     //disabled by user
     CANCELLED,
     //complete

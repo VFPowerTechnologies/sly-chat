@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.crypto.ciphers.UnknownCipherException
+import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
@@ -209,7 +210,7 @@ class DownloaderImpl(
             DownloadState.COMPLETE -> log.warn("startDownload called with a completed download")
 
             DownloadState.CANCELLED -> log.warn("startDownload called with a cancelled download")
-        }
+        }.enforceExhaustive()
     }
 
     private fun markDownloadCancelled(downloadId: String) {
