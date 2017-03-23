@@ -30,6 +30,7 @@ class StorageServiceImplTest {
         init {
             MockitoKotlin.registerInstanceCreator { randomUserMetadata() }
             MockitoKotlin.registerInstanceCreator { randomUpload() }
+            MockitoKotlin.registerInstanceCreator { randomUploadInfo() }
         }
     }
 
@@ -397,7 +398,7 @@ class StorageServiceImplTest {
 
         val fileIds = listOf(
             generateFileId(),
-            status.file.id
+            status.file!!.id
         )
 
         whenever(transferManager.transfers).thenReturn(listOf(status))
@@ -416,7 +417,7 @@ class StorageServiceImplTest {
 
         val fileIds = listOf(
             generateFileId(),
-            status.file.id
+            status.file!!.id
         )
 
         whenever(transferManager.transfers).thenReturn(listOf(status))

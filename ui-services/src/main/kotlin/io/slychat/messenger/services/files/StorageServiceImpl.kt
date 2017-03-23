@@ -187,7 +187,7 @@ class StorageServiceImpl(
     override fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception> {
         val s = HashSet(fileIds)
         val transfers = transferManager.transfers
-            .filter { it.file.id in s }
+            .filter { it.file != null && it.file.id in s }
             .map { it.id }
 
         return transferManager.remove(transfers) bind {
@@ -262,7 +262,7 @@ class StorageServiceImpl(
             )
         } bindUi { info ->
             transferManager.upload(info) successUi {
-                fileEventsSubject.onNext(RemoteFileEvent.Added(listOf(info.file)))
+                fileEventsSubject.onNext(RemoteFileEvent.Added(listOf(info.file!!)))
             }
         }
     }

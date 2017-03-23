@@ -32,6 +32,7 @@ class UploaderImplTest {
         init {
             MockitoKotlin.registerInstanceCreator { randomUpload() }
             MockitoKotlin.registerInstanceCreator { randomUserMetadata() }
+            MockitoKotlin.registerInstanceCreator { randomUploadInfo() }
             MockitoKotlin.registerInstanceCreator { UploadPart(1, 0, 10, 10, false) }
         }
     }
@@ -83,14 +84,6 @@ class UploaderImplTest {
         uploader.init()
 
         return uploader
-    }
-
-    private fun randomUploadInfo(state: UploadState = UploadState.PENDING, error: UploadError? = null): UploadInfo {
-        val file = randomRemoteFile()
-
-        val upload = randomUpload(file.id, file.remoteFileSize, state, error)
-
-        return UploadInfo(upload, file)
     }
 
     private fun <R> assertEventEmitted(uploader: Uploader, event: TransferEvent, body: () -> R): R {
@@ -167,7 +160,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        uploadOperations.assertCreateCalled(info.upload, info.file)
+        uploadOperations.assertCreateCalled(info.upload, info.file!!)
     }
 
     @Test
@@ -180,7 +173,7 @@ class UploaderImplTest {
 
         uploader.init()
 
-        uploadOperations.assertUploadPartCalled(info.upload, info.upload.parts[0], info.file)
+        uploadOperations.assertUploadPartCalled(info.upload, info.upload.parts[0], info.file!!)
     }
 
     @Test
@@ -292,7 +285,7 @@ class UploaderImplTest {
 
         uploader.upload(uploadInfo).get()
 
-        uploadOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
+        uploadOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file!!)
     }
 
     @Test
@@ -305,7 +298,7 @@ class UploaderImplTest {
 
         uploader.isNetworkAvailable = true
 
-        uploadOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file)
+        uploadOperations.assertCreateCalled(uploadInfo.upload, uploadInfo.file!!)
     }
 
     @Test
@@ -404,7 +397,7 @@ class UploaderImplTest {
         uploader.upload(uploadInfo).get()
 
         val upload = uploadInfo.upload
-        uploadOperations.assertUploadPartCalled(upload.copy(state = UploadState.CREATED), upload.parts[0], uploadInfo.file)
+        uploadOperations.assertUploadPartCalled(upload.copy(state = UploadState.CREATED), upload.parts[0], uploadInfo.file!!)
     }
 
     @Test
@@ -600,7 +593,7 @@ class UploaderImplTest {
         val uploader = newUploader(true)
         val info = testClearError(uploader)
 
-        uploadOperations.assertCreateCalled(info.upload, info.file)
+        uploadOperations.assertCreateCalled(info.upload, info.file!!)
     }
 
     @Test
@@ -621,7 +614,7 @@ class UploaderImplTest {
         val progress = UploadTransferProgress(
             partProgress,
             1000,
-            info.file.remoteFileSize
+            info.file!!.remoteFileSize
         )
 
         val event = TransferEvent.Progress(info.upload, progress)
@@ -900,6 +893,21 @@ class UploaderImplTest {
         val uploader = newUploaderWithUpload(info)
 
         uploadOperations.assertCancelCalled(uploadId)
+    }
+
+    @Test
+    fun `it should null the associated upload fileId and file when cancellation finishes`() {
+        val info = randomUploadInfo(state = UploadState.CANCELLING)
+        val uploadId = info.upload.id
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.resolveCancelOperation(uploadId)
+
+        val status = assertNotNull(uploader.get(uploadId), "Upload not in list")
+
+        assertNull(status.upload.fileId, "fileId not nulled")
+        assertNull(status.file, "file not nulled")
     }
 
     @Test

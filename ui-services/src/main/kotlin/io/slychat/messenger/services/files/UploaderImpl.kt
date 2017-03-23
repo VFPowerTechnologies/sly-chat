@@ -189,6 +189,10 @@ class UploaderImpl(
             log.info("Upload successfully cancelled")
             moveUploadToState(uploadId, TransferState.CANCELLED, UploadState.CANCELLED)
         } mapUi {
+            list.updateStatus(uploadId) {
+                it.copy(upload = it.upload.copy(fileId = null),  file = null)
+            }
+
             list.active -= uploadId
             list.inactive += uploadId
         } failUi {
@@ -200,7 +204,7 @@ class UploaderImpl(
         val uploadId = status.upload.id
 
         //TODO cancellation
-        uploadOperations.cache(status.upload, status.file)
+        uploadOperations.cache(status.upload, status.file!!)
             .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
             .map { it.sum() }
             .observeOn(mainScheduler)
@@ -355,7 +359,7 @@ class UploaderImpl(
 
         log.info("Upload {}/{} starting", uploadId, nextPart.n)
 
-        uploadOperations.uploadPart(status.upload, nextPart, status.file, cancellationToken)
+        uploadOperations.uploadPart(status.upload, nextPart, status.file!!, cancellationToken)
             .buffer(PROGRESS_TIME_MS, TimeUnit.MILLISECONDS, timerScheduler)
             .map { it.sum() }
             .observeOn(mainScheduler)
@@ -413,7 +417,7 @@ class UploaderImpl(
         val uploadId = status.upload.id
         val file = status.file
 
-        uploadOperations.create(status.upload, file) bindUi {
+        uploadOperations.create(status.upload, file!!) bindUi {
             quotaSubject.onNext(it.quota)
 
             when (it.error) {
@@ -576,20 +580,6 @@ class UploaderImpl(
         val status = list.getStatus(uploadId)
 
         //we let the move to cancelling state itself not persist for simplicity but that shouldn't generally be an issue
-
-        //cases:
-
-        //active: upload is either in PENDING(which we can't cancel so we need to wait until it's done), or CREATED, which means it's uploading and we can cancel it
-        //after PENDING finishes, or transfering is cancelled, we need to check if the upload is pending cancel (keep a set)
-        //however, if transfer is completed successfully (eg: we hit cancel when we're running the complete upload process), just remove the upload from the cancelled list and let it succeed
-        //if nextStep detects the upload is on the cancellation list, move to cancelling state, and then nextStep will handle remote cancellation
-        //once that's complete, move to cancelled state
-
-        //queued:
-        //if upload is just in PENDING state, just just delete from the list and remove its associated file; if it's queued we haven't registered the file remotely yet
-        //otherwise, move it to cancellation state
-
-        //error: just move to cancelling state (nothing to cancel)
 
         when (status.state) {
             TransferState.QUEUED -> attemptCancelQueued(status)
