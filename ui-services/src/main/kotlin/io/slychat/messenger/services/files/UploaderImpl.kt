@@ -107,7 +107,7 @@ class UploaderImpl(
                 upload.parts.map { UploadPartTransferProgress(if (it.isComplete) it.remoteSize else 0, it.remoteSize) }
             )
 
-            if (initialState == TransferState.QUEUED)
+            if (initialState == TransferState.QUEUED || initialState == TransferState.CANCELLING)
                 list.queued.add(upload.id)
             else
                 list.inactive.add(upload.id)

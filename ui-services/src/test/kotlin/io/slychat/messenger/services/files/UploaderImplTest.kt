@@ -170,6 +170,15 @@ class UploaderImplTest {
     }
 
     @Test
+    fun `it should start fetched uploads with state=CANCELLING when network is available`() {
+        val info = randomUploadInfo(state = UploadState.CANCELLING)
+
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.assertCancelCalled(info.upload.id)
+    }
+
+    @Test
     fun `it should not start fetched uploads which have an associated error`() {
         val file = randomRemoteFile()
         val upload = randomUpload(file.id, file.remoteFileSize).copy(
