@@ -293,7 +293,10 @@ class UploaderImpl(
 
     private fun handleUploadException(uploadId: String, e: Throwable, origin: String) {
         if (e is CancellationException) {
-            moveUploadToCancellingState(uploadId)
+            moveUploadToCancellingState(uploadId) successUi {
+                nextStep(uploadId)
+            }
+
             return
         }
 

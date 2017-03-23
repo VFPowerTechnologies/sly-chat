@@ -62,6 +62,19 @@ class UploaderImplTest {
         )
     }
 
+    private fun randomMultipartUpload(isPart1Complete: Boolean, isPart2Complete: Boolean): UploadInfo {
+        val file = randomRemoteFile()
+
+        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.CREATED).copy(
+            parts = listOf(
+                UploadPart(1, 0, 1, 1, isPart1Complete),
+                UploadPart(2, 1, file.remoteFileSize - 1, file.remoteFileSize - 1, isPart2Complete)
+            )
+        )
+
+        return UploadInfo(upload, file)
+    }
+
     private fun newUploaderWithUpload(info: UploadInfo, isNetworkAvailable: Boolean = true): UploaderImpl {
         val uploader = newUploader(isNetworkAvailable = isNetworkAvailable)
 
@@ -753,19 +766,21 @@ class UploaderImplTest {
         assertCancellingState(uploader, uploadId)
     }
 
+    @Test
+    fun `it should keep processing a cancelled ongoing transfer and cancel it remotely`() {
+        val info = randomUploadInfo(state = UploadState.CREATED)
+
+        val uploader = newUploaderWithUpload(info, true)
+
+        uploadOperations.errorUploadPartOperation(1, CancellationException())
+
+        uploadOperations.assertCancelCalled(info.upload.id)
+    }
+
     //this also works if in between the last part and completing the upload
     @Test
     fun `cancel should cause cancellation if called before a transfer begins its next part`() {
-        val file = randomRemoteFile()
-
-        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.CREATED).copy(
-            parts = listOf(
-                UploadPart(1, 0, 1, 1, false),
-                UploadPart(2, 1, file.remoteFileSize - 1, file.remoteFileSize - 1, false)
-            )
-        )
-
-        val info = UploadInfo(upload, file)
+        val info = randomMultipartUpload(false, false)
 
         //we need to get the cancel in before this completes
         val d = deferred<Unit, Exception>()
@@ -776,32 +791,23 @@ class UploaderImplTest {
         uploadOperations.completeUploadPartOperation(1)
 
         //here the cancellation token is null, since the transfer's done and we're just persisting the upload state
-        uploader.cancel(upload.id)
+        uploader.cancel(info.upload.id)
 
         d.resolve(Unit)
 
-        assertCancellingState(uploader, upload.id)
+        assertCancellingState(uploader, info.upload.id)
     }
 
     @Test
     fun `cancel should do nothing if an active upload completes before cancellation can occur`() {
-        val file = randomRemoteFile()
-
-        val upload = randomUpload(file.id, file.remoteFileSize, UploadState.CREATED).copy(
-            parts = listOf(
-                UploadPart(1, 0, 1, 1, true),
-                UploadPart(2, 1, file.remoteFileSize - 1, file.remoteFileSize - 1, true)
-            )
-        )
-
-        val info = UploadInfo(upload, file)
+        val info = randomMultipartUpload(true, true)
 
         val uploader = newUploaderWithUpload(info, true)
-        uploader.cancel(upload.id)
+        uploader.cancel(info.upload.id)
 
         uploadOperations.completeCompleteUploadOperation()
 
-        assertStatesUpdated(uploader, upload.id, TransferState.COMPLETE, UploadState.COMPLETE)
+        assertStatesUpdated(uploader, info.upload.id, TransferState.COMPLETE, UploadState.COMPLETE)
     }
 
     @Test
