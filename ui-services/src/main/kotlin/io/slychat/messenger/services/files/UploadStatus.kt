@@ -19,7 +19,7 @@ data class UploadStatus(
         }
     }
 
-    val transferedBytes: Long = progress.foldRight(0L) { p, t -> t + p.transferedBytes }
+    val transferedBytes: Long = if (file != null) progress.foldRight(0L) { p, t -> t + p.transferedBytes } else -1
     val totalBytes: Long
-        get() = file!!.remoteFileSize
+        get() = file?.remoteFileSize ?: -1
 }
