@@ -4,9 +4,9 @@ import java.util.*
 
 class TransferList<StatusT>(var maxSize: Int) {
     val queued = ArrayDeque<String>()
-    val active = ArrayList<String>()
-    //completed, errored uploads
-    val inactive = ArrayList<String>()
+    val active = HashSet<String>()
+    //completed, cancelled, errored transfers
+    val inactive = HashSet<String>()
     val all = HashMap<String, StatusT>()
 
     val canActivateMore: Boolean
