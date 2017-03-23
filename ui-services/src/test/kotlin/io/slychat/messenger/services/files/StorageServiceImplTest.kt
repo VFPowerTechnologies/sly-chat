@@ -250,6 +250,15 @@ class StorageServiceImplTest {
     }
 
     @Test
+    fun `it should sync when receiving an upload cancellation event`() {
+        val service = newService(true)
+
+        transferEvents.onNext(TransferEvent.StateChanged(randomUpload(), TransferState.CANCELLED))
+
+        syncJob.assertRunCalled()
+    }
+
+    @Test
     fun `it should not sync when receiving a download completion event`() {
         val service = newService(true)
 

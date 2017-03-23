@@ -77,8 +77,10 @@ class StorageServiceImpl(
         if (!event.transfer.isUpload)
             return
 
-        if (event.state == TransferState.COMPLETE)
-            sync()
+        when (event.state) {
+            TransferState.COMPLETE, TransferState.CANCELLED -> sync()
+            else -> {}
+        }
     }
 
     private fun onNetworkStatusChange(isAvailable: Boolean) {
