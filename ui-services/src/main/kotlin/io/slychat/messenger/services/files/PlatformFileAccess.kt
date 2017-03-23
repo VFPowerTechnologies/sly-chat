@@ -14,4 +14,6 @@ interface PlatformFileAccess {
 
     //TODO append
     fun openFileForWrite(path: String): OutputStream
+
+    fun delete(path: String)
 }

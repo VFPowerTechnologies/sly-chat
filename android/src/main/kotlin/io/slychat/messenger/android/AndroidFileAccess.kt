@@ -90,4 +90,13 @@ class AndroidFileAccess(private val context: Context) : PlatformFileAccess {
             is PathType.U -> context.contentResolver.openOutputStream(p.uri)
         }
     }
+
+    override fun delete(path: String) {
+        val p = parsePath(path)
+
+        when (p) {
+            is PathType.F -> p.file.delete()
+            is PathType.U -> context.contentResolver.delete(p.uri, null, null)
+        }
+    }
 }

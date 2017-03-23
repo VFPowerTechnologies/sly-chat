@@ -28,4 +28,8 @@ class DesktopFileAccess : PlatformFileAccess {
     override fun openFileForWrite(path: String): OutputStream {
         return FileOutputStream(path)
     }
+
+    override fun delete(path: String) {
+        File(path).delete()
+    }
 }
