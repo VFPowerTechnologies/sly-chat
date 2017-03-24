@@ -279,7 +279,7 @@ class TransferManagerImplTest {
     }
 
     @Test
-    fun `it should remove a pending retry if it's removed`() {
+    fun `it should remove a pending retry if its transfer removed`() {
         val upload = randomUpload(error = UploadError.NETWORK_ISSUE)
         val transfer = Transfer.U(upload)
 
@@ -296,5 +296,29 @@ class TransferManagerImplTest {
         scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
 
         assertErrorNeverCleared(transfer)
+    }
+
+    @Test
+    fun `it should emit an UntilRetry event if a timer is cancelled`() {
+        val upload = randomUpload(error = UploadError.NETWORK_ISSUE)
+        val transfer = Transfer.U(upload)
+
+        val manager = newManager()
+
+        val subject = getEventSubject(transfer)
+
+        subject.onNext(TransferEvent.Added(transfer, TransferState.ERROR))
+
+        val testSubscriber = manager.events.ofType(TransferEvent.UntilRetry::class.java).testSubscriber()
+
+        val updated = Transfer.U(upload.copy(error = null))
+        subject.onNext(TransferEvent.StateChanged(updated, TransferState.QUEUED))
+
+        //FIXME
+        scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
+
+        assertThat(testSubscriber.onNextEvents).desc("Should contain a terminating event") {
+            contains(TransferEvent.UntilRetry(updated, 0))
+        }
     }
 }

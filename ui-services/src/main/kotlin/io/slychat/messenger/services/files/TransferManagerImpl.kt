@@ -96,6 +96,7 @@ class TransferManagerImpl(
             log.info("Cancelling retry timer for {}", transfer.id)
             s.unsubscribe()
             timerSubscriptions.remove(transfer.id)
+            eventsSubject.onNext(TransferEvent.UntilRetry(transfer, 0))
         }
     }
 

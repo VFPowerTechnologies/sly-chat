@@ -77,7 +77,6 @@ class TransferItem(var transfer: Transfer, var realState: TransferState) {
 
     private fun updateStateValues() {
         this.state = realState.toString()
-        untilRetry = 0
     }
 
     fun update(progress: TransferProgress) {
