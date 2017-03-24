@@ -256,7 +256,7 @@ class UploaderImpl(
     private fun updateCachedUploadState(uploadId: String, newState: UploadState) {
         list.updateStatus(uploadId) {
             it.copy(
-                it.upload.copy(state = newState)
+                it.upload.copy(state = newState, error = null)
             )
         }
     }

@@ -142,6 +142,15 @@ class SQLiteUploadPersistenceManagerTest {
     }
 
     @Test
+    fun `setState should clear any pending error`() {
+        val upload = insertUpload(UploadError.NETWORK_ISSUE)
+
+        uploadPersistenceManager.setState(upload.id, UploadState.PENDING).get()
+
+        assertNull(getUpload(upload.id).error, "Error not cleared")
+    }
+
+    @Test
     fun `setState should throw InvalidUploadException if upload doesn't exist`() {
         assertFailsWith(InvalidUploadException::class) {
             uploadPersistenceManager.setState(generateUploadId(), UploadState.COMPLETE).get()

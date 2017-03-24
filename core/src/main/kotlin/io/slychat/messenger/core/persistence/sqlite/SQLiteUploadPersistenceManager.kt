@@ -146,7 +146,8 @@ WHERE
 UPDATE
     uploads
 SET
-    state = ?
+    state = ?,
+    error = null
 WHERE
     id = ?
 """
