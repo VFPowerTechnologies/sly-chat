@@ -289,6 +289,17 @@ class DownloaderImplTest {
     }
 
     @Test
+    fun `clearError should do nothing if no error is present`() {
+        val info = randomDownloadInfo()
+
+        val downloader = newDownloaderWithDownload(info, false)
+
+        downloader.clearError(info.download.id)
+
+        verify(downloadPersistenceManager, never()).setError(info.download.id, null)
+    }
+
+    @Test
     fun `clearError should clear the stored update error`() {
         val downloader = newDownloader(true)
 

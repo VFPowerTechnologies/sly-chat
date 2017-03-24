@@ -556,6 +556,17 @@ class UploaderImplTest {
     }
 
     @Test
+    fun `clearError should do nothing if no error is present`() {
+        val info = randomUploadInfo()
+
+        val uploader = newUploaderWithUpload(info, false)
+
+        uploader.clearError(info.upload.id)
+
+        verify(uploadPersistenceManager, never()).setError(info.upload.id, null)
+    }
+
+    @Test
     fun `clearError should clear the stored update error`() {
         val uploader = newUploader(true)
 

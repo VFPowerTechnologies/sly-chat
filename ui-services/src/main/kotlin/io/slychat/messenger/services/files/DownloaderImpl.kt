@@ -265,6 +265,9 @@ class DownloaderImpl(
     }
 
     override fun clearError(downloadId: String): Promise<Unit, Exception> {
+        if (list.getStatus(downloadId).state != TransferState.ERROR)
+            return Promise.ofSuccess(Unit)
+
         return downloadPersistenceManager.setError(downloadId, null) successUi {
             list.inactive.remove(downloadId)
             list.queued.add(downloadId)

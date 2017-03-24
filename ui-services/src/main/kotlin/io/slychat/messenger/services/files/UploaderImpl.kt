@@ -450,6 +450,9 @@ class UploaderImpl(
     }
 
     override fun clearError(uploadId: String): Promise<Unit, Exception> {
+        if (list.getStatus(uploadId).state != TransferState.ERROR)
+            return Promise.ofSuccess(Unit)
+
         return uploadPersistenceManager.setError(uploadId, null) successUi {
             list.inactive.remove(uploadId)
             list.queued.add(uploadId)
