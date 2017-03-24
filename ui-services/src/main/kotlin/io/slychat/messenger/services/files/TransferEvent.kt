@@ -1,17 +1,22 @@
 package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.persistence.Download
+import io.slychat.messenger.core.persistence.TransferError
 import io.slychat.messenger.core.persistence.Upload
 
 sealed class Transfer {
     abstract val isUpload: Boolean
     abstract val id: String
+    abstract val error: TransferError?
 
     class U(val upload: Upload) : Transfer() {
         override val isUpload: Boolean = true
 
         override val id: String
             get() = upload.id
+
+        override val error: TransferError?
+            get() = upload.error
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -38,6 +43,9 @@ sealed class Transfer {
 
         override val id: String
             get() = download.id
+
+        override val error: TransferError?
+            get() = download.error
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

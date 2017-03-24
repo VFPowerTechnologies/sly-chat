@@ -1,18 +1,28 @@
 package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.persistence.DownloadError
+import io.slychat.messenger.core.persistence.UploadError
+import io.slychat.messenger.core.randomDownload
+import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.testutils.thenResolveUnit
 import org.junit.Before
 import org.junit.Test
+import org.mockito.verification.VerificationMode
+import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
+import java.util.concurrent.TimeUnit
 
 class TransferManagerImplTest {
     private val userConfigService = UserConfigService(DummyConfigBackend())
     private val uploader: Uploader = mock()
     private val downloader: Downloader = mock()
+    private val uploadTransferEvents = PublishSubject.create<TransferEvent>()
+    private val downloadTransferEvents = PublishSubject.create<TransferEvent>()
     private val networkStatus: PublishSubject<Boolean> = PublishSubject.create()
+    private val scheduler = TestScheduler()
 
     private fun newManager(): TransferManagerImpl {
         userConfigService.withEditor {
@@ -24,12 +34,18 @@ class TransferManagerImplTest {
             userConfigService,
             uploader,
             downloader,
+            scheduler,
+            scheduler,
             networkStatus
         )
     }
 
     @Before
     fun before() {
+        whenever(downloader.events).thenReturn(downloadTransferEvents)
+        whenever(uploader.events).thenReturn(uploadTransferEvents)
+        whenever(downloader.clearError(any())).thenResolveUnit()
+        whenever(uploader.clearError(any())).thenResolveUnit()
         whenever(downloader.remove(any())).thenResolveUnit()
         whenever(uploader.remove(any())).thenResolveUnit()
     }
@@ -118,5 +134,124 @@ class TransferManagerImplTest {
         manager.removeCompleted().get()
 
         verify(uploader).remove(listOf(completed.upload.id, cancelled.upload.id))
+    }
+
+    private fun getEventSubject(transfer: Transfer): PublishSubject<TransferEvent> {
+        return when (transfer) {
+            is Transfer.U -> uploadTransferEvents
+            is Transfer.D -> downloadTransferEvents
+        }
+    }
+
+    private fun assertErrorNeverCleared(transfer: Transfer) {
+        when (transfer) {
+            is Transfer.U -> verify(uploader, never()).clearError(transfer.id)
+            is Transfer.D -> verify(downloader, never()).clearError(transfer.id)
+        }
+    }
+
+    private fun testRetryErrorTransfer(transfer: Transfer, ev: TransferEvent, times: VerificationMode) {
+        val manager = newManager()
+
+        val subject = getEventSubject(transfer)
+
+        subject.onNext(ev)
+
+        //FIXME
+        scheduler.advanceTimeBy(1000, TimeUnit.SECONDS)
+
+        when (transfer) {
+            is Transfer.U -> verify(uploader, times).clearError(transfer.id)
+            is Transfer.D -> verify(downloader, times).clearError(transfer.id)
+        }
+    }
+
+    @Test
+    fun `it should attempt to resume added transfers with transient errors (upload)`() {
+        val transfer = Transfer.U(randomUpload(error = UploadError.NETWORK_ISSUE))
+        testRetryErrorTransfer(transfer, TransferEvent.Added(transfer, TransferState.ERROR), times(1))
+    }
+
+    @Test
+    fun `it should attempt to resume added transfers with transient errors (download)`() {
+        val transfer = Transfer.D(randomDownload(error = DownloadError.NETWORK_ISSUE))
+        testRetryErrorTransfer(transfer, TransferEvent.Added(transfer, TransferState.ERROR), times(1))
+    }
+
+    @Test
+    fun `it should attempt to resume updated transfers with transient errors (upload)`() {
+        val transfer = Transfer.U(randomUpload(error = UploadError.NETWORK_ISSUE))
+        testRetryErrorTransfer(transfer, TransferEvent.StateChanged(transfer, TransferState.ERROR), times(1))
+    }
+
+    @Test
+    fun `it should attempt to resume updated transfers with transient errors (download)`() {
+        val transfer = Transfer.D(randomDownload(error = DownloadError.NETWORK_ISSUE))
+        testRetryErrorTransfer(transfer, TransferEvent.StateChanged(transfer, TransferState.ERROR), times(1))
+    }
+
+    @Test
+    fun `it should ignore added transfers with non-transient errors (upload)`() {
+        val transfer = Transfer.U(randomUpload(error = UploadError.FILE_DISAPPEARED))
+        testRetryErrorTransfer(transfer, TransferEvent.Added(transfer, TransferState.ERROR), never())
+    }
+
+    @Test
+    fun `it should ignore added transfers with non-transient errors (download)`() {
+        val transfer = Transfer.D(randomDownload(error = DownloadError.NO_SPACE))
+        testRetryErrorTransfer(transfer, TransferEvent.Added(transfer, TransferState.ERROR), never())
+    }
+    
+    @Test
+    fun `it should ignore updated transfers with transient errors (upload)`() {
+        val transfer = Transfer.U(randomUpload(error = UploadError.FILE_DISAPPEARED))
+        testRetryErrorTransfer(transfer, TransferEvent.StateChanged(transfer, TransferState.ERROR), never())
+    }
+    
+    @Test
+    fun `it should ignore updated transfers with transient errors (download)`() {
+        val transfer = Transfer.D(randomDownload(error = DownloadError.NO_SPACE))
+        testRetryErrorTransfer(transfer, TransferEvent.StateChanged(transfer, TransferState.ERROR), never())
+    }
+
+    //eg: from the ui
+    @Test
+    fun `it should remove a pending retry if its error is cleared`() {
+        val upload = randomUpload(error = UploadError.NETWORK_ISSUE)
+        val transfer = Transfer.U(upload)
+
+        val manager = newManager()
+
+        val subject = getEventSubject(transfer)
+
+        subject.onNext(TransferEvent.Added(transfer, TransferState.ERROR))
+
+        val updated = Transfer.U(upload.copy(error = null))
+        subject.onNext(TransferEvent.StateChanged(updated, TransferState.QUEUED))
+
+        //FIXME
+        scheduler.advanceTimeBy(1000, TimeUnit.SECONDS)
+
+        assertErrorNeverCleared(transfer)
+    }
+
+    @Test
+    fun `it should remove a pending retry if it's removed`() {
+        val upload = randomUpload(error = UploadError.NETWORK_ISSUE)
+        val transfer = Transfer.U(upload)
+
+        val manager = newManager()
+
+        val subject = getEventSubject(transfer)
+
+        subject.onNext(TransferEvent.Added(transfer, TransferState.ERROR))
+
+        val updated = Transfer.U(upload.copy(error = null))
+        subject.onNext(TransferEvent.Removed(listOf(updated)))
+
+        //FIXME
+        scheduler.advanceTimeBy(1000, TimeUnit.SECONDS)
+
+        assertErrorNeverCleared(transfer)
     }
 }

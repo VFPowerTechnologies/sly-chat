@@ -8,16 +8,30 @@ import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.config.UserConfigService
 import nl.komponents.kovenant.Promise
+import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Scheduler
+import rx.Subscription
 import rx.subscriptions.CompositeSubscription
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class TransferManagerImpl(
     private val userConfigService: UserConfigService,
     private val uploader: Uploader,
     private val downloader: Downloader,
+    private val scheduler: Scheduler,
+    private val timerScheduler: Scheduler,
     networkStatus: Observable<Boolean>
 ) : TransferManager {
+    private class ByType(val uploadIds: List<String>, val downloadIds: List<String>)
+
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    private var subscriptions = CompositeSubscription()
+
+    private val timerSubscriptions = HashMap<String, Subscription>()
+
     override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events)
 
     override val transfers: List<TransferStatus>
@@ -33,8 +47,6 @@ class TransferManagerImpl(
     override val quota: Observable<Quota>
         get() = uploader.quota
 
-    private var subscriptions = CompositeSubscription()
-
     init {
         subscriptions += networkStatus.subscribe {
             uploader.isNetworkAvailable = it
@@ -46,6 +58,68 @@ class TransferManagerImpl(
         uploader.simulUploads = userConfigService.transfersSimulUploads
 
         subscriptions += userConfigService.updates.subscribe { onUserConfigUpdates(it) }
+
+        subscriptions += uploader.events.subscribe { onTransferEvent(it) }
+        subscriptions += downloader.events.subscribe { onTransferEvent(it) }
+    }
+
+    private fun onTransferEvent(event: TransferEvent) {
+        when (event) {
+            is TransferEvent.Added -> {
+                if (event.transfer.error?.isTransient ?: false)
+                    startRetryTimer(event.transfer)
+            }
+
+            is TransferEvent.StateChanged -> {
+                val error = event.transfer.error
+
+                if (error != null) {
+                    if (error.isTransient)
+                    startRetryTimer(event.transfer)
+                }
+                else
+                    cancelTimer(event.transfer)
+            }
+
+            is TransferEvent.Removed -> {
+                event.transfers.forEach { cancelTimer(it) }
+            }
+        }
+    }
+
+    private fun cancelTimer(transfer: Transfer) {
+        val s = timerSubscriptions[transfer.id]
+        if (s != null) {
+            s.unsubscribe()
+            timerSubscriptions.remove(transfer.id)
+        }
+    }
+
+    private fun startRetryTimer(transfer: Transfer) {
+        if (transfer.id in timerSubscriptions)
+            return
+
+        log.info("Starting retry timer for transfer {}", transfer.id)
+
+        timerSubscriptions[transfer.id] = Observable
+            .timer(30, TimeUnit.SECONDS, timerScheduler)
+            .observeOn(scheduler)
+            .subscribe { onRetryTimer(transfer) }
+    }
+
+    private fun onRetryTimer(transfer: Transfer) {
+        val id = transfer.id
+
+        timerSubscriptions.remove(id)
+
+        log.info("Attempting to retry transfer {}", id)
+
+        when (transfer) {
+            is Transfer.U -> uploader.clearError(id)
+            is Transfer.D -> downloader.clearError(id)
+        } fail {
+            log.error("Failed to clear error for transfer {}: {}", id)
+        }
     }
 
     private fun onUserConfigUpdates(keys: Collection<String>) {
@@ -59,8 +133,6 @@ class TransferManagerImpl(
             }
         }
     }
-
-    private class ByType(val uploadIds: List<String>, val downloadIds: List<String>)
 
     private fun separateByType(transferIds: List<String>): ByType {
         val uploadIds = ArrayList<String>()
@@ -85,6 +157,9 @@ class TransferManagerImpl(
 
     override fun shutdown() {
         subscriptions.clear()
+
+        timerSubscriptions.forEach { it.value.unsubscribe() }
+        timerSubscriptions.clear()
 
         uploader.shutdown()
         downloader.shutdown()

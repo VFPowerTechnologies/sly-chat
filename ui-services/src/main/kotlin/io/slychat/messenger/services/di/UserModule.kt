@@ -566,12 +566,15 @@ class UserModule(
         userConfigService: UserConfigService,
         uploader: Uploader,
         downloader: Downloader,
+        scheduler: Scheduler,
         @NetworkStatus networkStatus: Observable<Boolean>
     ): TransferManager {
         val manager = TransferManagerImpl(
             userConfigService,
             uploader,
             downloader,
+            scheduler,
+            Schedulers.computation(),
             networkStatus
         )
 
