@@ -109,6 +109,15 @@ class SQLiteDownloadPersistenceManagerTest {
     }
 
     @Test
+    fun `setState should clear any pending error`() {
+        val download = insertDownload(DownloadError.NETWORK_ISSUE)
+
+        downloadPersistenceManager.setState(download.id, DownloadState.CANCELLED).get()
+
+        assertNull(getDownload(download.id).error, "Error not cleared")
+    }
+
+    @Test
     fun `setComplete should throw InvalidDownloadException if download doesn't exist`() {
         assertFailsWith(InvalidDownloadException::class) {
             downloadPersistenceManager.setState(generateDownloadId(), DownloadState.COMPLETE).get()

@@ -68,7 +68,8 @@ WHERE
 UPDATE
     downloads
 SET
-    state = ?
+    state = ?,
+    error = null
 WHERE
     id = ?
 """

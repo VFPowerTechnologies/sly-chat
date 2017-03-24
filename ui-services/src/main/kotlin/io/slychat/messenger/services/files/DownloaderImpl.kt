@@ -218,7 +218,7 @@ class DownloaderImpl(
 
         list.updateStatus(downloadId) {
             it.copy(
-                download = it.download.copy(state = DownloadState.CANCELLED)
+                download = it.download.copy(state = DownloadState.CANCELLED, error = null)
             )
         }
 
@@ -234,7 +234,7 @@ class DownloaderImpl(
 
         list.updateStatus(downloadId) {
             it.copy(
-                download = it.download.copy(state = DownloadState.COMPLETE)
+                download = it.download.copy(state = DownloadState.COMPLETE, error = null)
             )
         }
 
