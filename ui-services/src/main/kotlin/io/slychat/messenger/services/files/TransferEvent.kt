@@ -171,4 +171,28 @@ sealed class TransferEvent {
             return "StateChanged(transfer=$transfer, state=$state)"
         }
     }
+
+    class UntilRetry(val transfer: Transfer, val remainingSecs: Long) : TransferEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != javaClass) return false
+
+            other as UntilRetry
+
+            if (transfer != other.transfer) return false
+            if (remainingSecs != other.remainingSecs) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = transfer.hashCode()
+            result = 31 * result + remainingSecs.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "UntilRetry(transfer=$transfer, remainingSecs=$remainingSecs)"
+        }
+    }
 }

@@ -10,8 +10,10 @@ import io.slychat.messenger.services.config.UserConfigService
 import nl.komponents.kovenant.Promise
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Observer
 import rx.Scheduler
 import rx.Subscription
+import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -32,7 +34,8 @@ class TransferManagerImpl(
 
     private val timerSubscriptions = HashMap<String, Subscription>()
 
-    override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events)
+    private val eventsSubject = PublishSubject.create<TransferEvent>()
+    override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events, eventsSubject)
 
     override val transfers: List<TransferStatus>
         get() {
@@ -90,6 +93,7 @@ class TransferManagerImpl(
     private fun cancelTimer(transfer: Transfer) {
         val s = timerSubscriptions[transfer.id]
         if (s != null) {
+            log.info("Cancelling retry timer for {}", transfer.id)
             s.unsubscribe()
             timerSubscriptions.remove(transfer.id)
         }
@@ -101,10 +105,28 @@ class TransferManagerImpl(
 
         log.info("Starting retry timer for transfer {}", transfer.id)
 
+        val timeoutSecs = 30L
+
         timerSubscriptions[transfer.id] = Observable
-            .timer(30, TimeUnit.SECONDS, timerScheduler)
+            .interval(1, TimeUnit.SECONDS, timerScheduler)
+            .map { it + 1 }
+            .takeUntil { it == timeoutSecs }
             .observeOn(scheduler)
-            .subscribe { onRetryTimer(transfer) }
+            .subscribe(object : Observer<Long> {
+                override fun onCompleted() {
+                    onRetryTimer(transfer)
+                }
+
+                override fun onNext(t: Long) {
+                    eventsSubject.onNext(TransferEvent.UntilRetry(transfer, timeoutSecs - t))
+                }
+
+                override fun onError(e: Throwable) {
+                    log.error("Retry interval failed: {}", e.message, e)
+                }
+            })
+
+        eventsSubject.onNext(TransferEvent.UntilRetry(transfer, timeoutSecs))
     }
 
     private fun onRetryTimer(transfer: Transfer) {

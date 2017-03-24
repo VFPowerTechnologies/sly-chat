@@ -7,13 +7,17 @@ import io.slychat.messenger.core.randomDownload
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
+import io.slychat.messenger.testutils.desc
+import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenResolveUnit
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.mockito.verification.VerificationMode
 import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
 
 class TransferManagerImplTest {
     private val userConfigService = UserConfigService(DummyConfigBackend())
@@ -158,7 +162,7 @@ class TransferManagerImplTest {
         subject.onNext(ev)
 
         //FIXME
-        scheduler.advanceTimeBy(1000, TimeUnit.SECONDS)
+        scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
 
         when (transfer) {
             is Transfer.U -> verify(uploader, times).clearError(transfer.id)
@@ -214,6 +218,45 @@ class TransferManagerImplTest {
         testRetryErrorTransfer(transfer, TransferEvent.StateChanged(transfer, TransferState.ERROR), never())
     }
 
+    @Test
+    fun `it should emit UntilRetry events while the retry timer is active`() {
+        val manager = newManager()
+
+        val transfer = Transfer.U(randomUpload(error = UploadError.NETWORK_ISSUE))
+
+        val subject = getEventSubject(transfer)
+
+        subject.onNext(TransferEvent.Added(transfer, TransferState.ERROR))
+
+        val testSubscriber = manager.events.ofType(TransferEvent.UntilRetry::class.java).testSubscriber()
+
+        //FIXME
+        scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
+
+        val events = testSubscriber.onNextEvents
+        assertThat(events).desc("Should emit retry timer events") {
+            isNotEmpty()
+        }
+    }
+
+    @Test
+    fun `it should emit a UntilRetry with inSeconds=0 when timer expires`() {
+        val manager = newManager()
+
+        val transfer = Transfer.U(randomUpload(error = UploadError.NETWORK_ISSUE))
+
+        val subject = getEventSubject(transfer)
+
+        subject.onNext(TransferEvent.Added(transfer, TransferState.ERROR))
+
+        val testSubscriber = manager.events.ofType(TransferEvent.UntilRetry::class.java).testSubscriber()
+
+        //FIXME
+        scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
+
+        assertEquals(0, testSubscriber.onNextEvents.last().remainingSecs, "Final time is incorrect")
+    }
+
     //eg: from the ui
     @Test
     fun `it should remove a pending retry if its error is cleared`() {
@@ -230,7 +273,7 @@ class TransferManagerImplTest {
         subject.onNext(TransferEvent.StateChanged(updated, TransferState.QUEUED))
 
         //FIXME
-        scheduler.advanceTimeBy(1000, TimeUnit.SECONDS)
+        scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
 
         assertErrorNeverCleared(transfer)
     }
@@ -250,7 +293,7 @@ class TransferManagerImplTest {
         subject.onNext(TransferEvent.Removed(listOf(updated)))
 
         //FIXME
-        scheduler.advanceTimeBy(1000, TimeUnit.SECONDS)
+        scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
 
         assertErrorNeverCleared(transfer)
     }

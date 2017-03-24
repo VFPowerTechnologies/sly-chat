@@ -8,7 +8,9 @@ import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.files.*
-import javafx.beans.property.ReadOnlyObjectWrapper
+import javafx.beans.binding.Bindings
+import javafx.beans.property.*
+import javafx.collections.FXCollections
 import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.control.cell.ProgressBarTableCell
@@ -22,6 +24,76 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.subscriptions.CompositeSubscription
 import java.io.File
+import java.util.concurrent.Callable
+import kotlin.reflect.KProperty
+
+private operator fun <T> Property<T>.setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+    this.value = value
+}
+
+private operator fun <T> Property<T>.getValue(thisRef: Any?, property: KProperty<*>): T {
+    return value
+}
+
+//model item used by tableview
+@Suppress("HasPlatformType")
+class TransferItem(var transfer: Transfer, var realState: TransferState) {
+    val typeProperty = SimpleStringProperty()
+    var type by typeProperty
+
+    val idProperty = SimpleStringProperty()
+    var id by idProperty
+
+    val progressProperty = SimpleDoubleProperty(0.0)
+    var progress by progressProperty
+
+    val stateProperty = SimpleStringProperty()
+    var state by stateProperty
+
+    val errorProperty = SimpleStringProperty()
+    var error by errorProperty
+
+    val untilRetryProperty = SimpleLongProperty(-1)
+    var untilRetry by untilRetryProperty
+
+    init {
+        updateTransferValues()
+        updateStateValues()
+    }
+
+    private fun updateTransferValues() {
+        val transfer = this.transfer
+        type = when (transfer) {
+            is Transfer.U -> "U"
+            is Transfer.D -> "D"
+        }
+        id = transfer.id
+        @Suppress("IMPLICIT_CAST_TO_ANY")
+        error = when (transfer) {
+            is Transfer.U -> transfer.upload.error
+            is Transfer.D -> transfer.download.error
+        }?.toString() ?: "-"
+    }
+
+    private fun updateStateValues() {
+        this.state = realState.toString()
+        untilRetry = 0
+    }
+
+    fun update(progress: TransferProgress) {
+        this.progress = progress.transferedBytes.toDouble() / progress.totalBytes
+    }
+
+    fun update(state: TransferState) {
+        this.realState = state
+        updateStateValues()
+    }
+
+    fun update(transfer: Transfer) {
+        this.transfer = transfer
+        updateTransferValues()
+    }
+}
 
 class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -32,7 +104,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
 
     private val doCacheCheckBox: CheckBox
 
-    private val transferTableView: TableView<TransferStatus>
+    private val transferTableView: TableView<TransferItem>
     private val fileTableView: TableView<RemoteFile>
 
     private val subscriptions = CompositeSubscription()
@@ -52,6 +124,8 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     private val quotaLabel = Label("0/0")
     //kinda hacky but w/e
     private val quotaBar = ProgressBar()
+
+    private val currentTransfers = FXCollections.observableArrayList<TransferItem>()
 
     init {
         val root = VBox()
@@ -93,7 +167,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
 
         initTransfersContextMenu()
 
-        transferTableView = TableView()
+        transferTableView = TableView(currentTransfers)
         initTransferTable()
         root.children.add(transferTableView)
 
@@ -114,12 +188,12 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
         }
     }
 
-    private fun getSelectedStatuses(): List<TransferStatus> {
-        return transferTableView.selectionModel.selectedItems
+    private fun getSelectedStatuses(): List<Transfer> {
+        return transferTableView.selectionModel.selectedItems.map { it.transfer }
     }
 
-    private fun getSelectedStatus(): TransferStatus {
-        return transferTableView.selectionModel.selectedItem
+    private fun getSelectedStatus(): Transfer {
+        return transferTableView.selectionModel.selectedItem.transfer
     }
 
     private fun onTransferRemoveSelected() {
@@ -154,10 +228,16 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
             uc.storageService.retry(status.id)
         }
 
+        val errorCancel = MenuItem("Cancel")
+        errorCancel.setOnAction {
+            uc.storageService.cancel(getSelectedStatuses().map { it.id })
+        }
+
         val errorRemove = MenuItem("Remove")
         errorRemove.setOnAction { onTransferRemoveSelected() }
 
-        errorTransferContextMenu.items.addAll(retry, errorRemove)
+        //XXX for uploads, this shouldn't display remove, only cancel
+        errorTransferContextMenu.items.addAll(retry, errorCancel, errorRemove)
 
         val cancelRemove = MenuItem("Remove")
         cancelRemove.setOnAction { onTransferRemoveSelected() }
@@ -250,45 +330,48 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     }
 
     private fun initTransferTable() {
-        val typeCol = TableColumn<TransferStatus, String>("Type")
+        val typeCol = TableColumn<TransferItem, String>("Type")
         typeCol.setCellValueFactory {
-            ReadOnlyObjectWrapper(when (it.value.transfer) {
-                is Transfer.U -> "U"
-                is Transfer.D -> "D"
-            })
+            it.value.typeProperty
         }
 
-        val idCol = TableColumn<TransferStatus, String>("ID")
+        val idCol = TableColumn<TransferItem, String>("ID")
         idCol.setCellValueFactory {
-            ReadOnlyObjectWrapper(it.value.id)
+            it.value.idProperty
         }
         idCol.prefWidth = 250.0
 
-        val progressCol = TableColumn<TransferStatus, Double>("Progress")
+        val progressCol = TableColumn<TransferItem, Double>("Progress")
         progressCol.setCellValueFactory {
-            val progress = it.value.progress
-            ReadOnlyObjectWrapper(progress.transferedBytes.toDouble() / progress.totalBytes)
+            it.value.progressProperty.asObject()
         }
 
-        progressCol.setCellFactory {
-            ProgressBarTableCell()
-        }
+        progressCol.cellFactory = ProgressBarTableCell.forTableColumn()
 
-        val stateCol = TableColumn<TransferStatus, String>("State")
-        stateCol.setCellValueFactory { ReadOnlyObjectWrapper(it.value.state.toString()) }
+        val stateCol = TableColumn<TransferItem, String>("State")
+        stateCol.setCellValueFactory { it.value.stateProperty }
         stateCol.prefWidth = 110.0
 
-        val errorCol = TableColumn<TransferStatus, String>("Error")
+        val errorCol = TableColumn<TransferItem, String>("Error")
         errorCol.setCellValueFactory {
-            val transfer = it.value.transfer
-            ReadOnlyObjectWrapper(when (transfer) {
-                is Transfer.U -> transfer.upload.error
-                is Transfer.D -> transfer.download.error
-            }?.toString() ?: "-")
+            it.value.errorProperty
         }
         errorCol.prefWidth = 180.0
 
-        transferTableView.columns.addAll(typeCol, idCol, progressCol, stateCol, errorCol)
+        val retryCol = TableColumn<TransferItem, String>("Retry in")
+        retryCol.setCellValueFactory {
+            //XXX this is stupid
+            Bindings.createStringBinding(Callable {
+                val s = it.value.untilRetry
+
+                if (s.toLong() > 0)
+                   "${it.value.untilRetry}s"
+                else
+                    ""
+            }, it.value.untilRetryProperty)
+        }
+
+        transferTableView.columns.addAll(typeCol, idCol, progressCol, stateCol, errorCol, retryCol)
 
         val tableContextMenu = ContextMenu()
         val clearComplete = MenuItem("Clear complete")
@@ -296,13 +379,13 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
         tableContextMenu.items.addAll(clearComplete)
 
         transferTableView.setRowFactory {
-            val row = TableRow<TransferStatus>()
+            val row = TableRow<TransferItem>()
 
             row.setOnContextMenuRequested { ev ->
-                val status = row.item
+                val item = row.item
 
-                val contextMenu = if (status != null)
-                    getTransferContextMenu(status.state)
+                val contextMenu = if (item != null)
+                    getTransferContextMenu(item.realState)
                 else
                     tableContextMenu
 
@@ -381,12 +464,14 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     private fun refreshTransfers() {
         clearTransfers()
         uc.storageService.transfers.forEach {
-            transferTableView.items.add(it)
+            val item = TransferItem(it.transfer, it.state)
+            item.update(it.progress)
+            currentTransfers.add(item)
         }
     }
 
     private fun clearTransfers() {
-        transferTableView.items.clear()
+        currentTransfers.clear()
     }
 
     private fun clearFiles() {
@@ -417,22 +502,34 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     }
 
     private fun onTransferEvent(ev: TransferEvent) {
+        @Suppress("IMPLICIT_CAST_TO_ANY")
         when (ev) {
             is TransferEvent.Added -> {
-                refreshTransfers()
+                currentTransfers.add(TransferItem(ev.transfer, ev.state))
             }
 
             is TransferEvent.StateChanged -> {
-                refreshTransfers()
+                val item = currentTransfers.find { it.transfer.id == ev.transfer.id }
+                item?.apply {
+                    update(ev.state)
+                    //error might be reset here
+                    update(ev.transfer)
+                }
             }
 
             is TransferEvent.Progress -> {
-                refreshTransfers()
+                val item = currentTransfers.find { it.transfer.id == ev.transfer.id }
+                item?.update(ev.progress)
             }
 
             is TransferEvent.Removed -> {
-                println("${ev.transfers} were removed")
-                refreshTransfers()
+                val removedIds = ev.transfers.map { it.id }.toSet()
+                currentTransfers.removeAll { it.transfer.id in removedIds }
+            }
+
+            is TransferEvent.UntilRetry -> {
+                val item = currentTransfers.find { it.transfer.id == ev.transfer.id }
+                item?.untilRetry = ev.remainingSecs
             }
         }.enforceExhaustive()
     }
