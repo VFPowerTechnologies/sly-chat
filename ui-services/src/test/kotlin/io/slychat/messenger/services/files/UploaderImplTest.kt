@@ -871,7 +871,6 @@ class UploaderImplTest {
         val uploader = newUploaderWithUpload(info)
         uploader.cancel(uploadId)
 
-        verify(uploadPersistenceManager).setError(info.upload.id, null)
         assertNull(assertNotNull(uploader.get(uploadId)).upload.error, "Cached error not cleared")
     }
 
@@ -932,6 +931,18 @@ class UploaderImplTest {
         uploader.cancel(uploadId)
 
         verify(uploadPersistenceManager, never()).setState(any(), any())
+    }
+
+    @Test
+    fun `cancel should move an inactive errored non-PENDING transfer back to the queue`() {
+        val info = randomUploadInfo(error = UploadError.NETWORK_ISSUE, state = UploadState.CREATED)
+        val uploader = newUploaderWithUpload(info)
+
+        val uploadId = info.upload.id
+
+        uploader.cancel(uploadId)
+
+        uploadOperations.assertCancelCalled(uploadId)
     }
 
     @Test

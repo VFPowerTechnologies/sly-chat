@@ -449,24 +449,29 @@ class UploaderImpl(
         }
     }
 
+    private fun onErrorCleared(uploadId: String) {
+        list.inactive.remove(uploadId)
+        list.queued.add(uploadId)
+
+        val status = list.updateStatus(uploadId) {
+            it.copy(
+                upload = it.upload.copy(error = null),
+                state = TransferState.QUEUED
+            )
+        }
+
+        subject.onNext(TransferEvent.StateChanged(status.upload, status.state))
+
+        startNextUpload()
+
+    }
+
     override fun clearError(uploadId: String): Promise<Unit, Exception> {
         if (list.getStatus(uploadId).state != TransferState.ERROR)
             return Promise.ofSuccess(Unit)
 
         return uploadPersistenceManager.setError(uploadId, null) successUi {
-            list.inactive.remove(uploadId)
-            list.queued.add(uploadId)
-
-            val status = list.updateStatus(uploadId) {
-                it.copy(
-                    upload = it.upload.copy(error = null),
-                    state = TransferState.QUEUED
-                )
-            }
-
-            subject.onNext(TransferEvent.StateChanged(status.upload, status.state))
-
-            startNextUpload()
+            onErrorCleared(uploadId)
         }
     }
 
@@ -520,25 +525,22 @@ class UploaderImpl(
         @Suppress("IMPLICIT_CAST_TO_ANY")
         when (status.upload.state) {
             //hasn't been pushed remotely yet, so just cancel it
-            UploadState.PENDING -> moveUploadToState(uploadId, TransferState.CANCELLED, UploadState.CANCELLED)
+            UploadState.PENDING -> {
+                moveUploadToState(uploadId, TransferState.CANCELLED, UploadState.CANCELLED)
 
-            UploadState.CREATED -> moveUploadToCancellingState(uploadId)
+                list.queued.remove(uploadId)
+                list.inactive.add(uploadId)
+            }
 
             //TODO handle cached file deletion somehow
-            UploadState.CACHING -> moveUploadToCancellingState(uploadId)
+            UploadState.CREATED, UploadState.CACHING -> {
+                //TODO we actually wanna move out of the queue while we update; or update then persist, which is a better idea
+                moveUploadToCancellingState(uploadId)
+            }
 
             //do nothing
-            UploadState.COMPLETE -> {}
-
-            //do nothing
-            UploadState.CANCELLING -> TODO()
-
-            //do nothing
-            UploadState.CANCELLED -> TODO()
+            UploadState.COMPLETE, UploadState.CANCELLING, UploadState.CANCELLED -> {}
         }.enforceExhaustive()
-
-        list.queued.remove(uploadId)
-        list.inactive.add(uploadId)
     }
 
     private fun attemptCancelError(status: UploadStatus) {
@@ -548,9 +550,7 @@ class UploaderImpl(
         when (status.upload.state) {
             UploadState.CACHING, UploadState.CREATED, UploadState.CANCELLING -> {
                 moveUploadToCancellingState(uploadId) successUi {
-                    clearError(uploadId) failUi {
-                        log.error("Failed to clear error for {}: {}", uploadId, it.message, it)
-                    }
+                    onErrorCleared(uploadId)
                 }
             }
 
