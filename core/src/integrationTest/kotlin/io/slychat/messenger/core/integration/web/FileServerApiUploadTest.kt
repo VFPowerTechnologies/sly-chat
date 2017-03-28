@@ -3,6 +3,7 @@ package io.slychat.messenger.core.integration.web
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateUploadId
+import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClient
@@ -48,7 +49,7 @@ class FileServerApiUploadTest {
     }
 
     private fun newClient(): UploadClientImpl {
-        return UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
+        return UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient(HttpClientConfig(5000, 5000)))
     }
 
     private fun getSingleNewUploadRequest(): NewUploadRequest {

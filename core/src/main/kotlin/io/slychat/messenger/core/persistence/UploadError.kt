@@ -11,6 +11,10 @@ enum class UploadError(override val isTransient: Boolean) : TransferError {
     DUPLICATE_FILE(false),
     //things like disconnection, etc
     NETWORK_ISSUE(true),
+    //503 from server
+    SERVICE_UNAVAILABLE(true),
+    //too many uploads for this user
+    MAX_UPLOADS_EXCEEDED(false),
     //not really sure whether to mark this transient or not
     UNKNOWN(true)
 }

@@ -32,17 +32,19 @@ private fun <T> readValueOrThrowInvalid(response: HttpResponse, typeReference: T
 
 internal fun <T> throwApiException(response: HttpResponse, typeReference: TypeReference<ApiResult<T>>): Nothing {
    when (response.code) {
-        401 ->
-            throw UnauthorizedException()
-        409 ->
-            throw ResourceConflictException()
-        429 ->
-            throw TooManyRequestsException()
-        in 500..599 -> {
-            val apiValue = readValueOrThrowInvalid(response, typeReference)
-            throw ServerErrorException(response, apiValue.error)
-        }
-        else -> throw UnexpectedResponseException(response)
+       401 ->
+           throw UnauthorizedException()
+       409 ->
+           throw ResourceConflictException()
+       429 ->
+           throw TooManyRequestsException()
+       503 ->
+           throw ServiceUnavailableException()
+       in 500..599 -> {
+           val apiValue = readValueOrThrowInvalid(response, typeReference)
+           throw ServerErrorException(response, apiValue.error)
+       }
+       else -> throw UnexpectedResponseException(response)
     }
 }
 

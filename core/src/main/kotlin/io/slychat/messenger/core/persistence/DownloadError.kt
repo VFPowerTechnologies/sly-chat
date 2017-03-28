@@ -9,6 +9,8 @@ enum class DownloadError(override val isTransient: Boolean) : TransferError {
     CORRUPTED(false),
     //things like disconnection, etc
     NETWORK_ISSUE(true),
+    //503 from server
+    SERVICE_UNAVAILABLE(true),
     //occurs if downloading a file encrypted with a cipher this version of Sly doesn't support
     UNKNOWN_CIPHER(false),
     //not really sure whether to mark this transient or not

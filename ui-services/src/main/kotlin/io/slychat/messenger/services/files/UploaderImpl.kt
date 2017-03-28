@@ -3,6 +3,7 @@ package io.slychat.messenger.services.files
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.enforceExhaustive
+import io.slychat.messenger.core.http.api.ServiceUnavailableException
 import io.slychat.messenger.core.http.api.upload.NewUploadError
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.*
@@ -323,6 +324,10 @@ class UploaderImpl(
 
             is UploadCorruptedException -> UploadError.CORRUPTED
 
+            is MaxUploadsExceededException -> UploadError.MAX_UPLOADS_EXCEEDED
+
+            is ServiceUnavailableException -> UploadError.SERVICE_UNAVAILABLE
+
             else -> {
                 if (isNotNetworkError(e))
                     UploadError.UNKNOWN
@@ -432,6 +437,9 @@ class UploaderImpl(
 
                 NewUploadError.DUPLICATE_FILE ->
                     throw DuplicateFilePathException(file.userMetadata.directory, file.userMetadata.fileName)
+
+                NewUploadError.MAX_UPLOADS_EXCEEDED ->
+                    throw MaxUploadsExceededException()
 
                 null -> {}
             }.enforceExhaustive()
