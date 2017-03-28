@@ -1,4 +1,4 @@
-package io.slychat.messenger.core.integration.web
+package io.slychat.messenger.core.integration.utils
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

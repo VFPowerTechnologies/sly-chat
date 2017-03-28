@@ -1,4 +1,4 @@
-package io.slychat.messenger.core.integration.web
+package io.slychat.messenger.core.integration.utils
 
 import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.SlyAddress
@@ -6,7 +6,6 @@ import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.get
 import io.slychat.messenger.core.persistence.sqlite.JSONMapper
-import org.junit.Assume
 import java.net.ConnectException
 
 val serverBaseUrl = "http://localhost:8000"
@@ -19,18 +18,18 @@ val defaultRegistrationId = 12345
 
 fun isDevServerRunning() {
     try {
-        val response = JavaHttpClient().get("$serverBaseUrl/dev")
+        val response = JavaHttpClient().get("${serverBaseUrl}/dev")
         if (response.code == 404)
             throw ServerDevModeDisabledException()
     }
     catch (e: ConnectException) {
-        Assume.assumeTrue(false)
+        org.junit.Assume.assumeTrue(false)
     }
 }
 
 fun isDevFileServerRunning(): FileServerDevResponse {
     return try {
-        val response = JavaHttpClient().get("$fileServerBaseUrl/dev")
+        val response = JavaHttpClient().get("${fileServerBaseUrl}/dev")
         if (response.code == 404)
             throw ServerDevModeDisabledException()
 
@@ -38,7 +37,7 @@ fun isDevFileServerRunning(): FileServerDevResponse {
     }
     catch (e: ConnectException) {
         //never returns
-        Assume.assumeTrue(false)
+        org.junit.Assume.assumeTrue(false)
         throw e
     }
 }

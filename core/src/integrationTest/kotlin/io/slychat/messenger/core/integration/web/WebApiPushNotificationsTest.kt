@@ -5,6 +5,7 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationsClient
 import io.slychat.messenger.core.http.api.pushnotifications.UnregisterRequest
+import io.slychat.messenger.core.integration.utils.*
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -26,7 +27,7 @@ class WebApiPushNotificationsTest {
     }
 
     fun checkGCMTokenStatus(user: SiteUser, exists: Boolean) {
-        val client = PushNotificationsClient(serverBaseUrl, JavaHttpClient())
+        val client = PushNotificationsClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(user.email)
 
@@ -41,7 +42,7 @@ class WebApiPushNotificationsTest {
 
         val token = "gcm"
 
-        val deviceId = devClient.addDevice(userA.email, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(userA.email, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         devClient.registerPushNotificationToken(userA.email, deviceId, token, null, PushNotificationService.GCM)
 
@@ -60,11 +61,11 @@ class WebApiPushNotificationsTest {
         val user = userManagement.injectNamedSiteUser("a@a.com").user
         val token = "gcm"
 
-        val deviceId = devClient.addDevice(user.email, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(user.email, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val unregistrationToken = devClient.registerPushNotificationToken(user.email, deviceId, token, null, PushNotificationService.GCM)
 
-        val client = PushNotificationsClient(serverBaseUrl, JavaHttpClient())
+        val client = PushNotificationsClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
         client.unregister(UnregisterRequest(SlyAddress(user.id, deviceId), unregistrationToken))
 
         checkGCMTokenStatus(user, false)

@@ -4,6 +4,7 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.storage.*
+import io.slychat.messenger.core.integration.utils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -55,7 +56,7 @@ class WebApiStorageTest {
     fun `getFileList should return the user's quota`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
         val username = user.user.email
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val authToken = devClient.createAuthToken(username, deviceId)
 
@@ -71,7 +72,7 @@ class WebApiStorageTest {
     fun `getFileList should return the user's file list`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
         val username = user.user.email
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val lastUpdateVersion = 1L
 

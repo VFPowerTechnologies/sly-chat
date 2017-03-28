@@ -4,7 +4,7 @@ import org.junit.rules.ExternalResource
 
 class IsDevServerRunningClassRule : ExternalResource() {
     override fun before() {
-        isDevServerRunning()
+        io.slychat.messenger.core.integration.utils.isDevServerRunning()
     }
 }
 

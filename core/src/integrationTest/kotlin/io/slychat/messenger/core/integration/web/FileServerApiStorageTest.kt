@@ -8,6 +8,10 @@ import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.http.api.storage.StorageClientImpl
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
+import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.SiteUserManagement
+import io.slychat.messenger.core.integration.utils.newAuthUser
+import io.slychat.messenger.core.integration.utils.serverBaseUrl
 import org.assertj.core.api.Assertions
 import org.junit.*
 import java.io.ByteArrayInputStream
@@ -29,7 +33,7 @@ class FileServerApiStorageTest {
         @BeforeClass
         @JvmStatic
         fun beforeClass() {
-            val devSettings = isDevFileServerRunning()
+            val devSettings = io.slychat.messenger.core.integration.utils.isDevFileServerRunning()
 
             isStorageEnabled = devSettings.storageEnabled
         }
@@ -50,7 +54,7 @@ class FileServerApiStorageTest {
     }
 
     private fun newClient(): StorageClient {
-        return StorageClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
+        return StorageClientImpl(serverBaseUrl, io.slychat.messenger.core.integration.utils.fileServerBaseUrl, JavaHttpClient())
     }
 
     @Test
@@ -72,7 +76,7 @@ class FileServerApiStorageTest {
     private fun uploadFile(userCredentials: UserCredentials, fileData: ByteArray): String {
         val partSize = fileData.size.toLong()
 
-        val client = UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient())
+        val client = UploadClientImpl(serverBaseUrl, io.slychat.messenger.core.integration.utils.fileServerBaseUrl, JavaHttpClient())
 
         val fileId = generateFileId()
 

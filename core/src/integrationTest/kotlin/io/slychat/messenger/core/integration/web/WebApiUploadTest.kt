@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.storage.FileInfo
 import io.slychat.messenger.core.http.api.upload.*
+import io.slychat.messenger.core.integration.utils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule

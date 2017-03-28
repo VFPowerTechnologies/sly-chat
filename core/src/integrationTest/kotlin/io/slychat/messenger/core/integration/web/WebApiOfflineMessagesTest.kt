@@ -6,6 +6,7 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesClearRequest
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesClient
 import io.slychat.messenger.core.http.api.offline.SerializedOfflineMessage
+import io.slychat.messenger.core.integration.utils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -39,11 +40,11 @@ class WebApiOfflineMessagesTest {
 
         fromUser = userManagement.injectNamedSiteUser("a@a.com")
         fromUserId = fromUser.user.id
-        fromDeviceId = devClient.addDevice(fromUser.user.email, defaultRegistrationId, DeviceState.ACTIVE)
+        fromDeviceId = devClient.addDevice(fromUser.user.email, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         toUser = userManagement.injectNamedSiteUser("b@a.com")
         toUserId = toUser.user.id
-        toDeviceId = devClient.addDevice(toUser.user.email, defaultRegistrationId, DeviceState.ACTIVE)
+        toDeviceId = devClient.addDevice(toUser.user.email, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
     }
 
     private fun insertMessages(n: Int = 3): List<SerializedOfflineMessage> {
@@ -62,7 +63,7 @@ class WebApiOfflineMessagesTest {
     fun `should return all stored offline messages`() {
         val offlineMessages = insertMessages()
 
-        val client = OfflineMessagesClient(serverBaseUrl, JavaHttpClient())
+        val client = OfflineMessagesClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(toUser.user.email)
 
@@ -76,7 +77,7 @@ class WebApiOfflineMessagesTest {
 
     @Test
     fun `deletion should only remove the specified range`() {
-        val client = OfflineMessagesClient(serverBaseUrl, JavaHttpClient())
+        val client = OfflineMessagesClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(toUser.user.email)
         val userCredentials = toUser.getUserCredentials(authToken)

@@ -2,6 +2,10 @@ package io.slychat.messenger.core.integration.web
 
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.contacts.*
+import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.SiteUserManagement
+import io.slychat.messenger.core.integration.utils.getUserCredentials
+import io.slychat.messenger.core.integration.utils.serverBaseUrl
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry
@@ -44,7 +48,7 @@ class WebApiAddressBookTest {
 
         devClient.addAddressBookEntries(userA.user.email, contactList)
 
-        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.email)
 
@@ -71,7 +75,7 @@ class WebApiAddressBookTest {
         val aContacts = encryptRemoteAddressBookEntries(userA.keyVault, listOf(AddressBookUpdate.Contact(userB.user.id, AllowedMessageLevel.ALL)))
         val localHash = hashFromRemoteAddressBookEntries(aContacts)
 
-        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
         val userCredentials = userA.getUserCredentials(authToken)
         client.update(userCredentials, UpdateAddressBookRequest(localHash, aContacts))
 
@@ -92,10 +96,10 @@ class WebApiAddressBookTest {
         devClient.addAddressBookEntries(userA.user.email, aContacts)
         devClient.addAddressBookEntries(userB.user.email, bContacts)
 
-        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.email)
-        val response = client.get(userA.getUserCredentials(authToken), GetAddressBookRequest(emptyMd5))
+        val response = client.get(userA.getUserCredentials(authToken), GetAddressBookRequest(io.slychat.messenger.core.integration.utils.emptyMd5))
 
         assertAddressBookEquals(aContacts, response.entries)
     }
@@ -110,7 +114,7 @@ class WebApiAddressBookTest {
 
         devClient.addAddressBookEntries(username, contacts)
 
-        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val currentHash = devClient.getAddressBookHash(username)
 
@@ -129,7 +133,7 @@ class WebApiAddressBookTest {
         val userB = userManagement.injectNamedSiteUser("b@a.com")
         val userC = userManagement.injectNamedSiteUser("c@a.com")
 
-        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.email)
 
@@ -159,7 +163,7 @@ class WebApiAddressBookTest {
 
         devClient.addAddressBookEntries(userA.user.email, contactList.subList(0, contactList.size))
 
-        val client = AddressBookClient(serverBaseUrl, JavaHttpClient())
+        val client = AddressBookClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val authToken = devClient.createAuthToken(userA.user.email)
 

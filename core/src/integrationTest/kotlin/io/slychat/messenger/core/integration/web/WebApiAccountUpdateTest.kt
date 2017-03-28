@@ -4,6 +4,10 @@ import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.http.api.registration.RegistrationClient
+import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.SiteUserManagement
+import io.slychat.messenger.core.integration.utils.getUserCredentials
+import io.slychat.messenger.core.integration.utils.serverBaseUrl
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -31,7 +35,7 @@ class WebApiAccountUpdateTest {
     fun `Update Phone should succeed when right password is provided`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
 
-        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
+        val client = RegistrationClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val newPhoneNumber = "123453456"
 
@@ -49,7 +53,7 @@ class WebApiAccountUpdateTest {
     fun `Update Phone should fail when wrong password is provided`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
 
-        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
+        val client = RegistrationClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val request = UpdatePhoneRequest(user.user.email, "wrongPassword", "1111111111")
         val response = client.updatePhone(request)
@@ -67,7 +71,7 @@ class WebApiAccountUpdateTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+        val client = AccountUpdateClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val newEmail = "b@b.com"
 
@@ -85,7 +89,7 @@ class WebApiAccountUpdateTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+        val client = AccountUpdateClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val newEmail = "b@b.com"
 
@@ -101,7 +105,7 @@ class WebApiAccountUpdateTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+        val client = AccountUpdateClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val newName = "newName"
 
@@ -118,7 +122,7 @@ class WebApiAccountUpdateTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+        val client = AccountUpdateClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val newPhone = "12345678901"
 
@@ -142,7 +146,7 @@ class WebApiAccountUpdateTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = AccountUpdateClient(serverBaseUrl, JavaHttpClient())
+        val client = AccountUpdateClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val newPhone = "2222222222"
 

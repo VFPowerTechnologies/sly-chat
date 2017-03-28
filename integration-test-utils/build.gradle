@@ -1,0 +1,20 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
+    }
+}
+
+apply plugin: 'kotlin'
+
+dependencies {
+    compile "com.fasterxml.jackson.core:jackson-annotations:$versions.jackson"
+    compile "com.fasterxml.jackson.core:jackson-databind:$versions.jackson"
+    compile "joda-time:joda-time:$versions.jodaTime"
+    compile "junit:junit:$versions.junit"
+
+    compile project(':core')
+}

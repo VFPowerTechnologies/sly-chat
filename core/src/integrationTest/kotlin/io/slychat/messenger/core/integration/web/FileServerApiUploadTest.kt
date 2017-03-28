@@ -8,6 +8,10 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
+import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.newAuthUser
+import io.slychat.messenger.core.integration.utils.serverBaseUrl
+import io.slychat.messenger.core.integration.utils.SiteUserManagement
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
@@ -30,7 +34,7 @@ class FileServerApiUploadTest {
         @BeforeClass
         @JvmStatic
         fun beforeClass() {
-            val devSettings = isDevFileServerRunning()
+            val devSettings = io.slychat.messenger.core.integration.utils.isDevFileServerRunning()
 
             isStorageEnabled = devSettings.storageEnabled
             //min part size for s3 (excluding final part) is 5mb
@@ -49,7 +53,7 @@ class FileServerApiUploadTest {
     }
 
     private fun newClient(): UploadClientImpl {
-        return UploadClientImpl(serverBaseUrl, fileServerBaseUrl, JavaHttpClient(HttpClientConfig(5000, 5000)))
+        return UploadClientImpl(io.slychat.messenger.core.integration.utils.serverBaseUrl, io.slychat.messenger.core.integration.utils.fileServerBaseUrl, JavaHttpClient(HttpClientConfig(5000, 5000)))
     }
 
     private fun getSingleNewUploadRequest(): NewUploadRequest {

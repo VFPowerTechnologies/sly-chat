@@ -4,6 +4,9 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.accountreset.ResetAccountClient
 import io.slychat.messenger.core.http.api.accountreset.ResetAccountRequest
 import io.slychat.messenger.core.http.api.accountreset.ResetConfirmCodeRequest
+import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.serverBaseUrl
+import io.slychat.messenger.core.integration.utils.SiteUserManagement
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -29,7 +32,7 @@ class WebApiResetAccountTest {
     fun `Start Reset Request should succeed when an account exist for the given email`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
 
-        val client = ResetAccountClient(serverBaseUrl, JavaHttpClient())
+        val client = ResetAccountClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val request = ResetAccountRequest(user.user.email)
         val response = client.resetAccount(request)
@@ -41,7 +44,7 @@ class WebApiResetAccountTest {
     fun `Reset phone Request should succeed when an account exist for the given email and the right code is provided`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
 
-        val client = ResetAccountClient(serverBaseUrl, JavaHttpClient())
+        val client = ResetAccountClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val request = ResetAccountRequest(user.user.email)
         val response = client.resetAccount(request)
@@ -59,7 +62,7 @@ class WebApiResetAccountTest {
     fun `Reset email Request should succeed when an account exist for the given email and the right code is provided`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
 
-        val client = ResetAccountClient(serverBaseUrl, JavaHttpClient())
+        val client = ResetAccountClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val request = ResetAccountRequest(user.user.email)
         val response = client.resetAccount(request)
@@ -77,7 +80,7 @@ class WebApiResetAccountTest {
     fun `Full reset request should succeed when an account exist for the given email and the right code is provided`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
 
-        val client = ResetAccountClient(serverBaseUrl, JavaHttpClient())
+        val client = ResetAccountClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val request = ResetAccountRequest(user.user.email)
         val response = client.resetAccount(request)
@@ -101,7 +104,7 @@ class WebApiResetAccountTest {
     fun `Start Reset Request should succeed when an account exist for the given phoneNumber`() {
         val user = userManagement.injectNamedSiteUser("a@a.com", "1234567890")
 
-        val client = ResetAccountClient(serverBaseUrl, JavaHttpClient())
+        val client = ResetAccountClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val request = ResetAccountRequest(user.user.phoneNumber)
         val response = client.resetAccount(request)
@@ -113,7 +116,7 @@ class WebApiResetAccountTest {
     fun `Start Reset Request should fail when an account does not exist for the given phoneNumber`() {
         val user = userManagement.injectNamedSiteUser("a@a.com", "1234567890")
 
-        val client = ResetAccountClient(serverBaseUrl, JavaHttpClient())
+        val client = ResetAccountClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val phone = "01234567890"
 
@@ -127,7 +130,7 @@ class WebApiResetAccountTest {
     fun `Start Reset Request should fail when an account does not exist for the given email`() {
         val user = userManagement.injectNamedSiteUser("a@a.com")
 
-        val client = ResetAccountClient(serverBaseUrl, JavaHttpClient())
+        val client = ResetAccountClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val email = "b@b.com"
 

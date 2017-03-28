@@ -8,6 +8,7 @@ import io.slychat.messenger.core.http.api.authentication.AuthenticationClient
 import io.slychat.messenger.core.http.api.authentication.AuthenticationRequest
 import io.slychat.messenger.core.http.api.authentication.AuthenticationResponse
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
+import io.slychat.messenger.core.integration.utils.*
 import io.slychat.messenger.core.randomAuthToken
 import org.assertj.core.api.Assertions
 import org.junit.Before
@@ -39,7 +40,7 @@ class WebApiAuthenticationTest {
     fun sendAuthRequestForUser(userA: GeneratedSiteUser, deviceId: Int): AuthenticationResponse {
         val username = userA.user.email
 
-        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
+        val client = AuthenticationClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val paramsApiResult = client.getParams(username)
         assertTrue(paramsApiResult.isSuccess, "Unable to fetch params")
@@ -122,7 +123,7 @@ class WebApiAuthenticationTest {
         val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
         val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 
-        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
+        val client = AuthenticationClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.refreshToken(siteUser.getUserCredentials(authToken))
 
@@ -139,7 +140,7 @@ class WebApiAuthenticationTest {
 
         devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
 
-        val client = AuthenticationClient(serverBaseUrl, JavaHttpClient())
+        val client = AuthenticationClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         assertFailsWith(UnauthorizedException::class) {
             client.refreshToken(siteUser.getUserCredentials(randomAuthToken()))

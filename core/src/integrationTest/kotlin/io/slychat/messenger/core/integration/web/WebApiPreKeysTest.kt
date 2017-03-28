@@ -9,6 +9,8 @@ import io.slychat.messenger.core.crypto.signal.generatePrekeys
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.ApiException
 import io.slychat.messenger.core.http.api.prekeys.*
+import io.slychat.messenger.core.integration.*
+import io.slychat.messenger.core.integration.utils.*
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -46,7 +48,7 @@ class WebApiPreKeysTest {
         val siteUser = userManagement.injectNewSiteUser()
         val username = siteUser.user.email
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 
@@ -54,7 +56,7 @@ class WebApiPreKeysTest {
 
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId, maxCount)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.getInfo(siteUser.getUserCredentials(authToken))
 
@@ -67,9 +69,9 @@ class WebApiPreKeysTest {
         val keyVault = generateNewKeyVault(password)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(io.slychat.messenger.core.integration.utils.defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         assertFailsWith(UnauthorizedException::class) {
             client.store(invalidUserCredentials, request)
@@ -107,14 +109,14 @@ class WebApiPreKeysTest {
         val keyVault = siteUser.keyVault
         val username = siteUser.user.email
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val authToken = devClient.createAuthToken(username, deviceId)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(io.slychat.messenger.core.integration.utils.defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertTrue(response.isSuccess)
@@ -131,9 +133,9 @@ class WebApiPreKeysTest {
         val authToken = devClient.createAuthToken(username)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(io.slychat.messenger.core.integration.utils.defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken), request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -145,14 +147,14 @@ class WebApiPreKeysTest {
         val keyVault = siteUser.keyVault
         val username = siteUser.user.email
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.INACTIVE)
 
         val authToken = devClient.createAuthToken(username, deviceId)
         val (generatedPreKeys, lastResortPreKey) = generatePreKeysForRequest(keyVault)
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(io.slychat.messenger.core.integration.utils.defaultRegistrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertFalse(response.isSuccess, "Upload succeeded")
@@ -163,7 +165,7 @@ class WebApiPreKeysTest {
         val siteUser = userManagement.injectNewSiteUser()
         val keyVault = siteUser.keyVault
         val username = siteUser.user.email
-        val registrationId = defaultRegistrationId
+        val registrationId = io.slychat.messenger.core.integration.utils.defaultRegistrationId
 
         val deviceId = devClient.addDevice(username, registrationId, DeviceState.PENDING)
 
@@ -172,7 +174,7 @@ class WebApiPreKeysTest {
 
         val request = preKeyStorageRequestFromGeneratedPreKeys(registrationId, keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.store(siteUser.getUserCredentials(authToken, deviceId), request)
         assertTrue(response.isSuccess, "Upload failed: ${response.errorMessage}")
@@ -187,7 +189,7 @@ class WebApiPreKeysTest {
         val siteUser = userManagement.injectNewSiteUser()
         val username = siteUser.user.email
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 
@@ -196,9 +198,9 @@ class WebApiPreKeysTest {
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId, maxCount+1)
         val lastResortPreKey = generateLastResortPreKey()
 
-        val request = preKeyStorageRequestFromGeneratedPreKeys(defaultRegistrationId, siteUser.keyVault, generatedPreKeys, lastResortPreKey)
+        val request = preKeyStorageRequestFromGeneratedPreKeys(io.slychat.messenger.core.integration.utils.defaultRegistrationId, siteUser.keyVault, generatedPreKeys, lastResortPreKey)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val exception = assertFailsWith<ApiException> {
             client.store(siteUser.getUserCredentials(authToken, deviceId), request)
@@ -211,7 +213,7 @@ class WebApiPreKeysTest {
     fun `prekey retrieval should fail when an invalid auth token is used`() {
         val siteUser = userManagement.injectNewSiteUser()
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
         assertFailsWith(UnauthorizedException::class) {
             client.retrieve(invalidUserCredentials, PreKeyRetrievalRequest(siteUser.user.id, listOf()))
         }
@@ -225,11 +227,11 @@ class WebApiPreKeysTest {
         val requestingSiteUser = userManagement.injectNamedSiteUser("b@a.com")
         val requestingUsername = requestingSiteUser.user.email
 
-        val deviceIds = (0..2).map { devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE) }
+        val deviceIds = (0..2).map { devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE) }
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val requestedDeviceIds = deviceIds.subList(0, deviceIds.size-2)
         val request = PreKeyRetrievalRequest(siteUser.user.id, requestedDeviceIds)
@@ -250,12 +252,12 @@ class WebApiPreKeysTest {
         val requestingSiteUser = userManagement.injectNamedSiteUser("b@a.com")
         val requestingUsername = requestingSiteUser.user.email
 
-        devClient.addDevice(username, defaultRegistrationId, DeviceState.PENDING)
-        devClient.addDevice(username, defaultRegistrationId, DeviceState.INACTIVE)
+        devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.PENDING)
+        devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.INACTIVE)
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(requestingSiteUser.getUserCredentials(authToken), PreKeyRetrievalRequest(siteUser.user.id, listOf()))
 
@@ -272,13 +274,13 @@ class WebApiPreKeysTest {
         val requestingSiteUser = userManagement.injectNamedSiteUser("b@a.com")
         val requestingUsername = requestingSiteUser.user.email
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val generatedPreKeys = injectPreKeys(username, siteUser.keyVault, deviceId)
 
         val authToken = devClient.createAuthToken(requestingUsername)
 
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.retrieve(requestingSiteUser.getUserCredentials(authToken, deviceId), PreKeyRetrievalRequest(siteUser.user.id, listOf()))
 
@@ -301,7 +303,7 @@ class WebApiPreKeysTest {
     }
 
     fun assertNextPreKeyIs(userId: UserId, authToken: AuthToken, expected: PreKeyRecord, signedPreKey: SignedPreKeyRecord) {
-        val client = HttpPreKeyClient(serverBaseUrl, JavaHttpClient())
+        val client = HttpPreKeyClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val userCredentials = UserCredentials(SlyAddress(userId, DEFAULT_DEVICE_ID), authToken)
 
@@ -331,7 +333,7 @@ class WebApiPreKeysTest {
         val username = siteUser.user.email
         val userId = siteUser.user.id
 
-        val deviceId = devClient.addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
+        val deviceId = devClient.addDevice(username, io.slychat.messenger.core.integration.utils.defaultRegistrationId, DeviceState.ACTIVE)
 
         val authToken = devClient.createAuthToken(siteUser.user.email, deviceId)
 

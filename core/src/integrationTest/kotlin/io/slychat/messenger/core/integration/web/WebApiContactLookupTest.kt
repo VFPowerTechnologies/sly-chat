@@ -6,6 +6,7 @@ import io.slychat.messenger.core.http.api.contacts.ContactLookupClient
 import io.slychat.messenger.core.http.api.contacts.FindAllByIdRequest
 import io.slychat.messenger.core.http.api.contacts.FindContactRequest
 import io.slychat.messenger.core.http.api.contacts.FindLocalContactsRequest
+import io.slychat.messenger.core.integration.utils.*
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.ContactInfo
 import io.slychat.messenger.core.randomUserId
@@ -41,7 +42,7 @@ class WebApiContactLookupTest {
 
         val contactDetails = siteUser.user.toContactInfo()
 
-        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val contactResponseEmail = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(siteUser.user.email, null))
         assertTrue(contactResponseEmail.isSuccess)
@@ -58,7 +59,7 @@ class WebApiContactLookupTest {
 
         val contactDetails = siteUser.user.toContactInfo()
 
-        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val contactResponse = client.find(siteUser.getUserCredentials(authToken), FindContactRequest(null, siteUser.user.phoneNumber))
         assertTrue(contactResponse.isSuccess)
@@ -77,7 +78,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val platformContacts = listOf(
             PlatformContact("B", listOf(userC.email), listOf()),
@@ -102,7 +103,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val request = FindAllByIdRequest(listOf(userB.id, userC.id))
         val response = client.findAllById(userA.getUserCredentials(authToken), request)
@@ -122,7 +123,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.findById(userA.getUserCredentials(authToken), userB.id)
 
@@ -135,7 +136,7 @@ class WebApiContactLookupTest {
 
         val authToken = devClient.createAuthToken(userA.email)
 
-        val client = ContactLookupClient(serverBaseUrl, JavaHttpClient())
+        val client = ContactLookupClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
 
         val response = client.findById(userA.getUserCredentials(authToken), randomUserId())
 

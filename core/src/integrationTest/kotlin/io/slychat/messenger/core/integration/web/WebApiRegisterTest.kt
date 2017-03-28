@@ -8,6 +8,10 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.registration.RegistrationClient
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.http.api.registration.registrationRequestFromKeyVault
+import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.SiteUser
+import io.slychat.messenger.core.integration.utils.SiteUserManagement
+import io.slychat.messenger.core.integration.utils.serverBaseUrl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -38,7 +42,7 @@ class WebApiRegisterTest {
         val keyVault = generateNewKeyVault(password)
         val request = registrationRequestFromKeyVault(dummyRegistrationInfo, keyVault, password)
 
-        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
+        val client = RegistrationClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
         assertNull(result.validationErrors)
         assertNull(result.errorMessage)
@@ -73,7 +77,7 @@ class WebApiRegisterTest {
         val keyVault = generateNewKeyVault(password)
         val request = registrationRequestFromKeyVault(registrationInfo, keyVault, password)
 
-        val client = RegistrationClient(serverBaseUrl, JavaHttpClient())
+        val client = RegistrationClient(io.slychat.messenger.core.integration.utils.serverBaseUrl, JavaHttpClient())
         val result = client.register(request)
 
         assertNotNull(result.errorMessage, "Null error message")
