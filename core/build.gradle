@@ -20,36 +20,7 @@ test {
     systemProperties['keytap.tests.doOnline'] = System.getProperty('keytap.tests.doOnline')
 }
 
-sourceSets {
-    integrationTest {
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-configurations {
-    integrationTestCompile.extendsFrom testCompile
-    integrationTestCompile.extendsFrom testRuntime
-}
-
-task integrationTest(type: Test) {
-    testClassesDir = sourceSets.integrationTest.output.classesDir
-    classpath = sourceSets.integrationTest.runtimeClasspath
-    outputs.upToDateWhen { false }
-    group = 'verification'
-}
-
-integrationTest {
-    testLogging {
-        showStandardStreams = true
-    }
-}
-
-integrationTest.mustRunAfter test
-
-tasks.withType(Test) {
-    reports.html.destination = file("$reporting.baseDir/$name")
-}
+configureIntegrationTests(this)
 
 dependencies {
     compile "nl.komponents.kovenant:kovenant-core:$versions.kovenant"
@@ -66,10 +37,4 @@ dependencies {
     testCompile project(':test-utils')
 
     integrationTestCompile project(':integration-test-utils')
-}
-
-idea {
-    module {
-        scopes.TEST.plus += [ configurations.integrationTestCompile ]
-    }
 }

@@ -165,3 +165,41 @@ project(':android') {
         }
     }
 }
+
+def configureIntegrationTests(project) {
+    project.sourceSets {
+        integrationTest {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+        }
+    }
+    project.configurations {
+        integrationTestCompile.extendsFrom testCompile
+        integrationTestCompile.extendsFrom testRuntime
+    }
+
+    project.tasks.create(name:  'integrationTest', type: Test) {
+        testClassesDir = project.sourceSets.integrationTest.output.classesDir
+        classpath = project.sourceSets.integrationTest.runtimeClasspath
+        outputs.upToDateWhen { false }
+        group = 'verification'
+    }
+
+    project.integrationTest {
+        testLogging {
+            showStandardStreams = true
+        }
+    }
+
+    project.integrationTest.mustRunAfter project.test
+
+    project.tasks.withType(Test) {
+        reports.html.destination = file("${project.reporting.baseDir}/$name")
+    }
+
+    project.idea {
+        module {
+            scopes.TEST.plus += [ project.configurations.integrationTestCompile ]
+        }
+    }
+}
