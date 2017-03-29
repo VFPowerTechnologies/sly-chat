@@ -165,7 +165,7 @@ class JavaHttpClient(
     override fun download(url: String, headers: List<Pair<String, String>>): HttpStreamResponse {
         val connection = getHttpConnection(url)
 
-        connection.doOutput = true
+        connection.doInput = true
         connection.requestMethod = "GET"
         connection.useCaches = false
 
