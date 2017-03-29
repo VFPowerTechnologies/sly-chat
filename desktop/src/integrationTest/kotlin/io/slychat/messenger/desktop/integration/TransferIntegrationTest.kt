@@ -19,11 +19,13 @@ import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.files.*
+import io.slychat.messenger.testutils.desc
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
 import io.slychat.messenger.testutils.withTempFile
 import nl.komponents.kovenant.jvm.asDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
+import org.assertj.core.api.Assertions
 import org.junit.*
 import rx.Observable
 import rx.Scheduler
@@ -31,7 +33,9 @@ import rx.Subscription
 import rx.schedulers.Schedulers
 import java.io.File
 import java.io.PrintWriter
+import java.io.RandomAccessFile
 import java.io.StringWriter
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
@@ -164,6 +168,8 @@ class TransferIntegrationTest {
         }
     }
 
+    //TODO need to do something about the timeout... so long as we have periodic TransferEvent.Progress coming in we don't need to timeout
+    //it's mostly here to make sure the transfer actually begins
     private fun uploadFile(inputFile: File, storageService: StorageService): RemoteFile {
         var f: RemoteFile? = null
 
@@ -179,7 +185,7 @@ class TransferIntegrationTest {
 
         val resultObservable = Observable.merge(errorObservable, okObservable)
             .first()
-            .timeout(5000, TimeUnit.MILLISECONDS)
+            .timeout(50, TimeUnit.SECONDS)
             .replay()
 
         resultObservable.connect().use {
@@ -210,7 +216,7 @@ class TransferIntegrationTest {
 
         val resultObservable = Observable.merge(errorObservable, okObservable)
             .first()
-            .timeout(5000, TimeUnit.MILLISECONDS)
+            .timeout(50, TimeUnit.SECONDS)
             .replay()
 
         resultObservable.connect().use {
@@ -228,8 +234,49 @@ class TransferIntegrationTest {
         }
     }
 
-    @Test
-    fun `it should be able to upload and then download the file`() {
+    private fun assertFilesEqual(inputFile: File, outputFile: File) {
+        val totalSize = inputFile.length()
+        assertEquals(totalSize, outputFile.length(), "Output file size differs from input file size")
+
+        inputFile.inputStream().use { inputStream ->
+            outputFile.inputStream().use { outputStream ->
+                val inputBuffer = ByteArray(8 * 1024)
+                val outputBuffer = ByteArray(8 * 1024)
+                var totalRead = 0L
+
+                while (true) {
+                    val inputRead = inputStream.read(inputBuffer)
+                    val outputRead = outputStream.read(outputBuffer)
+
+                    assertEquals(inputRead, outputRead, "inputRead is not the same as outputRead")
+
+                    if (inputRead == -1)
+                        break
+
+                    val inCmp = if (inputRead == inputBuffer.size)
+                        inputBuffer
+                    else
+                        Arrays.copyOf(inputBuffer, inputRead)
+
+                    val outCmp = if (outputRead == outputBuffer.size)
+                        outputBuffer
+                    else
+                        Arrays.copyOf(outputBuffer, outputRead)
+
+                    Assertions.assertThat(outCmp).desc("Offset $totalRead should be equal") {
+                        inHexadecimal()
+                        isEqualTo(inCmp)
+                    }
+
+                    totalRead += inputRead
+                }
+
+                assertEquals(totalSize, totalRead, "Read size doesn't equal file size")
+            }
+        }
+    }
+
+    private fun testFileTransfer(fileSize: Long) {
         val userManagement = SiteUserManagement(devClient)
         val authUser = devClient.newAuthUser(userManagement)
 
@@ -312,8 +359,11 @@ class TransferIntegrationTest {
 
         try {
             withTempFile { inputFile ->
-                val originalContents = "Testing upload"
-                inputFile.writeText(originalContents)
+                //cheap way to preallocate an empty file
+                //even if this isn't zero'ed we don't care for our purposes
+                RandomAccessFile(inputFile.path, "rw").use {
+                    it.setLength(fileSize)
+                }
 
                 val file = uploadFile(inputFile, storageService)
 
@@ -322,12 +372,22 @@ class TransferIntegrationTest {
                 withTempFile { outputFile ->
                     downloadFile(file, outputFile, storageService)
 
-                    assertEquals(originalContents, outputFile.readText(), "Upload/download contents differ")
+                    assertFilesEqual(inputFile, outputFile)
                 }
             }
         }
         finally {
             storageService.shutdown()
         }
+    }
+
+    @Test
+    fun `it should be able to upload and then download a single part upload file`() {
+        testFileTransfer(10)
+    }
+
+    @Test
+    fun `it should be able to upload and then download a multipart part upload file`() {
+        testFileTransfer(5.mb + 1L)
     }
 }
