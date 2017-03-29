@@ -8,10 +8,7 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.registration.RegistrationClient
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
 import io.slychat.messenger.core.http.api.registration.registrationRequestFromKeyVault
-import io.slychat.messenger.core.integration.utils.DevClient
-import io.slychat.messenger.core.integration.utils.SiteUser
-import io.slychat.messenger.core.integration.utils.SiteUserManagement
-import io.slychat.messenger.core.integration.utils.serverBaseUrl
+import io.slychat.messenger.core.integration.utils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule

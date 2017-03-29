@@ -2,10 +2,7 @@ package io.slychat.messenger.core.integration.web
 
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.contacts.*
-import io.slychat.messenger.core.integration.utils.DevClient
-import io.slychat.messenger.core.integration.utils.SiteUserManagement
-import io.slychat.messenger.core.integration.utils.getUserCredentials
-import io.slychat.messenger.core.integration.utils.serverBaseUrl
+import io.slychat.messenger.core.integration.utils.*
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.persistence.RemoteAddressBookEntry

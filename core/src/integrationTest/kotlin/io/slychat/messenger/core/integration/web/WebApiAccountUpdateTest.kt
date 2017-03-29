@@ -4,10 +4,7 @@ import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.accountupdate.*
 import io.slychat.messenger.core.http.api.registration.RegistrationClient
-import io.slychat.messenger.core.integration.utils.DevClient
-import io.slychat.messenger.core.integration.utils.SiteUserManagement
-import io.slychat.messenger.core.integration.utils.getUserCredentials
-import io.slychat.messenger.core.integration.utils.serverBaseUrl
+import io.slychat.messenger.core.integration.utils.*
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test

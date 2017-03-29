@@ -167,6 +167,8 @@ project(':android') {
 }
 
 def configureIntegrationTests(project) {
+    project.apply(plugin: 'idea')
+
     project.sourceSets {
         integrationTest {
             compileClasspath += main.output + test.output

@@ -8,10 +8,7 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClient
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
-import io.slychat.messenger.core.integration.utils.DevClient
-import io.slychat.messenger.core.integration.utils.newAuthUser
-import io.slychat.messenger.core.integration.utils.serverBaseUrl
-import io.slychat.messenger.core.integration.utils.SiteUserManagement
+import io.slychat.messenger.core.integration.utils.*
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule

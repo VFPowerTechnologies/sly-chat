@@ -355,7 +355,7 @@ class UploaderImpl(
             else
                 uploadOperations.complete(status.upload)
 
-            p successUi {
+            p bindUi {
                 awaitingCancellation -= uploadId
 
                 updateUploadState(uploadId, UploadState.COMPLETE) mapUi {

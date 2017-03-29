@@ -5,6 +5,7 @@ import io.slychat.messenger.core.http.api.accountreset.ResetAccountClient
 import io.slychat.messenger.core.http.api.accountreset.ResetAccountRequest
 import io.slychat.messenger.core.http.api.accountreset.ResetConfirmCodeRequest
 import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.IsDevServerRunningClassRule
 import io.slychat.messenger.core.integration.utils.serverBaseUrl
 import io.slychat.messenger.core.integration.utils.SiteUserManagement
 import org.junit.Before

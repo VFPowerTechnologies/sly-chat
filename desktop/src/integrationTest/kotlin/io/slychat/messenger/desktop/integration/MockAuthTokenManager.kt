@@ -1,4 +1,4 @@
-package io.slychat.messenger.services.crypto
+package io.slychat.messenger.desktop.integration
 
 import io.slychat.messenger.core.AuthToken
 import io.slychat.messenger.core.SlyAddress
@@ -9,7 +9,7 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 import rx.subjects.PublishSubject
 
-/** Just runs the given functions with dummy credentials. */
+//FIXME copied from ui-services test
 class MockAuthTokenManager(
     var userCredentials: UserCredentials = UserCredentials(SlyAddress(UserId(0), 0), AuthToken("dummy"))
 ) : AuthTokenManager {

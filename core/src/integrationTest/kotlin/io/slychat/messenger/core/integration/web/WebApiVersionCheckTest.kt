@@ -3,6 +3,7 @@ package io.slychat.messenger.core.integration.web
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.versioncheck.ClientVersionClientImpl
 import io.slychat.messenger.core.integration.utils.DevClient
+import io.slychat.messenger.core.integration.utils.IsDevServerRunningClassRule
 import io.slychat.messenger.core.integration.utils.serverBaseUrl
 import org.junit.Before
 import org.junit.ClassRule

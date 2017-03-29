@@ -8,10 +8,7 @@ import io.slychat.messenger.core.http.api.storage.StorageClient
 import io.slychat.messenger.core.http.api.storage.StorageClientImpl
 import io.slychat.messenger.core.http.api.upload.NewUploadRequest
 import io.slychat.messenger.core.http.api.upload.UploadClientImpl
-import io.slychat.messenger.core.integration.utils.DevClient
-import io.slychat.messenger.core.integration.utils.SiteUserManagement
-import io.slychat.messenger.core.integration.utils.newAuthUser
-import io.slychat.messenger.core.integration.utils.serverBaseUrl
+import io.slychat.messenger.core.integration.utils.*
 import org.assertj.core.api.Assertions
 import org.junit.*
 import java.io.ByteArrayInputStream
