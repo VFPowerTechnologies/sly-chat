@@ -15,6 +15,7 @@ import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.Scheduler
 import rx.subjects.BehaviorSubject
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -24,7 +25,8 @@ import java.util.concurrent.TimeUnit
 class AuthTokenManagerImpl(
     private val address: SlyAddress,
     private val tokenProvider: TokenProvider,
-    private val promiseTimerFactory: PromiseTimerFactory
+    private val promiseTimerFactory: PromiseTimerFactory,
+    scheduler: Scheduler
 ) : AuthTokenManager {
     companion object {
         internal const val MAX_RETRIES = 2
@@ -33,8 +35,7 @@ class AuthTokenManagerImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val newTokenSubject = BehaviorSubject.create<AuthToken?>()
-    override val newToken: Observable<AuthToken?>
-        get() = newTokenSubject
+    override val newToken: Observable<AuthToken?> = newTokenSubject.observeOn(scheduler)
 
     //queued and currentToken are synchronized as they can end up being access from any thread
     private var queued = ArrayList<Deferred<AuthToken, Exception>>()

@@ -18,7 +18,7 @@ private const val MASTER_KEY_SIZE_BITS = 256
 private const val LOCAL_MASTER_KEY_SIZE_BITS = 256
 private const val ANONYMIZING_DATA_SIZE_BITS = 128
 
-private fun defaultScryptParams(): HashParams.SCrypt {
+private fun defaultScryptParams(): HashParams.SCrypt2 {
     val keyLengthBits = 256
 
     val salt = getRandomBits(256)
@@ -29,7 +29,7 @@ private fun defaultScryptParams(): HashParams.SCrypt {
     val r = 8
     val p = 1
 
-    return HashParams.SCrypt(
+    return HashParams.SCrypt2(
         salt,
         N,
         r,

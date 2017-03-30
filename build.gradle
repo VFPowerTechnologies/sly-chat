@@ -5,7 +5,7 @@ ext.androidVersionCode = project.ANDROID_VERSION_CODE.toInteger()
 buildscript {
     ext {
         versions = [
-            kotlin: '1.0.3',
+            kotlin: '1.0.6',
             slf4j: '1.7.15',
             roboVM: '1.13.0',
             jackson: '2.8.1',
@@ -18,15 +18,15 @@ buildscript {
             rxjava: '1.1.8',
             rxjavafx: '0.1.4',
             rxandroid: '1.2.1',
-            jfxGradlePlugin: '8.7.0',
+            jfxGradlePlugin: '8.8.1',
             appcompatv7: '23.1.1',
-            playServices: '8.3.0',
+            playServices: '10.0.1',
+            googleServices: '3.0.0',
             libphonenumber: '7.1.1',
-            dokka: '0.9.9',
             junit: '4.11',
             assertJ: '3.5.1',
             mockitoKotlin: '0.5.2',
-            androidGradle: '2.1.0',
+            androidGradle: '2.2.3',
             androidBuildTools: '23.0.3',
             androidCompileSdk: 23,
             jsbridge: '0.3.1',
@@ -34,6 +34,7 @@ buildscript {
             nsMenuFx: '2.1.4',
             jna: '4.2.2',
             androidDeviceNames: '1.1.2',
+            prettyTime: '4.0.1.Final',
             moeGradle: '1.2.5',
             javaObjcBridge: '1.0.0',
         ]
@@ -42,19 +43,9 @@ buildscript {
     repositories {
         jcenter()
     }
-
-    dependencies {
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$versions.dokka"
-    }
 }
 
 subprojects {
-    apply plugin: 'org.jetbrains.dokka'
-
-    dokka {
-        outputDirectory = 'build/docs'
-    }
-
     repositories {
         mavenLocal()
         jcenter()
@@ -97,9 +88,11 @@ task nextAndroidVersion(type: UpdateVersion) {
     versionType = VersionType.ANDROID
 }
 
-task printVersionInfo << {
-    println("Version: $project.version")
-    println("Android version code: $project.androidVersionCode")
+task printVersionInfo {
+    doLast {
+        println("Version: $project.version")
+        println("Android version code: $project.androidVersionCode")
+    }
 }
 
 task clean {
@@ -151,18 +144,23 @@ project(':ui-services') {
 
 project(':ios') {
     afterEvaluate { p ->
-        rootProject.tasks.create(name: 'distIOS', description: 'Release IPA build', dependsOn: p.tasks.appStoreIPA) << {
-            print "Generated release IPA: ${p.tasks.appStoreIPA.ipaPath}"
+        rootProject.tasks.create(name: 'distIOS', description: 'Release IPA build', dependsOn: p.tasks.appStoreIPA) {
+            doLast {
+                print "Generated release IPA: ${p.tasks.appStoreIPA.ipaPath}"
+            }
         }
     }
 }
 
 project(':android') {
     afterEvaluate { p ->
-        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: p.tasks.assembleRelease) << {
-            def variants = p.android.applicationVariants
-            def releaseVariant = variants.find { it.name == 'release' }
-            print "Generated release APK: ${releaseVariant.outputs.first().outputFile}"
+        //accessing via p.tasks.assembleRelease no longer works on newer versions
+        rootProject.tasks.create(name: 'distAndroid', description: 'Release APK build', dependsOn: 'android:assembleRelease') {
+            doLast {
+                def variants = p.android.applicationVariants
+                def releaseVariant = variants.find { it.name == 'release' }
+                print "Generated release APK: ${releaseVariant.outputs.first().outputFile}"
+            }
         }
     }
 }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+        xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/view_message_info"
+        android:title="Message info"
+        android:icon="@drawable/ic_launcher"/>
+    <item
+        android:id="@+id/delete_single_message"
+        android:title="Delete message"
+        android:icon="@drawable/ic_launcher"/>
+    <item
+        android:id="@+id/copy_message_text"
+        android:title="Copy text"
+        android:icon="@drawable/ic_launcher"/>
+
+</menu>

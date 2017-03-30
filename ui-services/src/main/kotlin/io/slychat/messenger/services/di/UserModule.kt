@@ -312,9 +312,10 @@ class UserModule(
     fun providesAuthTokenManager(
         userLoginData: UserData,
         tokenProvider: TokenProvider,
-        promiseTimerFactory: PromiseTimerFactory
+        promiseTimerFactory: PromiseTimerFactory,
+        scheduler: Scheduler
     ): AuthTokenManager =
-        AuthTokenManagerImpl(userLoginData.address, tokenProvider, promiseTimerFactory)
+        AuthTokenManagerImpl(userLoginData.address, tokenProvider, promiseTimerFactory, scheduler)
 
     @UserScope
     @Provides

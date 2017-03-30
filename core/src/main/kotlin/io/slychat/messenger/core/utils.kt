@@ -9,7 +9,7 @@ import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.*
-import javax.net.ssl.SSLHandshakeException
+import javax.net.ssl.SSLException
 
 /**
  * Throw an IllegalArgumentException with the given message if the predicate is false.
@@ -174,7 +174,7 @@ fun String.unhexify(): ByteArray {
 fun isNotNetworkError(t: Throwable): Boolean = when (t) {
     is SocketTimeoutException -> false
     is UnknownHostException -> false
-    is SSLHandshakeException -> false
+    is SSLException -> false
     is ConnectException -> false
     //android throws this from HttpURLConnection, wrapping the underlying ConnectException, etc
     //not really sure if I should ignore all of these; haven't seen any that were of any value

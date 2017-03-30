@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sly</string>
+    <string name="title_activity_main">Sly</string>
+
+    <string name="splash_screen_title">Crypté.</string>
+
+    <string name="add_contact_title">Ajout de contact</string>
+
+    <string name="blocked_contacts_page_title">Contacts bloqués</string>
+    <string name="blocked_contacts_empty">Aucun contact bloqué</string>
+    <string name="unblock_contact_dialog_title">Débloquer le contact?</string>
+    <string name="unblock_contact_add_back_dialog_title">Ajouter le contact?</string>
+    <string name="unblock_contact_add_back_dialog_message">Voulez-vous ajouter ce contact à votre liste de contacts?</string>
+    <string name="unblock_contact_dialog_message">Êtes-vous certain de vouloir debloquer ce contact?</string>
+    <string name="blocked_groups_empty">Aucun groupe bloqué</string>
+    <string name="blocked_groups_header">Groupes</string>
+    <string name="unblock_group_dialog_title">Debloquer le groupe?</string>
+    <string name="unblock_group_dialog_message">Êtes-vous certain de vouloir debloquer ce groupe?</string>
+
+    <string name="expiring_delay_start">Destruction automatique:\u0020</string>
+    <string name="expiring_delay_end">\u0020secondes</string>
+
+    <string name="login_page_title">Connexion</string>
+    <string name="login_username_hint">Courriel ou numéro de téléphone</string>
+    <string name="login_password_hint">Mot de passe</string>
+    <string name="login_remember_me_text">Se souvenir de moi</string>
+    <string name="login_submit_btn">Connexion</string>
+    <string name="login_register_link_text">Pas encore enregistré? Créer un compte maintenant</string>
+    <string name="login_in_process_message">Connexion en cours</string>
+    <string name="login_username_required_error">Nom d\'utilisateur requis</string>
+    <string name="login_password_required_error">Mot de passe requis</string>
+    <string name="login_forgot_password_link_text">Oublié votre mot de passe?</string>
+
+    <string name="registration_one_title">Entrer votre nom</string>
+    <string name="registration_one_details">Ce sera affiché à vos contacts</string>
+    <string name="registration_two_title">Entrer votre courriel</string>
+    <string name="registration_two_details">C\'est pour l\'administration de votre compte</string>
+    <string name="registration_three_title">Entrer un mot de passe</string>
+    <string name="registration_three_details">C\'est pour le cryptage de vos données</string>
+    <string name="registration_four_title">Entrer votre numéro de téléphone</string>
+    <string name="registration_country_label">Pays</string>
+    <string name="registration_phone_hint">Numéro de téléphone</string>
+    <string name="registration_password_hint">Mot de passe</string>
+    <string name="registration_password_conf_hint">Confirmation du mot de passe</string>
+    <string name="registration_email_hint">Courriel</string>
+    <string name="registration_name_hint">Nom</string>
+    <string name="registration_next_btn">Suivant</string>
+    <string name="registration_login_link_text">Vous avez déja un compte? Connexion</string>
+    <string name="registration_name_required_error">Votre nom est requis</string>
+    <string name="registration_email_required_error">Votre courriel est requis</string>
+    <string name="registration_email_taken_error">Ce courriel n\'est pas disponible</string>
+    <string name="registration_password_required_error">Le mot de passe est requis</string>
+    <string name="registration_password_match_error">Les mots de passe ne concorde pas</string>
+    <string name="registration_phone_required_error">Votre numéro de téléphone est requis</string>
+    <string name="registration_phone_invalid_error">Le numéro de téléphone ne semble pas être valide</string>
+    <string name="registration_phone_taken_error">Ce numéro de téléphone n\'est pas disponible</string>
+    <string name="registration_verification_code_required_error">Le code de vérification est requis</string>
+    <string name="registration_verification_code_invalid_error">Code invalide</string>
+    <string name="registration_phone_identical_error">Le numéro de téléphone est déja celui au compte</string>
+    <string name="registration_global_error">Une erreure est survenue</string>
+    <string name="registration_phone_verification_process">Vérification de la disponibilité du numéro de téléphone</string>
+    <string name="registration_email_verification_process">Vérification de la disponibilité du courriel</string>
+    <string name="registration_sms_verification_process">Envoie du code de vérification</string>
+    <string name="registration_update_phone_process">Modification du numéro de téléphone en cours</string>
+    <string name="registration_process">Enregistrement en cours</string>
+
+    <string name="sms_verification_title">Verifier votre numéro de téléphone</string>
+    <string name="sms_verification_details">Dernière étape! Etrer le code que nous vous avons envoyé</string>
+    <string name="sms_verification_code_hint">Code de vérification</string>
+    <string name="sms_verification_resend_link">Vous n\'avez pas reçu votre code? Revoyer</string>
+    <string name="sms_verification_update_phone_link">Modifier le numéro de téléphone</string>
+
+    <string name="empty_recent_chat_text">Aucun nouveau message</string>
+    <string name="empty_contact_list_text">Aucun contact</string>
+
+    <string name="recent_chat_title">\u0020 Sly Chat</string>
+    <string name="recent_chat_invite_title">Inviter vos amis</string>
+    <string name="recent_chat_invite_text">Vous avez actuellement moin de 5 contacts!</string>
+    <string name="recent_chat_hidden_text">Message caché</string>
+    <string name="recent_chat_self_speaker_name">Vous</string>
+
+    <string name="contact_page_title">Carnet d\'adresse</string>
+    <string name="contact_recent_title">Contacts récent</string>
+    <string name="contact_list_title">Contacts</string>
+    <string name="contact_info_title">Information du contact</string>
+
+    <string name="empty_group_string">Vous ne faites parti d\'aucun groupe</string>
+
+    <string name="forgot_password_title">Mot de passe oublié</string>
+    <string name="forgot_password_text">Avertissement, due au fonctionnement de l\'encryption, reinitializer votre mot de passe va effacer tout les données de votre compte&#8230;</string>
+    <string name="forgot_password_text_two">Vous devrez creer votre compte sly chat de nouveau.</string>
+    <string name="forgot_password_confirm_text">Nous avons envoyé un code de confirmation à votre courriel et numéro de téléphone enregisté à votre compte.</string>
+    <string name="forgot_password_confirm_text_two">Vous devriez les recevoirs sous peu</string>
+    <string name="forgot_password_back_to_login">Retour à la connexion</string>
+    <string name="forgot_password_sms_title">Vérification SMS</string>
+    <string name="forgot_password_sms_hint">Code de vérification SMS</string>
+    <string name="forgot_password_email_title">Vérification du courriel</string>
+    <string name="forgot_password_email_hint">Code de vérification du courriel</string>
+
+    <string name="create_group_title">Créer un groupe</string>
+    <string name="create_group_name_hint">Nom du groupe</string>
+    <string name="create_group_contact_header">Contacts</string>
+    <string name="create_group_process_message">Creation de votre nouveau groupe</string>
+    <string name="create_group_name_required_error">Le nom du groupe est requis</string>
+
+    <string name="profile_title">Profil</string>
+    <string name="profile_device_header">Id du dispositif:</string>
+    <string name="profile_phone_header">Numéro de téléphone:</string>
+    <string name="profile_email_header">Courriel: </string>
+    <string name="profile_key_header">Clé publique:</string>
+    <string name="profile_update_btn">Update Profil</string>
+    <string name="profile_picture_description">Photo du profil</string>
+
+    <string name="group_info_title">Info du groupe</string>
+    <string name="group_picture_description">Photo du groupe</string>
+    <string name="group_info_members">Membres:</string>
+
+    <string name="update_profile_title">Modifier le profil</string>
+    <string name="update_profile_sms_verification_message">Vous devriez reçevoir un code de vérification par sms</string>
+    <string name="update_profile_sms_verification_title">Vérification par sms</string>
+
+    <string name="update_phone_title">Modifier le numéro de téléphone</string>
+    <string name="update_phone_sms_received_link">Reçus votre code? retour</string>
+    <string name="update_phone_back_to_login">Cancel? Retour a la connexion</string>
+
+    <string name="invite_friends_title">Inviter des amis</string>
+    <string name="invite_friends_btn">Partager</string>
+    <string name="default_invite_text">Hey, sécurisons nos conversations: https://slychat.io/get-app</string>
+    <string name="invite_friends_hint">Écriver votre text d\'invitation</string>
+    <string name="invite_friends_intent_text">Inviter un ami à Sly</string>
+
+    <string name="feedback_title">Évaluation</string>
+    <string name="feedback_hint">Veuillez écrire votre évaluation</string>
+
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_notification_header">Notifications</string>
+    <string name="settings_notification_switch">Activer les notifications</string>
+    <string name="settings_notification_btn">Son de notification</string>
+    <string name="settings_ringtone_intent_text">Son de notification pour les messages</string>
+    <string name="settings_appearance_header">Apparence</string>
+    <string name="settings_theme_switch">Thème foncé</string>
+    <string name="settings_misc_header">Misc</string>
+    <string name="settings_invite_friends_switch">Afficher l\'invitaion d\'amis</string>
+
+    <string name="add_contact_header_text">Ajouter un contact</string>
+    <string name="search_result_header">Résultats de recherche</string>
+    <string name="search_contact_btn_text">Rechercher</string>
+
+    <string name="chat_input_hint">Écrivez votre message sécurisé</string>
+    <string name="chat_input_expire_hint">Écrivez votre message sécurisé autodétruit</string>
+    <string name="chat_expiring_message_text">Appuyez pour voir le message</string>
+    <string name="chat_expired_message_text">Message expiré</string>
+    <string name="chat_delivering_time_string">Envoi&#8230;</string>
+    <string name="chat_failed_message_delivery">Echec de l\'envoi</string>
+
+    <string name="chat_block_contact_title">Bloquer le contact</string>
+    <string name="chat_block_contact_text">Êtes-vous certain de vouloir bloquer ce contact?</string>
+    <string name="chat_delete_contact_title">Effacer le contact</string>
+    <string name="chat_delete_contact_text">Êtes-vous certain de vouloir effacer ce contact?</string>
+    <string name="chat_delete_conversation_title">Effacer la conversation</string>
+    <string name="chat_delete_conversation_text">Êtes-vous certain de vouloir effacer cette conversation entière?</string>
+    <string name="chat_block_group_title">Bloquer le groupe</string>
+    <string name="chat_block_group_text">Êtes-vous certain de vouloir bloquer ce groupe?</string>
+    <string name="chat_delete_group_title">Effacer le groupe</string>
+    <string name="chat_delete_group_text">Êtes-vous certain de vouloir effacer ce groupe?</string>
+
+    <string name="action_menu">Menu</string>
+
+    <string name="add_button_text">Ajouter</string>
+
+    <string name="drawer_add_contact">Ajouter un contact</string>
+    <string name="drawer_create_group">Créer un groupe</string>
+    <string name="drawer_delete_contact">Effacer le contact</string>
+    <string name="drawer_block_contact">Bloquer le contact</string>
+    <string name="drawer_blocked_contacts">Contacts bloqués</string>
+    <string name="drawer_delete_conversation">Effacer la conversation</string>
+    <string name="drawer_contact_info">Info du contact</string>
+    <string name="drawer_profile">Profil</string>
+    <string name="drawer_settings">Paramètres</string>
+    <string name="drawer_share">Partagez avec vos amis</string>
+    <string name="drawer_feedback">Évaluer l\'application</string>
+    <string name="drawer_logout">Déconnexion</string>
+    <string name="drawer_delete_group">Quiter le groupe</string>
+    <string name="drawer_group_info">Info du groupe</string>
+    <string name="drawer_block_group">Bloquer le groupe</string>
+
+    <string name="permission_request_title">Permission requise</string>
+    <string name="permission_request_title_phone_access">L\'accès au téléphone est requis pour avoir accès à votre numéro de téléphone</string>
+
+    <string name="submit_button">Envoyer</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="create_button">Créer</string>
+    <string name="update_button">Mettre a jour</string>
+    <string name="unblock_button">Débloquer</string>
+    <string name="forgot_password_email_code_required_error">Code de vérification du courriel est requis</string>
+    <string name="forgot_password_email_success_text">Votre courriel est libre pour la création d\'un nouveau compte</string>
+    <string name="forgot_password_phone_success_text">Votre numéro de téléphone est libre pour la création d\'un nouveau compte</string>
+    <string name="forgot_password_request_complete_text">La réinstallation est requise sur les autres dispositifs pour effacer les données de votre compte</string>
+    <string name="forgot_password_sms_code_required_error">Code de vérification SMS est requis</string>
+    <string name="forgot_password_username_required_error">Votre courriel ou numéro de téléphone est requis</string>
+    <string name="global_success">Succès</string>
+    <string name="chat_expiring_message_timer_text">" secondes"</string>
+    <string name="message_info_encrypted">Le message est crypté</string>
+    <string name="message_info_contact_email">Courriel du contact:</string>
+    <string name="message_info_contact_name">Nom du contact:</string>
+    <string name="message_info_contact_pub_key">Clé publique du contact:</string>
+    <string name="message_info_group_id">Id du groupe:</string>
+    <string name="message_info_group_members">Membres du groupe:</string>
+    <string name="message_info_message_id">Id du message:</string>
+    <string name="message_info_received_in_group">Recu dans le groupe:</string>
+    <string name="message_info_received_time">Heure de réception:</string>
+    <string name="message_info_sent_time">Heure d\'envoi:</string>
+    <string name="message_info_sent_to">Envoyé à:</string>
+    <string name="message_info_sent_to_group">Envoyé au groupe:</string>
+    <string name="message_info_title">Infomation du message</string>
+    <string name="add_contact_no_result_error">Aucun résultat trouvé</string>
+    <string name="negative_button">NON</string>
+    <string name="positive_button">OUI</string>
+    <string name="delete_message_text">êtes vous certain de vouloir effacer ce message?</string>
+    <string name="delete_message_title">Effacer ce message?</string>
+    <string name="ok_button">OK</string>
+    <string name="jump_to_recent_messages">Voir les messages récents</string>
+
+</resources>

@@ -288,6 +288,10 @@ class SlyApplication {
         }
     }
 
+    fun resetLoginEvent() {
+        emitLoginEvent(LoginEvent.LoggedOut())
+    }
+
     /**
      * Attempts to login (either locally or remotely) using the given username and password.
      *

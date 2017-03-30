@@ -11,6 +11,7 @@ import rx.Observable
  * Must be thread-safe, as bind/map/bindUi/mapUi may be called on any thread. Other methods are only called on the main thread.
  */
 interface AuthTokenManager {
+    /** Observed on the main scheduler. */
     val newToken: Observable<AuthToken?>
 
     /** Used to set an initial token externally. */

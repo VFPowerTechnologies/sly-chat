@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <attr name="themedDrawerHeader" format="reference"/>
+    <attr name="themedSentBubbleColor" format="reference"/>
+    <attr name="themedReceivedBubbleColor" format="reference"/>
+
+    <attr name="themedChatInputColor" format="reference"/>
+
+    <attr name="themedChatSubmitButton" format="reference"/>
+    <attr name="themedChatEmojiButton" format="reference"/>
+    <attr name="themedChatBombButton" format="reference"/>
+
+    <attr name="themedEmojiconIconColor" format="reference"/>
+    <attr name="themedEmojiconTabsColor" format="reference"/>
+    <attr name="themedEmojiconBackgroundColor" format="reference"/>
+
+</resources>

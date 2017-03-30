@@ -165,12 +165,13 @@ class ApplicationModule(
     @Singleton
     @Provides
     fun providesResetAccountService(
+            localAccountDirectory: LocalAccountDirectory,
             serverUrls: SlyBuildConfig.ServerUrls,
             @SlyHttp httpClientFactory: HttpClientFactory
     ): ResetAccountService {
         val serverUrl = serverUrls.API_SERVER
         val resetAccountClient = ResetAccountAsyncClient(serverUrl, httpClientFactory)
-        return ResetAccountServiceImpl(resetAccountClient)
+        return ResetAccountServiceImpl(resetAccountClient, localAccountDirectory)
     }
 
     @Singleton

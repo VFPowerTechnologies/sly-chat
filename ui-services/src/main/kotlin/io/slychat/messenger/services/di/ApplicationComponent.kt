@@ -68,6 +68,8 @@ interface ApplicationComponent {
 
     val platformContacts: PlatformContacts
 
+    val resetAccountService: ResetAccountService
+
     //FIXME only used for gcm client in AndroidApp
     val serverUrls: SlyBuildConfig.ServerUrls
 

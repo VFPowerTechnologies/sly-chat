@@ -5,7 +5,7 @@ buildscript {
     dependencies {
         classpath "com.android.tools.build:gradle:$versions.androidGradle"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$versions.kotlin"
-        classpath "com.google.gms:google-services:$versions.androidGradle"
+        classpath "com.google.gms:google-services:$versions.googleServices"
     }
 }
 
@@ -32,7 +32,7 @@ android {
     defaultConfig {
         applicationId 'io.slychat.messenger'
         minSdkVersion 19
-        targetSdkVersion 23
+        targetSdkVersion 25
         versionCode androidVersionCode
         versionName rootProject.version
     }
@@ -40,7 +40,7 @@ android {
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
         debug.java.srcDirs += 'src/debug/kotlin'
-        main.assets.srcDirs += "$rootProject.projectDir/ui"
+//        main.assets.srcDirs += "$rootProject.projectDir/ui"
     }
 
     packagingOptions {
@@ -60,9 +60,6 @@ android.applicationVariants.all { variant ->
         def apkName = "SlyChat-${rootProject.version}"
 
         apkName += '-' + variant.buildType.name
-        
-        if (!output.zipAlign)
-            apkName += '-unaligned'
 
         if (!variant.isSigningReady())
             apkName += '-unsigned'
@@ -102,13 +99,27 @@ dependencies {
     compile "com.android.support:appcompat-v7:$versions.appcompatv7"
     //pure-java curve25519 is broken: https://github.com/WhisperSystems/curve25519-java/pull/4
     compile "org.whispersystems:signal-protocol-android:$versions.libsignal"
+    compile project(':core')
     compile project(':ui-services')
     compile project(':logger')
-    compile "com.vfpowertech:jsbridge-android-webengine:$versions.jsbridge"
     compile "nl.komponents.kovenant:kovenant-android:$versions.kovenant"
     compile "io.reactivex:rxandroid:$versions.rxandroid"
     compile "com.jaredrummler:android-device-names:$versions.androidDeviceNames"
     compile "com.google.android.gms:play-services-gcm:$versions.playServices"
+    compile "com.android.support:design:$versions.appcompatv7"
+    compile "org.ocpsoft.prettytime:prettytime:$versions.prettyTime"
+
+    //Added to prevent unresolved reference in IDEA
+    compile "nl.komponents.kovenant:kovenant-functional:$versions.kovenant"
+    compile "com.googlecode.libphonenumber:libphonenumber:$versions.libphonenumber"
+    compile "com.almworks.sqlite4java:sqlite4java:$versions.sqlite4java"
+    compile "org.slf4j:slf4j-api:$versions.slf4j"
+
+    repositories {
+        maven { url "https://dl.bintray.com/hani-momanii/maven"}
+    }
+    compile 'hani.momanii.supernova_emoji_library:supernova-emoji-library:0.0.2'
+
 }
 
 apply plugin: 'com.google.gms.google-services'

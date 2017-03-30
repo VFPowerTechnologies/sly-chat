@@ -1,5 +1,6 @@
 package io.slychat.messenger.android
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.IntentFilter
@@ -9,16 +10,21 @@ import android.net.ConnectivityManager
 import android.os.StrictMode
 import android.support.v4.content.ContextCompat
 import com.almworks.sqlite4java.SQLite
+import com.fasterxml.jackson.databind.deser.Deserializers
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.security.ProviderInstaller
 import com.jaredrummler.android.device.DeviceName
+import io.slychat.messenger.android.activites.BaseActivity
 import io.slychat.messenger.android.services.AndroidPlatformContacts
 import io.slychat.messenger.android.services.AndroidUILoadService
 import io.slychat.messenger.android.services.AndroidUIPlatformInfoService
 import io.slychat.messenger.android.services.AndroidUIPlatformService
+import io.slychat.messenger.core.*
+import io.slychat.messenger.services.*
+import io.slychat.messenger.core.persistence.AccountInfo
 import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
@@ -31,8 +37,8 @@ import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.ApplicationComponent
 import io.slychat.messenger.services.di.PlatformModule
-import io.slychat.messenger.services.ui.SoftKeyboardInfo
-import io.slychat.messenger.services.ui.createAppDirectories
+import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.android.androidUiDispatcher
 import nl.komponents.kovenant.task
@@ -49,7 +55,7 @@ import java.util.*
 class AndroidApp : Application() {
     companion object {
         fun get(context: Context): AndroidApp =
-            context.applicationContext as AndroidApp
+                context.applicationContext as AndroidApp
 
         /** Will never leak any exceptions. */
         private fun playServicesInit(context: Context): LoadError? {
@@ -91,9 +97,6 @@ class AndroidApp : Application() {
 
     val app: SlyApplication = SlyApplication()
 
-    //if AndroidUILoadService.loadComplete is called while we're paused (eg: during the permissions dialog)
-    private var queuedLoadComplete = false
-
     private val onSuccessfulInitListeners = ArrayList<() -> Unit>()
     private var isInitialized = false
     private var wasSuccessfullyInitialized = false
@@ -110,20 +113,28 @@ class AndroidApp : Application() {
 
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
     private val networkStatus: BehaviorSubject<Boolean> = BehaviorSubject.create(false)
-    private val softKeyboardVisibility = BehaviorSubject.create(SoftKeyboardInfo(false, 0))
 
-    /** Points to the current activity, if one is set. Used to request permissions from various services. */
-    var currentActivity: MainActivity? = null
-        set(value) {
-            field = value
+    var platformContactSyncOccured = true
 
-            uiVisibility.onNext(value != null)
+    var currentActivity: BaseActivity? = null
 
-            if (queuedLoadComplete)
-                queuedLoadComplete = hideSplashImage() == false
-
-            app.isInBackground = value == null
+    fun setCurrentActivity (activity: BaseActivity, visible: Boolean) {
+        if (!visible && activity == currentActivity) {
+            currentActivity = null
+            uiVisibility.onNext(visible)
+            return
         }
+
+        if (visible) {
+            currentActivity = activity
+            uiVisibility.onNext(visible)
+        }
+    }
+
+    var conversationCache: MutableMap<UserId, UIConversation> = mutableMapOf()
+
+    var accountInfo : AccountInfo? = null
+    var publicKey : String? = null
 
     lateinit var appComponent: ApplicationComponent
         private set
@@ -138,9 +149,9 @@ class AndroidApp : Application() {
 
         if (SlyBuildConfig.DEBUG) {
             val policy = StrictMode.ThreadPolicy.Builder()
-                .detectAll()
-                .penaltyLog()
-                .build()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
 
             StrictMode.setThreadPolicy(policy)
         }
@@ -156,32 +167,34 @@ class AndroidApp : Application() {
 
         val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val defaultUserConfig = UserConfig().copy(
-            notificationsSound = defaultUri.toString()
+                notificationsSound = defaultUri.toString()
         )
 
         val platformModule = PlatformModule(
-            AndroidUIPlatformInfoService(),
-            SlyBuildConfig.ANDROID_SERVER_URLS,
-            platformInfo,
-            AndroidTelephonyService(this),
-            AndroidUIWindowService(this, softKeyboardVisibility),
-            AndroidPlatformContacts(this),
-            notificationService,
-            AndroidUIShareService(this),
-            AndroidUIPlatformService(this),
-            AndroidUILoadService(this),
-            uiVisibility,
-            AndroidTokenFetcher(this),
-            networkStatus,
-            AndroidSchedulers.mainThread(),
-            defaultUserConfig,
-            PushNotificationService.GCM
+                AndroidUIPlatformInfoService(),
+                SlyBuildConfig.ANDROID_SERVER_URLS,
+                platformInfo,
+                AndroidTelephonyService(this),
+                AndroidUIWindowService(),
+                AndroidPlatformContacts(this),
+                notificationService,
+                AndroidUIShareService(),
+                AndroidUIPlatformService(),
+                AndroidUILoadService(),
+                uiVisibility,
+                AndroidTokenFetcher(this),
+                networkStatus,
+                AndroidSchedulers.mainThread(),
+                defaultUserConfig,
+                PushNotificationService.GCM
         )
 
         app.init(platformModule)
         notificationService.init(app.userSessionAvailable)
 
         appComponent = app.appComponent
+
+        app.isInBackground = false
 
         pushNotificationsClient = PushNotificationsAsyncClientImpl(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
 
@@ -300,6 +313,10 @@ class AndroidApp : Application() {
         //occurs on startup when we first register for events
         val userComponent = app.userComponent ?: return
 
+        conversationCache = mutableMapOf()
+        accountInfo = null
+        publicKey = null
+
         if (noNotificationsOnLogout)
             appComponent.pushNotificationsManager.unregister(userComponent.userLoginData.address)
     }
@@ -313,20 +330,16 @@ class AndroidApp : Application() {
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED)
             return Promise.ofSuccess(true)
 
-        val activity = currentActivity ?: return Promise.ofSuccess(false)
+        val activity = currentActivity
+        if (permission == Manifest.permission.READ_CONTACTS && (activity is MainActivity || activity == null)) {
+            platformContactSyncOccured = false
+            return Promise.ofSuccess(false)
+        }
+
+        if (activity == null)
+            return Promise.ofSuccess(false)
 
         return activity.requestPermission(permission)
-    }
-
-    private fun hideSplashImage(): Boolean {
-        val currentActivity = currentActivity as? MainActivity ?: return false
-
-        currentActivity.hideSplashImage()
-        return true
-    }
-
-    fun uiLoadCompleted() {
-        queuedLoadComplete = hideSplashImage() == false
     }
 
     private fun finishInitialization(loadError: LoadError?) {
@@ -341,10 +354,6 @@ class AndroidApp : Application() {
         }
     }
 
-    fun updateSoftKeyboardVisibility(isVisible: Boolean, keyboardHeight: Int) {
-        softKeyboardVisibility.onNext(SoftKeyboardInfo(isVisible, keyboardHeight))
-    }
-
     /** Fires only if play services and SlyApplication have successfully completed initialization. Used by services. */
     fun addOnSuccessfulInitListener(listener: () -> Unit) {
         if (wasSuccessfullyInitialized) {
@@ -353,5 +362,17 @@ class AndroidApp : Application() {
         else if (!isInitialized) {
             onSuccessfulInitListeners.add(listener)
         }
+    }
+
+    fun getUserComponent(): UserComponent {
+        val userComponent = app.userComponent ?: throw Exception()
+
+        return userComponent
+    }
+
+    fun dispatchEvent (type: String, page: PageType, extra: String) {
+        val event = UIEvent.PageChange(page, extra)
+
+        this.appComponent.uiEventService.dispatchEvent(event)
     }
 }

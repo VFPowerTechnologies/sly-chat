@@ -14,6 +14,7 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
+import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -44,7 +45,7 @@ class AuthTokenManagerImplTest {
 
         whenever(promiseTimerFactory.run(any(), any())).thenResolve(Unit)
 
-        tokenManager = AuthTokenManagerImpl(address, tokenProvider, promiseTimerFactory)
+        tokenManager = AuthTokenManagerImpl(address, tokenProvider, promiseTimerFactory, TestScheduler())
     }
 
     fun emitNewToken() {
