@@ -8,17 +8,18 @@ import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.api.share.AcceptShareRequest
 import io.slychat.messenger.core.http.api.share.ShareClient
 import io.slychat.messenger.core.http.api.share.ShareClientImpl
+import io.slychat.messenger.core.http.api.share.ShareInfo
 import io.slychat.messenger.core.http.api.storage.FileInfo
 import io.slychat.messenger.core.integration.utils.*
 import io.slychat.messenger.core.randomPathHash
 import io.slychat.messenger.testutils.desc
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 class WebApiShareTest {
     companion object {
@@ -59,25 +60,34 @@ class WebApiShareTest {
         )
         devClient.addFile(sendingUser.user.id, fileInfo)
 
+        val ourFileId = generateFileId()
+        val ourShareKey = generateShareKey()
+        val userMetadata = byteArrayOf(0x77)
         val request = AcceptShareRequest(
             sendingUser.user.id,
-            fileInfo.id,
-            fileInfo.shareKey,
-            generateFileId(),
-            generateShareKey(),
-            byteArrayOf(0x77),
-            randomPathHash()
+            listOf(
+                ShareInfo(
+                    fileInfo.id,
+                    fileInfo.shareKey,
+                    ourFileId,
+                    ourShareKey,
+                    userMetadata,
+                    randomPathHash()
+                )
+            )
         )
         val resp = client.acceptShare(receivingUser.userCredentials, request)
 
-        assertNull(resp.error, "An error occured")
+        assertThat(resp.errors).desc("Should not have any errors") {
+            isEmpty()
+        }
 
-        val ourFileInfo = assertNotNull(devClient.getFileInfo(receivingUser.user.id, request.ourFileId), "File not added to list")
+        val ourFileInfo = assertNotNull(devClient.getFileInfo(receivingUser.user.id, ourFileId), "File not added to list")
 
-        assertEquals(request.ourShareKey, ourFileInfo.shareKey, "Invalid share key")
+        assertEquals(ourShareKey, ourFileInfo.shareKey, "Invalid share key")
         Assertions.assertThat(ourFileInfo.userMetadata).desc("Invalid file info") {
             inHexadecimal()
-            isEqualTo(request.userMetadata)
+            isEqualTo(userMetadata)
         }
     }
 }
