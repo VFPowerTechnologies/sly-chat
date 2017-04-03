@@ -54,7 +54,11 @@ fun GeneratedSiteUser.getUserCredentials(authToken: AuthToken, deviceId: Int = D
 }
 
 fun DevClient.newAuthUser(userManagement: SiteUserManagement): AuthUser {
-    val user = userManagement.injectNewSiteUser()
+    return newNamedAuthUser(userManagement, "a@a.com")
+}
+
+fun DevClient.newNamedAuthUser(userManagement: SiteUserManagement, email: String): AuthUser {
+    val user = userManagement.injectNamedSiteUser(email)
     val username = user.user.email
     val deviceId = addDevice(username, defaultRegistrationId, DeviceState.ACTIVE)
     val authToken = createAuthToken(username, deviceId)

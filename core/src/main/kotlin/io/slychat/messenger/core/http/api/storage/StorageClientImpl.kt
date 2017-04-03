@@ -29,10 +29,6 @@ class StorageClientImpl(
         return apiPostRequest(httpClient, url, userCredentials, request, typeRef())
     }
 
-    override fun acceptShare(userCredentials: UserCredentials, request: AcceptShareRequest): AcceptShareResponse {
-        TODO()
-    }
-
     override fun downloadFile(userCredentials: UserCredentials, fileId: String): DownloadFileResponse? {
         val url = "$fileServerBaseUrl/v1/storage/$fileId"
 
