@@ -21,18 +21,15 @@ data class MessageInfo(
     val isRead: Boolean,
     val isExpired: Boolean,
     val ttlMs: Long,
-    val expiresAt: Long
+    val expiresAt: Long,
+    val attachments: List<MessageAttachmentInfo> = emptyList()
 ) {
     companion object {
         fun newSent(message: String, ttlMs: Long): MessageInfo =
             MessageInfo(randomMessageId(), message, currentTimestamp(), 0, true, false, true, false, ttlMs, 0)
 
-        fun newSelfSent(message: String, receivedTimestamp: Long, ttlMs: Long): MessageInfo {
-            return MessageInfo(randomMessageId(), message, receivedTimestamp, receivedTimestamp, true, true, true, false, ttlMs, 0)
-        }
-
-        fun newSent(message: String, timestamp: Long, ttlMs: Long): MessageInfo =
-            MessageInfo(randomMessageId(), message, timestamp, 0, true, false, true, false, ttlMs, 0)
+        fun newSent(message: String, timestamp: Long, ttlMs: Long, attachments: List<MessageAttachmentInfo>): MessageInfo =
+            MessageInfo(randomMessageId(), message, timestamp, 0, true, false, true, false, ttlMs, 0, attachments)
 
         fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, isRead: Boolean, ttlMs: Long): MessageInfo =
             MessageInfo(id, message, timestamp, receivedTimestamp, false, true, isRead, false, ttlMs, 0)

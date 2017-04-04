@@ -17,7 +17,7 @@ internal class FileUtils {
             Key(stmt.columnBlob(colOffset + 7)),
             CipherId(stmt.columnInt(colOffset + 10).toShort()),
             stmt.columnString(colOffset + 9),
-            stmt.columnString(colOffset + 8)
+            stmt.columnString(colOffset + 8), null
         )
 
         val isDeleted = stmt.columnBool(colOffset + 3)

@@ -1,6 +1,7 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.*
 import org.assertj.core.api.Assertions.assertThat
@@ -428,6 +429,31 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `addMessage should not inc the conversation info unread count if an inserted message is read`() {
         testSingleUnreadInc(true)
+    }
+
+    @Test
+    fun `addMessage should include attachment info if present`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val attachmentInfo = MessageAttachmentInfo(
+                "dummy.jpg",
+                generateFileId(),
+                true
+            )
+
+            val messageInfo = randomReceivedMessageInfo().copy(
+                attachments = listOf(attachmentInfo)
+            )
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+
+            val fromDb = getMessage(conversationId, messageInfo.id)
+
+            assertEquals(conversationMessageInfo, fromDb, "Invalid serialization")
+        }
     }
 
     @Test

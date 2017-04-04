@@ -33,7 +33,9 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "directory_index",
             "uploads",
             "upload_parts",
-            "downloads"
+            "downloads",
+            "attachments",
+            "message_attachments"
         )
     }
 

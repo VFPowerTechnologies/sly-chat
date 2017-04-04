@@ -224,7 +224,8 @@ fun randomUserMetadata(directory: String? = null, fileName: String? = null): Use
         Key(byteArrayOf(0x73, 0x68, 0x69, 0x6e, 0x6f, 0x7a, 0x61, 0x6b, 0x69, 0x61, 0x69)),
         CipherList.defaultDataEncryptionCipher.id,
         directory ?: "/" + randomName(),
-        fileName ?: randomName()
+        fileName ?: randomName(),
+        null
     )
 }
 

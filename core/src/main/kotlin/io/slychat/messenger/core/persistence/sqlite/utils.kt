@@ -46,9 +46,21 @@ fun SQLiteStatement.bind(index: Int, enum: Enum<*>?) {
     bind(index, enum?.toString())
 }
 
+fun SQLiteStatement.bind(name: String, boolean: Boolean) {
+    val v = if (boolean) 1 else 0
+    bind(name, v)
+}
+
 fun SQLiteStatement.bind(index: Int, boolean: Boolean) {
     val v = if (boolean) 1 else 0
     bind(index, v)
+}
+
+fun SQLiteStatement.bind(name: String, value: UserId?) {
+    if (value != null)
+        bind(name, value.long)
+    else
+        bindNull(name)
 }
 
 fun SQLiteStatement.bind(index: Int, value: UserId?) {
@@ -125,6 +137,10 @@ private fun Int.toGroupMembershipLevel(): GroupMembershipLevel = when (this) {
     1 -> GroupMembershipLevel.PARTED
     2 -> GroupMembershipLevel.JOINED
     else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $this")
+}
+
+fun SQLiteStatement.bind(name: String, conversationId: ConversationId?) {
+    bind(name, conversationId?.asString())
 }
 
 fun SQLiteStatement.bind(index: Int, conversationId: ConversationId?) {

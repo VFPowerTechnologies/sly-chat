@@ -11,15 +11,12 @@ import io.slychat.messenger.core.crypto.ciphers.Key
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class UserMetadata(
     //this should never be updated
-    @JsonProperty("fileKey")
-    val fileKey: Key,
-    @JsonProperty("cipherId")
-    val cipherId: CipherId,
+    @JsonProperty("fileKey") val fileKey: Key,
+    @JsonProperty("cipherId") val cipherId: CipherId,
     //dir/filenames should be case-insensitive during searches
-    @JsonProperty("directory")
-    val directory: String,
-    @JsonProperty("fileName")
-    val fileName: String
+    @JsonProperty("directory") val directory: String,
+    @JsonProperty("fileName") val fileName: String,
+    @JsonProperty("sharedFrom") val sharedFrom: SharedFrom?
 ) {
     init {
         require(fileName.isNotBlank()) { "Invalid file name: <<$fileName>>" }

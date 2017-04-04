@@ -48,17 +48,17 @@ class SQLiteMessagePersistenceManager(
 
     private fun conversationMessageInfoToRow(conversationMessageInfo: ConversationMessageInfo, stmt: SQLiteStatement) {
         val messageInfo = conversationMessageInfo.info
-        stmt.bind(1, messageInfo.id)
-        stmt.bind(2, conversationMessageInfo.speaker)
-        stmt.bind(3, messageInfo.timestamp)
-        stmt.bind(4, messageInfo.receivedTimestamp)
-        stmt.bind(5, messageInfo.isRead)
-        stmt.bind(6, messageInfo.isExpired)
-        stmt.bind(7, messageInfo.ttlMs)
-        stmt.bind(8, messageInfo.expiresAt)
-        stmt.bind(9, messageInfo.isDelivered)
-        stmt.bind(10, messageInfo.message)
-        stmt.bind(11, conversationMessageInfo.failures.isNotEmpty())
+        stmt.bind(":id", messageInfo.id)
+        stmt.bind(":speakerContactId", conversationMessageInfo.speaker)
+        stmt.bind(":timestamp", messageInfo.timestamp)
+        stmt.bind(":receivedTimestamp", messageInfo.receivedTimestamp)
+        stmt.bind(":isRead", messageInfo.isRead)
+        stmt.bind(":isExpired", messageInfo.isExpired)
+        stmt.bind(":ttl", messageInfo.ttlMs)
+        stmt.bind(":expiresAt", messageInfo.expiresAt)
+        stmt.bind(":isDelivered", messageInfo.isDelivered)
+        stmt.bind(":message", messageInfo.message)
+        stmt.bind(":hasFailures", conversationMessageInfo.failures.isNotEmpty())
     }
 
     /** Throws InvalidGroupException if group_conv table was missing, else rethrows the given exception. */
@@ -173,21 +173,23 @@ WHERE
 
     private fun insertMessage(connection: SQLiteConnection, conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo) {
         val tableName = ConversationTable.getTablename(conversationId)
-        val sql =
-            """
+
+        val sql = """
 INSERT INTO $tableName
     (id, speaker_contact_id, timestamp, received_timestamp, is_read, is_expired, ttl, expires_at, is_delivered, message, has_failures, n)
 VALUES
-    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT count(n)
-                                       FROM   $tableName
-                                       WHERE  timestamp = ?)+1)
+    (:id, :speakerContactId, :timestamp, :receivedTimestamp, :isRead, :isExpired, :ttl, :expiresAt, :isDelivered, :message, :hasFailures,
+        (SELECT count(n)
+         FROM   $tableName
+         WHERE  timestamp = :timestamp)+1)
 """
         try {
             connection.withPrepared(sql) { stmt ->
                 conversationMessageInfoToRow(conversationMessageInfo, stmt)
-                stmt.bind(12, conversationMessageInfo.info.timestamp)
                 stmt.step()
             }
+
+            insertAttachments(connection, conversationId, conversationMessageInfo.info.id, conversationMessageInfo.info.attachments)
 
             insertFailures(connection, conversationId, conversationMessageInfo.info.id, conversationMessageInfo.failures)
         }
@@ -203,6 +205,57 @@ VALUES
 
             throw e
         }
+    }
+
+    private fun insertAttachmentRefs(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, refs: ArrayList<Long>) {
+        //language=SQLite
+        val sql = """
+INSERT INTO
+    message_attachments
+   (conversation_id, message_id, attachment_id)
+VALUES
+    (:conversationId, :messageId, :attachmentId)
+"""
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(":conversationId", conversationId)
+            stmt.bind(":messageId", messageId)
+
+            refs.forEach {
+                stmt.bind(":attachmentId", it)
+                stmt.step()
+                stmt.reset(false)
+            }
+        }
+    }
+
+    private fun insertAttachments(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, attachments: List<MessageAttachmentInfo>) {
+        //language=SQLite
+        val sql = """
+INSERT INTO
+    attachments
+    (display_name, is_inline, file_id)
+VALUES
+    (:displayName, :isInline, :fileId)
+"""
+
+        val refs = ArrayList<Long>()
+
+        connection.withPrepared(sql) { stmt ->
+            attachments.forEach {
+                stmt.bind(":displayName", it.displayName)
+                stmt.bind(":isInline", it.isInline)
+                stmt.bind(":fileId", it.fileId)
+                stmt.step()
+
+                val attachmentId = connection.lastInsertId
+                refs.add(attachmentId)
+
+                stmt.reset()
+            }
+        }
+
+        insertAttachmentRefs(connection, conversationId, messageId, refs)
     }
 
     private fun deleteFailures(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
@@ -654,8 +707,9 @@ LIMIT
 
             if (!stmt.step())
                 null
-            else
+            else {
                 rowToConversationMessageInfo(connection, stmt, conversationId)
+            }
         }
     }
 
@@ -942,8 +996,41 @@ AND
         }
     }
 
+    private fun selectAttachments(connection: SQLiteConnection, conversationId: ConversationId, messageId: String): List<MessageAttachmentInfo> {
+        //language=SQLite
+        val sql = """
+SELECT
+    a.display_name,
+    a.file_id,
+    a.is_inline
+FROM
+    message_attachments m
+JOIN
+    attachments a
+ON
+    a.id = m.attachment_id
+WHERE
+    m.conversation_id = :conversationId
+AND
+    m.message_id = :messageId
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(":conversationId", conversationId)
+            stmt.bind(":messageId", messageId)
+            stmt.map {
+                MessageAttachmentInfo(
+                    stmt.columnString(0),
+                    stmt.columnString(1),
+                    stmt.columnBool(2)
+                )
+            }
+        }
+    }
+
     private fun rowToConversationMessageInfo(connection: SQLiteConnection, stmt: SQLiteStatement, conversationId: ConversationId): ConversationMessageInfo {
         val id = stmt.columnString(0)
+        val attachments = selectAttachments(connection, conversationId, id)
+
         val speaker = stmt.columnNullableLong(1)?.let(::UserId)
         val timestamp = stmt.columnLong(2)
         val receivedTimestamp = stmt.columnLong(3)
@@ -972,7 +1059,8 @@ AND
                 isRead,
                 isDestroyed,
                 ttl,
-                expiresAt
+                expiresAt,
+                attachments
             ),
             failures
         )
