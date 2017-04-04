@@ -11,6 +11,10 @@ interface FileListPersistenceManager {
 
     fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, includeDeleted: Boolean, path: String): Promise<List<RemoteFile>, Exception>
 
+    //returns a total map; InvalidFileException is raised if any of the file ids are invalid
+    //pending files are treated as missing
+    fun getFilesById(fileIds: List<String>): Promise<Map<String, RemoteFile>, Exception>
+
     fun getFileCount(): Promise<Int, Exception>
 
     //generates remote updates

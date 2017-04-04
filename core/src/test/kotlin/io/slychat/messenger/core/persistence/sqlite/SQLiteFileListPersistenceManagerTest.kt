@@ -660,4 +660,42 @@ class SQLiteFileListPersistenceManagerTest {
             containsOnly(DirEntry.F(file2))
         }
     }
+
+    @Test
+    fun `getFilesById should throw InvalidFileException if any fileIds are invalid`() {
+        val file = insertFile()
+
+        assertFailsWith(InvalidFileException::class) {
+            fileListPersistenceManager.getFilesById(listOf(file.id, generateFileId())).get()
+        }
+    }
+
+    @Test
+    fun `getFilesById should throw InvalidFileException if any fileIds are marked as pending`() {
+        val file = insertFile(lastUpdateVersion = 0)
+
+        assertFailsWith(InvalidFileException::class) {
+            fileListPersistenceManager.getFilesById(listOf(file.id)).get()
+        }
+    }
+
+    @Test
+    fun `getFilesById should throw InvalidFileException if any fileIds are marked as deleted`() {
+        val file = insertFile(isDeleted = true)
+
+        assertFailsWith(InvalidFileException::class) {
+            fileListPersistenceManager.getFilesById(listOf(file.id)).get()
+        }
+    }
+
+    @Test
+    fun `getFilesById should return info if all fileIds are valid`() {
+        val file = insertFile()
+        val file2 = insertFile()
+
+        assertThat(fileListPersistenceManager.getFilesById(listOf(file.id, file2.id)).get()).desc("Should contain all requested entries") {
+            containsEntry(file.id, file)
+            containsEntry(file2.id, file2)
+        }
+    }
 }

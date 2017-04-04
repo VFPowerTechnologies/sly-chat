@@ -102,6 +102,27 @@ OFFSET
         selectFiles(it, path, startingAt, count, includePending, includeDeleted)
     }
 
+    override fun getFilesById(fileIds: List<String>): Promise<Map<String, RemoteFile>, Exception> {
+        return if (fileIds.isEmpty())
+            Promise.ofSuccess(emptyMap())
+        else {
+            sqlitePersistenceManager.runQuery { connection ->
+                val r = HashMap<String, RemoteFile>()
+
+                fileIds.forEach { fileId ->
+                    val f = fileUtils.selectFile(connection, fileId) ?: throw InvalidFileException(fileId)
+
+                    if (f.isPending || f.isDeleted)
+                        throw InvalidFileException(fileId)
+
+                    r[fileId] = f
+                }
+
+                r
+            }
+        }
+    }
+
     private fun updateFile(connection: SQLiteConnection, file: RemoteFile) {
         //language=SQLite
         val sql = """
@@ -335,7 +356,7 @@ ON
                     Key(stmt.columnBlob(2)),
                     CipherId(stmt.columnInt(3).toShort()),
                     stmt.columnString(5),
-                    stmt.columnString(4)
+                    stmt.columnString(4), null
                 )
                 FileListUpdate.MetadataUpdate(fileId, userMetadata)
             }
