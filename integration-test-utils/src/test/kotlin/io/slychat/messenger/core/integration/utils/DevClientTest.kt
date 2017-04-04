@@ -7,8 +7,6 @@ import io.slychat.messenger.core.http.api.contacts.encryptRemoteAddressBookEntri
 import io.slychat.messenger.core.http.api.offline.SerializedOfflineMessage
 import io.slychat.messenger.core.http.api.pushnotifications.PushNotificationService
 import io.slychat.messenger.core.http.api.registration.RegistrationInfo
-import io.slychat.messenger.core.integration.web.DevServerInsaneException
-import io.slychat.messenger.core.integration.utils.IsDevServerRunningClassRule
 import io.slychat.messenger.core.persistence.AddressBookUpdate
 import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import org.assertj.core.api.Assertions.assertThat

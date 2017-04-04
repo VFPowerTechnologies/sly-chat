@@ -1,4 +1,4 @@
-package io.slychat.messenger.core.integration.web
+package io.slychat.messenger.core.integration.utils
 
 class DevServerInsaneException(
     reason: String,
