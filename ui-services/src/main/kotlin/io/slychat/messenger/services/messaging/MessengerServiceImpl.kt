@@ -191,9 +191,12 @@ class MessengerServiceImpl(
         }.enforceExhaustive()
 
         return storageService.getFilesById(remoteFileIds).bindUi { attachmentInfo ->
+            var n = 0
             val attachments = attachmentInfo.map {
                 val file = it.value
-                MessageAttachmentInfo(file.userMetadata.fileName, file.id, false)
+                val a = MessageAttachmentInfo(n, file.userMetadata.fileName, file.id, false)
+                n += 1
+                a
             }
 
             val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs, attachments)
@@ -221,6 +224,7 @@ class MessengerServiceImpl(
 
                 val serialized = objectMapper.writeValueAsBytes(wrapper)
 
+                //this is in this order since right now there's nothing to detect missing queued messages from addMessage
                 messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
                     messageService.addMessage(userId.toConversationId(), conversationMessageInfo)
                 }

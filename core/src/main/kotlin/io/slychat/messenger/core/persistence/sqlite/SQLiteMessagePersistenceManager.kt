@@ -207,55 +207,29 @@ VALUES
         }
     }
 
-    private fun insertAttachmentRefs(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, refs: ArrayList<Long>) {
-        //language=SQLite
-        val sql = """
-INSERT INTO
-    message_attachments
-   (conversation_id, message_id, attachment_id)
-VALUES
-    (:conversationId, :messageId, :attachmentId)
-"""
-
-        connection.withPrepared(sql) { stmt ->
-            stmt.bind(":conversationId", conversationId)
-            stmt.bind(":messageId", messageId)
-
-            refs.forEach {
-                stmt.bind(":attachmentId", it)
-                stmt.step()
-                stmt.reset(false)
-            }
-        }
-    }
-
     private fun insertAttachments(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, attachments: List<MessageAttachmentInfo>) {
         //language=SQLite
         val sql = """
 INSERT INTO
     attachments
-    (display_name, is_inline, file_id)
+    (conversation_id, message_id, n, display_name, is_inline, file_id)
 VALUES
-    (:displayName, :isInline, :fileId)
+    (:conversationId, :messageId, :n, :displayName, :isInline, :fileId)
 """
-
-        val refs = ArrayList<Long>()
 
         connection.withPrepared(sql) { stmt ->
             attachments.forEach {
+                stmt.bind(":conversationId", conversationId)
+                stmt.bind(":messageId", messageId)
+                stmt.bind(":n", it.n)
                 stmt.bind(":displayName", it.displayName)
                 stmt.bind(":isInline", it.isInline)
                 stmt.bind(":fileId", it.fileId)
                 stmt.step()
 
-                val attachmentId = connection.lastInsertId
-                refs.add(attachmentId)
-
                 stmt.reset()
             }
         }
-
-        insertAttachmentRefs(connection, conversationId, messageId, refs)
     }
 
     private fun deleteFailures(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
@@ -1000,28 +974,28 @@ AND
         //language=SQLite
         val sql = """
 SELECT
-    a.display_name,
-    a.file_id,
-    a.is_inline
+    n,
+    display_name,
+    file_id,
+    is_inline
 FROM
-    message_attachments m
-JOIN
-    attachments a
-ON
-    a.id = m.attachment_id
+    attachments
 WHERE
-    m.conversation_id = :conversationId
+    conversation_id = :conversationId
 AND
-    m.message_id = :messageId
+    message_id = :messageId
+ORDER BY
+    n
 """
         return connection.withPrepared(sql) { stmt ->
             stmt.bind(":conversationId", conversationId)
             stmt.bind(":messageId", messageId)
             stmt.map {
                 MessageAttachmentInfo(
-                    stmt.columnString(0),
+                    stmt.columnInt(0),
                     stmt.columnString(1),
-                    stmt.columnBool(2)
+                    stmt.columnString(2),
+                    stmt.columnBool(3)
                 )
             }
         }

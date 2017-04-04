@@ -1070,6 +1070,7 @@ class MessengerServiceImplTest {
         whenever(storageService.getFilesById(listOf(file.id))).thenResolve(mapOf(file.id to file))
 
         val expected = MessageAttachmentInfo(
+            0,
             file.userMetadata.fileName,
             file.id,
             false

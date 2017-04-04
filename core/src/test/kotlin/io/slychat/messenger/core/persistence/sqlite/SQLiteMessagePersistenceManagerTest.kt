@@ -437,6 +437,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val speaker = participants.first()
 
             val attachmentInfo = MessageAttachmentInfo(
+                0,
                 "dummy.jpg",
                 generateFileId(),
                 true

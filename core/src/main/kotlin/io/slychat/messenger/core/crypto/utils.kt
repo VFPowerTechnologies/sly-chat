@@ -129,3 +129,5 @@ fun generateDownloadId(): String = randomUUID()
 fun generateFileId(): String = randomUUID()
 
 fun generateShareKey(): String = randomUUID()
+
+fun generateAttachmentId(): String = randomUUID()
