@@ -29,6 +29,9 @@ interface StorageService {
 
     fun getFilesAt(startingAt: Int, count: Int, path: String): Promise<List<RemoteFile>, Exception>
 
+    //if any files are missing, an error is thrown
+    fun getFilesById(fileIds: List<String>): Promise<Map<String, RemoteFile>, Exception>
+
     fun deleteFiles(fileIds: List<String>): Promise<Unit, Exception>
 
     fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String, cache: Boolean): Promise<Unit, Exception>

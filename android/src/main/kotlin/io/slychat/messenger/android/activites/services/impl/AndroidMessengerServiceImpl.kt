@@ -159,10 +159,10 @@ class AndroidMessengerServiceImpl(activity: AppCompatActivity): AndroidMessenger
     override fun sendMessageTo (conversationId: ConversationId, message: String, ttl: Long): Promise<Unit, Exception> {
         when(conversationId) {
             is ConversationId.User -> {
-                return messengerService.sendMessageTo(conversationId.id, message, ttl)
+                return messengerService.sendMessageTo(conversationId.id, message, ttl, emptyList())
             }
             is ConversationId.Group -> {
-                return messengerService.sendGroupMessageTo(conversationId.id, message, ttl)
+                return messengerService.sendGroupMessageTo(conversationId.id, message, ttl, emptyList())
             }
         }
     }

@@ -13,7 +13,9 @@ import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.EncryptedPackagePayloadV0
+import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.desc
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
 import nl.komponents.kovenant.Promise
@@ -35,24 +37,25 @@ class MessengerServiceImplTest {
         @ClassRule
         val kovenantTestMode = KovenantTestModeRule()
 
-        val selfId = randomUserId()
+        private val selfId = randomUserId()
 
         init {
             MockitoKotlin.registerInstanceCreator { randomGroupId() }
         }
     }
 
-    val contactsService: ContactsService = mock()
-    val messageService: MessageService = mock()
-    val groupService: GroupService = mock()
-    val relayClientManager: RelayClientManager = mock()
-    val messageSender: MessageSender = mock()
-    val messageReceiver: MessageReceiver = mock()
-    val relayClock: RelayClock = mock()
+    private val contactsService: ContactsService = mock()
+    private val messageService: MessageService = mock()
+    private val groupService: GroupService = mock()
+    private val storageService: StorageService = mock()
+    private val relayClientManager: RelayClientManager = mock()
+    private val messageSender: MessageSender = mock()
+    private val messageReceiver: MessageReceiver = mock()
+    private val relayClock: RelayClock = mock()
 
-    val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
+    private val relayEvents: PublishSubject<RelayClientEvent> = PublishSubject.create()
 
-    val messageSent: PublishSubject<MessageSendRecord> = PublishSubject.create()
+    private val messageSent: PublishSubject<MessageSendRecord> = PublishSubject.create()
 
     @Before
     fun before() {
@@ -78,32 +81,33 @@ class MessengerServiceImplTest {
         whenever(relayClock.currentTime()).thenReturn(1)
     }
 
-    fun randomTextSingleRecord(): MessageSendRecord.Ok {
+    private fun randomTextSingleRecord(): MessageSendRecord.Ok {
         return MessageSendRecord.Ok(
             randomTextSingleMetadata(),
             currentTimestamp()
         )
     }
 
-    fun randomTextGroupRecord(): MessageSendRecord.Ok {
+    private fun randomTextGroupRecord(): MessageSendRecord.Ok {
         return MessageSendRecord.Ok(
             randomTextGroupMetadata(),
             currentTimestamp()
         )
     }
 
-    fun randomOtherRecord(): MessageSendRecord.Ok {
+    private fun randomOtherRecord(): MessageSendRecord.Ok {
         return MessageSendRecord.Ok(
             randomOtherMetadata(),
             currentTimestamp()
         )
     }
 
-    fun createService(): MessengerServiceImpl {
+    private fun createService(): MessengerServiceImpl {
         return MessengerServiceImpl(
             contactsService,
             messageService,
             groupService,
+            storageService,
             relayClientManager,
             messageSender,
             messageReceiver,
@@ -112,7 +116,7 @@ class MessengerServiceImplTest {
         )
     }
 
-    fun wheneverAllowMessagesFrom(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
+    private fun wheneverAllowMessagesFrom(fn: (Set<UserId>) -> Promise<Set<UserId>, Exception>) {
         whenever(contactsService.filterBlocked(anySet())).thenAnswer {
             @Suppress("UNCHECKED_CAST")
             val a = it.arguments[0] as Set<UserId>
@@ -120,25 +124,25 @@ class MessengerServiceImplTest {
         }
     }
 
-    fun setAllowAllUsers() {
+    private fun setAllowAllUsers() {
         wheneverAllowMessagesFrom {
             Promise.ofSuccess(it)
         }
     }
 
-    fun setAllowedUsers(allowedUsers: Set<UserId>) {
+    private fun setAllowedUsers(allowedUsers: Set<UserId>) {
         wheneverAllowMessagesFrom {
             Promise.ofSuccess<Set<UserId>, Exception>(allowedUsers)
         }
     }
 
-    fun getQueuedPackages(): Collection<Package> {
+    private fun getQueuedPackages(): Collection<Package> {
         val argumentCaptor = argumentCaptor<List<Package>>()
         verify(messageReceiver).processPackages(capture(argumentCaptor))
         return argumentCaptor.value
     }
 
-    fun newMessagePayload(message: String): String {
+    private fun newMessagePayload(message: String): String {
         val objectMapper = ObjectMapper()
         return objectMapper.writeValueAsString(EncryptedPackagePayloadV0(false, message.toByteArray()))
     }
@@ -244,7 +248,7 @@ class MessengerServiceImplTest {
 
         val recipient = randomUserId()
 
-        messengerService.sendMessageTo(recipient, randomMessageText(), 0)
+        messengerService.sendMessageTo(recipient, randomMessageText(), 0, emptyList())
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             assertEquals(recipient, it.metadata.userId, "Invalid recipient")
@@ -258,7 +262,7 @@ class MessengerServiceImplTest {
 
         val userId = randomUserId()
 
-        messengerService.sendMessageTo(userId, randomMessageText(), 0)
+        messengerService.sendMessageTo(userId, randomMessageText(), 0, emptyList())
 
         verify(messageService).addMessage(eq(userId.toConversationId()), capture {
             assertFalse(it.info.isDelivered, "Should not be marked as delivered")
@@ -274,7 +278,7 @@ class MessengerServiceImplTest {
 
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
         
-        messengerService.sendGroupMessageTo(groupId, randomMessageText(), 0)
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), 0, emptyList())
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertFalse(it.info.isDelivered, "Should not be marked as delivered")
@@ -282,7 +286,7 @@ class MessengerServiceImplTest {
         })
     }
 
-    fun deserializeTextMessage(bytes: ByteArray): TextMessage {
+    private fun deserializeTextMessage(bytes: ByteArray): TextMessage {
         val objectMapper = ObjectMapper()
 
         return objectMapper.readValue(bytes, SlyMessage.Text::class.java).m
@@ -298,7 +302,7 @@ class MessengerServiceImplTest {
 
         val userId = randomUserId()
 
-        messengerService.sendMessageTo(userId, randomMessageText(), 0)
+        messengerService.sendMessageTo(userId, randomMessageText(), 0, emptyList())
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             val message = deserializeTextMessage(it.message)
@@ -323,7 +327,7 @@ class MessengerServiceImplTest {
 
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
 
-        messengerService.sendGroupMessageTo(groupId, randomMessageText(), 0)
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), 0, emptyList())
 
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             it.forEach {
@@ -343,7 +347,7 @@ class MessengerServiceImplTest {
         val messengerService = createService()
 
         val ttl = 1000L
-        messengerService.sendMessageTo(randomUserId(), randomMessageText(), ttl)
+        messengerService.sendMessageTo(randomUserId(), randomMessageText(), ttl, emptyList())
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             val message = deserializeTextMessage(it.message)
@@ -357,7 +361,7 @@ class MessengerServiceImplTest {
 
         val ttl = 1000L
         val userId = randomUserId()
-        messengerService.sendMessageTo(userId, randomMessageText(), ttl)
+        messengerService.sendMessageTo(userId, randomMessageText(), ttl, emptyList())
 
         verify(messageService).addMessage(eq(userId.toConversationId()), capture {
             assertEquals(ttl, it.info.ttlMs, "Invalid TTL value")
@@ -373,7 +377,7 @@ class MessengerServiceImplTest {
 
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
 
-        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl)
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl, emptyList())
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(ttl, it.info.ttlMs, "Invalid TTL value")
@@ -389,7 +393,7 @@ class MessengerServiceImplTest {
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(setOf(randomUserId()))
 
         val ttl = 1000L
-        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl)
+        messengerService.sendGroupMessageTo(groupId, randomMessageText(), ttl, emptyList())
 
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             val m = it.first()
@@ -461,7 +465,7 @@ class MessengerServiceImplTest {
 
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(members)
 
-        messengerService.sendGroupMessageTo(groupId, "msg", 0)
+        messengerService.sendGroupMessageTo(groupId, "msg", 0, emptyList())
 
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.map { it.metadata.userId }.toSet(), "Member list is invalid")
@@ -477,7 +481,7 @@ class MessengerServiceImplTest {
         whenever(groupService.getNonBlockedMembers(groupId)).thenResolve(emptySet())
 
         val message = "msg"
-        messengerService.sendGroupMessageTo(groupId, message, 0)
+        messengerService.sendGroupMessageTo(groupId, message, 0, emptyList())
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Message is invalid")
@@ -497,7 +501,7 @@ class MessengerServiceImplTest {
 
         val message = "msg"
 
-        messengerService.sendGroupMessageTo(groupId, message, 0)
+        messengerService.sendGroupMessageTo(groupId, message, 0, emptyList())
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Text message doesn't match")
@@ -515,7 +519,7 @@ class MessengerServiceImplTest {
 
         val message = "msg"
 
-        messengerService.sendGroupMessageTo(groupId, message, 0)
+        messengerService.sendGroupMessageTo(groupId, message, 0, emptyList())
 
         var sentMessageId: String? = null
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
@@ -540,7 +544,7 @@ class MessengerServiceImplTest {
         verify(groupService).part(groupId)
     }
 
-    fun assertPartMessagesSent(members: Set<UserId>) {
+    private fun assertPartMessagesSent(members: Set<UserId>) {
         verify(messageSender).addToQueue(capture<List<SenderMessageEntry>> {
             assertEquals(members, it.mapToSet { it.metadata.userId }, "Invalid users")
             val messages = convertMessageFromSerialized<SlyMessage.GroupEvent>(it)
@@ -615,14 +619,14 @@ class MessengerServiceImplTest {
         verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
 
-    fun getAllSentMessages(times: Int): List<SenderMessageEntry> {
+    private fun getAllSentMessages(times: Int): List<SenderMessageEntry> {
         val captor = argumentCaptor<List<SenderMessageEntry>>()
         verify(messageSender, atLeast(times)).addToQueue(capture(captor))
 
         return captor.allValues.flatten()
     }
 
-    inline fun <reified T : GroupEventMessage> assertNoGroupMessagesSent() {
+    private inline fun <reified T : GroupEventMessage> assertNoGroupMessagesSent() {
         val messages = getAllSentMessages(0)
 
         if (messages.isEmpty())
@@ -638,7 +642,16 @@ class MessengerServiceImplTest {
         }
     }
 
-    inline fun <reified T : SyncMessage> retrieveSyncMessage(): T {
+    private fun getSentTextMessage(): TextMessage {
+        val captor = argumentCaptor<SenderMessageEntry>()
+
+        verify(messageSender).addToQueue(capture(captor))
+
+        val m = captor.value
+        return deserializeTextMessage(m.message)
+    }
+
+    private inline fun <reified T : SyncMessage> retrieveSyncMessage(): T {
         val captor = argumentCaptor<SenderMessageEntry>()
         verify(messageSender, atLeast(1)).addToQueue(capture(captor))
 
@@ -647,14 +660,14 @@ class MessengerServiceImplTest {
         return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
     }
 
-    inline fun <reified T : ControlMessage> convertToControlMessage(entry: SenderMessageEntry): T {
+    private inline fun <reified T : ControlMessage> convertToControlMessage(entry: SenderMessageEntry): T {
         val wrapper = convertMessageFromSerialized<SlyMessage.Control>(entry)
 
         return wrapper.m as? T ?: throw AssertionError("Unexpected ${T::class.simpleName} message")
     }
 
     /** Assert that the given group message type was sent to everyone in the given list, and that it satisifies certain conditions. */
-    inline fun <reified T> assertGroupMessagesSentTo(expectedConversationIds: Set<UserId>, asserter: (UserId, T) -> Unit) {
+    private inline fun <reified T> assertGroupMessagesSentTo(expectedConversationIds: Set<UserId>, asserter: (UserId, T) -> Unit) {
         val messages = getAllSentMessages(1)
 
         assertTrue(messages.isNotEmpty(), "No messages were sent")
@@ -685,7 +698,7 @@ class MessengerServiceImplTest {
     }
 
     /** Runs the body with the proper setup for an existing group to be tested. */
-    fun withExistingGroup(noMembers: Boolean = false, body: (messengerService: MessengerServiceImpl, groupInfo: GroupInfo, members: Set<UserId>) -> Unit) {
+    private fun withExistingGroup(noMembers: Boolean = false, body: (messengerService: MessengerServiceImpl, groupInfo: GroupInfo, members: Set<UserId>) -> Unit) {
         val messengerService = createService()
 
         val groupInfo = randomGroupInfo()
@@ -961,7 +974,7 @@ class MessengerServiceImplTest {
 
         val recipient = selfId
 
-        messengerService.sendMessageTo(recipient, randomMessageText(), 0)
+        messengerService.sendMessageTo(recipient, randomMessageText(), 0, emptyList())
 
         verify(messageSender).addToQueue(capture<SenderMessageEntry> {
             assertNotEquals(MessageCategory.TEXT_SINGLE, it.metadata.category, "Invalid category")
@@ -976,7 +989,7 @@ class MessengerServiceImplTest {
 
         val messageText = randomMessageText()
 
-        messengerService.sendMessageTo(recipient, messageText, 0)
+        messengerService.sendMessageTo(recipient, messageText, 0, emptyList())
 
         verify(messageService).addMessage(eq(recipient.toConversationId()), capture {
             assertTrue(it.info.isDelivered, "Not marked as delivered")
@@ -994,7 +1007,7 @@ class MessengerServiceImplTest {
 
         val messageText = randomMessageText()
 
-        messengerService.sendMessageTo(recipient, messageText, 0)
+        messengerService.sendMessageTo(recipient, messageText, 0, emptyList())
 
         val selfMessage = retrieveSyncMessage<SyncMessage.SelfMessage>()
 
@@ -1047,5 +1060,59 @@ class MessengerServiceImplTest {
         val message = retrieveSyncMessage<SyncMessage.FileListSync>()
 
         assertEquals(SyncMessage.FileListSync(), message, "Invalid sync message")
+    }
+
+    @Test
+    fun `it should add attachment info to stored messages for remote source attachments if present`() {
+        val service = createService()
+
+        val file = randomRemoteFile()
+        whenever(storageService.getFilesById(listOf(file.id))).thenResolve(mapOf(file.id to file))
+
+        val expected = MessageAttachmentInfo(
+            file.userMetadata.fileName,
+            file.id,
+            false
+        )
+
+        val attachment = AttachmentSource.Remote(file.id, false)
+        val userId = randomUserId()
+        service.sendMessageTo(userId, "test", 0, listOf(attachment)).get()
+
+        verify(messageService).addMessage(any(), capture {
+            assertThat(it.info.attachments).desc("Should contain a valid attachment description") {
+                containsOnly(expected)
+            }
+        })
+    }
+
+    @Test
+    fun `it should include attachment info for queued messages if present`() {
+        val service = createService()
+
+        val file = randomRemoteFile()
+        whenever(storageService.getFilesById(listOf(file.id))).thenResolve(mapOf(file.id to file))
+
+        val expected = TextMessageAttachment(
+            file.id,
+            file.shareKey,
+            file.userMetadata.fileName,
+            file.userMetadata.fileKey
+        )
+
+        val attachment = AttachmentSource.Remote(file.id, false)
+        val userId = randomUserId()
+        service.sendMessageTo(userId, "test", 0, listOf(attachment)).get()
+
+        val m = getSentTextMessage()
+
+        assertThat(m.attachments).desc("Should contain a valid attachment") {
+            containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `it should include group message attachment info for remote source attachments if present`() {
+        TODO()
     }
 }

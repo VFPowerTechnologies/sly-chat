@@ -179,6 +179,10 @@ class StorageServiceImpl(
         return fileListPersistenceManager.getFilesAt(startingAt, count, false, false, path)
     }
 
+    override fun getFilesById(fileIds: List<String>): Promise<Map<String, RemoteFile>, Exception> {
+        return fileListPersistenceManager.getFilesById(fileIds)
+    }
+
     override fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception> {
         return fileListPersistenceManager.getEntriesAt(startingAt, count, false, path)
     }
@@ -209,7 +213,7 @@ class StorageServiceImpl(
                 key,
                 cipher.id,
                 remoteFileDirectory,
-                remoteFileName
+                remoteFileName, null
             )
 
             //FIXME calc based on file size

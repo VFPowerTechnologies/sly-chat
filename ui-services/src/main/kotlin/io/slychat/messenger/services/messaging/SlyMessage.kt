@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.services.messaging.TextMessageAttachment
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
@@ -114,7 +115,9 @@ data class TextMessage(
     @JsonProperty("groupId")
     val groupId: GroupId?,
     @JsonProperty("ttl")
-    val ttlMs: Long
+    val ttlMs: Long,
+    @JsonProperty("attachments")
+    val attachments: List<TextMessageAttachment> = emptyList()
 )
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")

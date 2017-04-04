@@ -15,6 +15,7 @@ import io.slychat.messenger.services.RelayClientManager
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.contacts.ContactsService
+import io.slychat.messenger.services.files.StorageService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
@@ -35,6 +36,7 @@ class MessengerServiceImpl(
     private val contactsService: ContactsService,
     private val messageService: MessageService,
     private val groupService: GroupService,
+    private val storageService: StorageService,
     private val relayClientManager: RelayClientManager,
     private val messageSender: MessageSender,
     private val messageReceiver: MessageReceiver,
@@ -175,35 +177,61 @@ class MessengerServiceImpl(
 
     /* UIMessengerService interface */
 
-    override fun sendMessageTo(userId: UserId, message: String, ttlMs: Long): Promise<Unit, Exception> {
+    override fun sendMessageTo(userId: UserId, message: String, ttlMs: Long, attachments: List<AttachmentSource>): Promise<Unit, Exception> {
         val isSelfMessage = userId == selfId
 
         val timestamp = relayClock.currentTime()
 
-        val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs)
-        val conversationMessageInfo = ConversationMessageInfo(null, messageInfo.copy(
-            isDelivered = isSelfMessage,
-            receivedTimestamp = if (!isSelfMessage) 0 else relayClock.currentTime()
-        ))
+        val remoteFileIds = ArrayList<String>()
 
-        val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
-
-        return if (!isSelfMessage) {
-            val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttlMs)
-            val wrapper = SlyMessage.Text(m)
-
-            val serialized = objectMapper.writeValueAsBytes(wrapper)
-
-            messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
-                messageService.addMessage(userId.toConversationId(), conversationMessageInfo)
+        attachments.forEach {
+            when (it) {
+                is AttachmentSource.Remote -> remoteFileIds.add(it.fileId)
             }
-        }
-        else {
-            //we don't actually wanna send a text message to ourselves; mostly because both the sent and received ids would be the same
-            //so we just add a new sent message, then broadcast the sync message to other devices
+        }.enforceExhaustive()
 
-            messageService.addMessage(userId.toConversationId(), conversationMessageInfo) bindUi {
-                broadcastSentMessage(metadata, conversationMessageInfo) map { Unit }
+        return storageService.getFilesById(remoteFileIds).bindUi { attachmentInfo ->
+            val attachments = attachmentInfo.map {
+                val file = it.value
+                MessageAttachmentInfo(file.userMetadata.fileName, file.id, false)
+            }
+
+            val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs, attachments)
+            val conversationMessageInfo = ConversationMessageInfo(null, messageInfo.copy(
+                isDelivered = isSelfMessage,
+                receivedTimestamp = if (!isSelfMessage) 0 else relayClock.currentTime()
+            ))
+
+            val metadata = MessageMetadata(userId, null, MessageCategory.TEXT_SINGLE, messageInfo.id)
+
+            if (!isSelfMessage) {
+                val textAttachments = attachmentInfo.map {
+                    val file = it.value
+
+                    TextMessageAttachment(
+                        file.id,
+                        file.shareKey,
+                        file.userMetadata.fileName,
+                        file.userMetadata.fileKey
+                    )
+                }
+
+                val m = TextMessage(MessageId(messageInfo.id), messageInfo.timestamp, message, null, ttlMs, textAttachments)
+                val wrapper = SlyMessage.Text(m)
+
+                val serialized = objectMapper.writeValueAsBytes(wrapper)
+
+                messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
+                    messageService.addMessage(userId.toConversationId(), conversationMessageInfo)
+                }
+            }
+            else {
+                //we don't actually wanna send a text message to ourselves; mostly because both the sent and received ids would be the same
+                //so we just add a new sent message, then broadcast the sync message to other devices
+
+                messageService.addMessage(userId.toConversationId(), conversationMessageInfo) bindUi {
+                    broadcastSentMessage(metadata, conversationMessageInfo) map { Unit }
+                }
             }
         }
     }
@@ -236,7 +264,7 @@ class MessengerServiceImpl(
         return messageSender.addToQueue(messages) map { members }
     }
 
-    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long): Promise<Unit, Exception> {
+    override fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long, attachments: List<AttachmentSource>): Promise<Unit, Exception> {
         val timestamp = relayClock.currentTime()
 
         val m = SlyMessage.Text(TextMessage(MessageId(randomMessageId()), timestamp, message, groupId, ttlMs))
@@ -244,7 +272,7 @@ class MessengerServiceImpl(
         val messageId = randomUUID()
 
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
-            val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs).copy(id = messageId)
+            val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs, emptyList()).copy(id = messageId)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
             messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
         }

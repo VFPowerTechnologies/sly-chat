@@ -170,11 +170,11 @@ class UIMessengerServiceImpl(
     /* Interface methods. */
 
     override fun sendMessageTo(userId: UserId, message: String, ttlMs: Long): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().sendMessageTo(userId, message, ttlMs)
+        return getMessengerServiceOrThrow().sendMessageTo(userId, message, ttlMs, emptyList())
     }
 
     override fun sendGroupMessageTo(groupId: GroupId, message: String, ttlMs: Long): Promise<Unit, Exception> {
-        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message, ttlMs)
+        return getMessengerServiceOrThrow().sendGroupMessageTo(groupId, message, ttlMs, emptyList())
     }
 
     override fun addNewMessageListener(listener: (UIMessageInfo) -> Unit) {

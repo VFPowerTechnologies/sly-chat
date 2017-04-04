@@ -606,8 +606,8 @@ class DesktopApp : Application() {
         val messengerService = userComponent.messengerService
 
         when (conversationId) {
-            is ConversationId.User -> messengerService.sendMessageTo(conversationId.id, message, 0)
-            is ConversationId.Group -> messengerService.sendGroupMessageTo(conversationId.id, message, 0)
+            is ConversationId.User -> messengerService.sendMessageTo(conversationId.id, message, 0, emptyList())
+            is ConversationId.Group -> messengerService.sendGroupMessageTo(conversationId.id, message, 0, emptyList())
         } fail {
             log.error("Failed to send notification reply: {}", it.message, it)
         }
