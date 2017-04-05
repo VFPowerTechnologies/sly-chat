@@ -119,9 +119,9 @@ class SQLiteMessagePersistenceManager(
         val sql = """
 INSERT INTO
     received_attachments
-    (conversation_id, message_id, n, their_file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id)
+    (conversation_id, message_id, n, their_file_id, their_share_key, our_file_id, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id)
 VALUES
-    (:conversationId, :messageId, :n, :theirFileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId)
+    (:conversationId, :messageId, :n, :theirFileId, :theirShareKey, :ourFileId, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId)
 """
 
         connection.withPrepared(sql) { stmt ->
@@ -132,6 +132,7 @@ VALUES
                 stmt.bind(":n", it.n)
                 stmt.bind(":theirFileId", it.theirFileId)
                 stmt.bind(":theirShareKey", it.theirShareKey)
+                stmt.bind(":ourFileId", it.ourFileId)
                 stmt.bind(":fileKey", it.userMetadata.fileKey)
                 stmt.bind(":cipherId", it.userMetadata.cipherId)
                 stmt.bind(":directory", it.userMetadata.directory)
@@ -162,6 +163,7 @@ SELECT
     n,
     their_file_id,
     their_share_key,
+    our_file_id,
     file_key,
     cipher_id,
     directory,
@@ -183,14 +185,15 @@ AND
                     it.columnInt(0),
                     it.columnString(1),
                     it.columnString(2),
+                    it.columnString(3),
                     UserMetadata(
-                        it.columnKey(3),
-                        it.columnCipherId(4),
-                        it.columnString(5),
+                        it.columnKey(4),
+                        it.columnCipherId(5),
                         it.columnString(6),
+                        it.columnString(7),
                         SharedFrom(
-                            it.columnUserId(7),
-                            it.columnNullableGroupId(8)
+                            it.columnUserId(8),
+                            it.columnNullableGroupId(9)
                         )
                     )
                 )
