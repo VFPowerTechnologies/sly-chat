@@ -8,16 +8,23 @@ import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.FileMetadata
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.files.SharedFrom
 import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.DuplicateFilePathException
 
 internal class FileUtils {
     fun rowToRemoteFile(stmt: SQLiteStatement, colOffset: Int = 0): RemoteFile {
+        val sharedFromUserId = stmt.columnNullableUserId(14)
+        val sharedFrom = sharedFromUserId?.let {
+            SharedFrom(it, stmt.columnNullableGroupId(15))
+        }
+
         val userMetadata = UserMetadata(
             Key(stmt.columnBlob(colOffset + 7)),
             CipherId(stmt.columnInt(colOffset + 10).toShort()),
             stmt.columnString(colOffset + 9),
-            stmt.columnString(colOffset + 8), null
+            stmt.columnString(colOffset + 8),
+            sharedFrom
         )
 
         val isDeleted = stmt.columnBool(colOffset + 3)
@@ -46,29 +53,35 @@ internal class FileUtils {
     }
 
     fun remoteFileToRow(file: RemoteFile, stmt: SQLiteStatement) {
-        stmt.bind(1, file.id)
-        stmt.bind(2, file.shareKey)
-        stmt.bind(3, file.lastUpdateVersion)
-        stmt.bind(4, file.isDeleted)
-        stmt.bind(5, file.creationDate)
-        stmt.bind(6, file.modificationDate)
-        stmt.bind(7, file.remoteFileSize)
-        stmt.bind(8, file.userMetadata.fileKey.raw)
-        stmt.bind(11, file.userMetadata.cipherId.short.toInt())
-        stmt.bind(9, file.userMetadata.fileName)
-        stmt.bind(10, file.userMetadata.directory)
+        stmt.bind(":id", file.id)
+        stmt.bind(":shareKey", file.shareKey)
+        stmt.bind(":lastUpdateVersion", file.lastUpdateVersion)
+        stmt.bind(":isDeleted", file.isDeleted)
+        stmt.bind(":creationDate", file.creationDate)
+        stmt.bind(":modificationDate", file.modificationDate)
+        stmt.bind(":remoteFileSize", file.remoteFileSize)
+
+        val userMetadata = file.userMetadata
+        stmt.bind(":fileKey", userMetadata.fileKey)
+        stmt.bind(":cipherId", userMetadata.cipherId)
+        stmt.bind(":fileName", userMetadata.fileName)
+        stmt.bind(":directory", userMetadata.directory)
+
+        if (userMetadata.sharedFrom != null) {
+            stmt.bind(":sharedFromUserId", userMetadata.sharedFrom.userId)
+            stmt.bind(":sharedFromGroupId", userMetadata.sharedFrom.groupId)
+        }
 
         val fileMetadata = file.fileMetadata
         if (fileMetadata != null) {
-            stmt.bind(12, fileMetadata.chunkSize)
-            stmt.bind(13, fileMetadata.size)
-            stmt.bind(14, fileMetadata.mimeType)
+            stmt.bind(":chunkSize", fileMetadata.chunkSize)
+            stmt.bind(":fileSize", fileMetadata.size)
+            stmt.bind(":mimeType", fileMetadata.mimeType)
         }
         else {
-            stmt.bind(11, 0)
-            stmt.bind(12, 0)
-            stmt.bind(13, 0)
-            stmt.bindNull(14)
+            stmt.bind(":chunkSize", 0)
+            stmt.bind(":fileSize", 0)
+            stmt.bindNull(":mimeType")
         }
     }
 
@@ -82,16 +95,18 @@ INSERT INTO
     id, share_key, last_update_version,
     is_deleted, creation_date, modification_date,
     remote_file_size, file_key, file_name,
+    shared_from_user_id, shared_from_group_id,
     directory, cipher_id, chunk_size,
     file_size, mime_type, is_pending
     )
     VALUES
     (
-    ?, ?, ?,
-    ?, ?, ?,
-    ?, ?, ?,
-    ?, ?, ?,
-    ?, ?, $isPending
+    :id, :shareKey, :lastUpdateVersion,
+    :isDeleted, :creationDate, :modificationDate,
+    :remoteFileSize, :fileKey, :fileName,
+    :sharedFromUserId, :sharedFromGroupId,
+    :directory, :cipherId, :chunkSize,
+    :fileSize, :mimeType, $isPending
     )
 """
         connection.withPrepared(sql) {
@@ -139,7 +154,8 @@ SELECT
     is_deleted, creation_date, modification_date,
     remote_file_size, file_key, file_name,
     directory, cipher_id, chunk_size,
-    file_size, mime_type
+    file_size, mime_type, shared_from_user_id,
+    shared_from_group_id
 FROM
     files
 WHERE

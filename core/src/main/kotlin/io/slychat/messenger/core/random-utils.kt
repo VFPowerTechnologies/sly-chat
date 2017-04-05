@@ -6,6 +6,7 @@ import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.FileMetadata
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.files.SharedFrom
 import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.http.api.contacts.ApiContactInfo
@@ -186,12 +187,14 @@ fun randomMessageAttachmentInfo(n: Int): MessageAttachmentInfo {
     )
 }
 
+fun randomSharedFrom(): SharedFrom = SharedFrom(randomUserId(), randomGroupId())
+
 fun randomReceivedAttachment(n: Int): ReceivedAttachment {
     return ReceivedAttachment(
         n,
         generateFileId(),
         generateShareKey(),
-        Key(byteArrayOf(0x77))
+        randomUserMetadata(sharedFrom = randomSharedFrom())
     )
 }
 
@@ -237,13 +240,13 @@ fun randomMessageSendFailures(userId: UserId): Map<UserId, MessageSendFailure> =
     userId to MessageSendFailure.InactiveUser()
 )
 
-fun randomUserMetadata(directory: String? = null, fileName: String? = null): UserMetadata {
+fun randomUserMetadata(directory: String? = null, fileName: String? = null, sharedFrom: SharedFrom? = null): UserMetadata {
     return UserMetadata(
         Key(byteArrayOf(0x73, 0x68, 0x69, 0x6e, 0x6f, 0x7a, 0x61, 0x6b, 0x69, 0x61, 0x69)),
         CipherList.defaultDataEncryptionCipher.id,
         directory ?: "/" + randomName(),
         fileName ?: randomName(),
-        null
+        sharedFrom
     )
 }
 

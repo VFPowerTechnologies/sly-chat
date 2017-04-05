@@ -7,6 +7,7 @@ import io.slychat.messenger.core.persistence.DuplicateFilePathException
 import io.slychat.messenger.core.persistence.FileListUpdate
 import io.slychat.messenger.core.persistence.InvalidFileException
 import io.slychat.messenger.core.randomRemoteFile
+import io.slychat.messenger.core.randomSharedFrom
 import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.testutils.desc
 import org.assertj.core.api.Assertions.assertThat
@@ -94,6 +95,16 @@ class SQLiteFileListPersistenceManagerTest {
     @Test
     fun `addFile should add a new file`() {
         val file = randomRemoteFile()
+
+        fileListPersistenceManager.addFile(file).get()
+
+        val stored = getFile(file.id)
+        assertEquals(file, stored, "Version in db differs from original")
+    }
+
+    @Test
+    fun `addFile should store SharedFrom if present`() {
+        val file = randomRemoteFile(userMetadata = randomUserMetadata(sharedFrom = randomSharedFrom()))
 
         fileListPersistenceManager.addFile(file).get()
 

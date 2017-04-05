@@ -117,7 +117,8 @@ SELECT
     f.is_deleted, f.creation_date, f.modification_date,
     f.remote_file_size, f.file_key, f.file_name,
     f.directory, f.cipher_id, f.chunk_size,
-    f.file_size, f.mime_type
+    f.file_size, f.mime_type, f.shared_from_user_id,
+    f.shared_from_group_id
 FROM
     downloads AS d
 JOIN

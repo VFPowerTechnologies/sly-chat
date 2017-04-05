@@ -4,6 +4,7 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.*
 import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.loadSharedLibFromResource
@@ -33,6 +34,25 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
 fun SQLiteStatement.columnKey(index: Int): Key =
     Key(columnBlob(index))
 
+fun SQLiteStatement.columnCipherId(index: Int): CipherId =
+    CipherId(columnInt(index).toShort())
+
+fun SQLiteStatement.columnUserId(index: Int): UserId =
+    UserId(columnLong(index))
+
+fun SQLiteStatement.columnGroupId(index: Int): GroupId =
+    GroupId(columnString(index))
+
+fun SQLiteStatement.columnNullableUserId(index: Int): UserId? {
+    return if (!columnNull(index))
+        UserId(columnLong(index))
+    else
+        null
+}
+
+fun SQLiteStatement.columnNullableGroupId(index: Int): GroupId? =
+    columnString(index)?.let(::GroupId)
+
 fun SQLiteStatement.columnNullableInt(index: Int): Int? =
     if (columnNull(index)) null else columnInt(index)
 
@@ -41,6 +61,10 @@ fun SQLiteStatement.columnNullableLong(index: Int): Long? =
 
 fun SQLiteStatement.columnBool(index: Int): Boolean =
     columnInt(index) != 0
+
+fun SQLiteStatement.bind(name: String, value: GroupId?) {
+    bind(name, value?.string)
+}
 
 fun SQLiteStatement.bind(index: Int, value: GroupId?) {
     bind(index, value?.string)
@@ -149,6 +173,10 @@ fun SQLiteStatement.bind(name: String, conversationId: ConversationId?) {
 
 fun SQLiteStatement.bind(name: String, key: Key?) {
     bind(name, key?.raw)
+}
+
+fun SQLiteStatement.bind(name: String, cipherId: CipherId) {
+    bind(name, cipherId.short.toInt())
 }
 
 fun SQLiteStatement.bind(index: Int, conversationId: ConversationId?) {

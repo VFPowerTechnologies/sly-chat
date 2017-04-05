@@ -67,7 +67,8 @@ SELECT
     is_deleted, creation_date, modification_date,
     remote_file_size, file_key, file_name,
     directory, cipher_id, chunk_size,
-    file_size, mime_type
+    file_size, mime_type, shared_from_user_id,
+    shared_from_group_id
 FROM
     files
 $whereClause
@@ -129,28 +130,27 @@ OFFSET
 UPDATE
     files
 SET
-    id = ?,
-    share_key = ?,
-    last_update_version = ?,
-    is_deleted = ?,
-    creation_date = ?,
-    modification_date = ?,
-    remote_file_size = ?,
-    file_key = ?,
-    file_name = ?,
-    directory = ?,
-    cipher_id = ?,
-    chunk_size = ?,
-    file_size = ?,
-    mime_type = ?,
+    id = :id,
+    share_key = :shareKey,
+    last_update_version = :lastUpdateVersion,
+    is_deleted = :isDeleted,
+    creation_date = :creationDate,
+    modification_date = :modificationDate,
+    remote_file_size = :remoteFileSize,
+    file_key = :fileKey,
+    file_name = :fileName,
+    directory = :directory,
+    cipher_id = :cipherId,
+    chunk_size = :chunkSize,
+    file_size = :fileSize,
+    mime_type = :mimeType,
     is_pending = 0
 WHERE
-    id = ?
+    id = :id
 """
 
         connection.withPrepared(sql) {
             fileUtils.remoteFileToRow(file, it)
-            it.bind(15, file.id)
             it.step()
         }
 

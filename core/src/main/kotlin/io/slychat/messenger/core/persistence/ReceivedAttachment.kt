@@ -1,10 +1,10 @@
 package io.slychat.messenger.core.persistence
 
-import io.slychat.messenger.core.crypto.ciphers.Key
+import io.slychat.messenger.core.files.UserMetadata
 
 data class ReceivedAttachment(
     val n: Int,
     val theirFileId: String,
     val theirShareKey: String,
-    val fileKey: Key
+    val userMetadata: UserMetadata
 )

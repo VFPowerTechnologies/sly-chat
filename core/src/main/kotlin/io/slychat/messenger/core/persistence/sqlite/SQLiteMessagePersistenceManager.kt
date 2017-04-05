@@ -6,6 +6,8 @@ import com.almworks.sqlite4java.SQLiteException
 import com.almworks.sqlite4java.SQLiteStatement
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.files.SharedFrom
+import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
 import java.util.*
@@ -117,9 +119,9 @@ class SQLiteMessagePersistenceManager(
         val sql = """
 INSERT INTO
     received_attachments
-    (conversation_id, message_id, n, their_file_id, their_share_key, file_key)
+    (conversation_id, message_id, n, their_file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id)
 VALUES
-    (:conversationId, :messageId, :n, :theirFileId, :theirShareKey, :fileKey)
+    (:conversationId, :messageId, :n, :theirFileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId)
 """
 
         connection.withPrepared(sql) { stmt ->
@@ -130,7 +132,13 @@ VALUES
                 stmt.bind(":n", it.n)
                 stmt.bind(":theirFileId", it.theirFileId)
                 stmt.bind(":theirShareKey", it.theirShareKey)
-                stmt.bind(":fileKey", it.fileKey)
+                stmt.bind(":fileKey", it.userMetadata.fileKey)
+                stmt.bind(":cipherId", it.userMetadata.cipherId)
+                stmt.bind(":directory", it.userMetadata.directory)
+                stmt.bind(":fileName", it.userMetadata.fileName)
+                val sharedFrom = it.userMetadata.sharedFrom ?: throw IllegalArgumentException("ReceivedAttachment.sharedFrom should not be null")
+                stmt.bind(":sharedFromUserId", sharedFrom.userId)
+                stmt.bind(":sharedFromGroupId", sharedFrom.groupId)
 
                 try {
                     stmt.step()
@@ -154,7 +162,12 @@ SELECT
     n,
     their_file_id,
     their_share_key,
-    file_key
+    file_key,
+    cipher_id,
+    directory,
+    file_name,
+    shared_from_user_id,
+    shared_from_group_id
 FROM
     received_attachments
 WHERE
@@ -170,7 +183,16 @@ AND
                     it.columnInt(0),
                     it.columnString(1),
                     it.columnString(2),
-                    it.columnKey(3)
+                    UserMetadata(
+                        it.columnKey(3),
+                        it.columnCipherId(4),
+                        it.columnString(5),
+                        it.columnString(6),
+                        SharedFrom(
+                            it.columnUserId(7),
+                            it.columnNullableGroupId(8)
+                        )
+                    )
                 )
             }
         }

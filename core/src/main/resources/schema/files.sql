@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS files (
     cipher_id INTEGER NOT NULL,
     file_name TEXT NOT NULL COLLATE NOCASE,
     directory TEXT NOT NULL COLLATE NOCASE,
-    shared_from TEXT,
+    shared_from_user_id INTEGER,
+    shared_from_group_id TEXT,
 
     -- file metadata
     chunk_size INTEGER NOT NULL,
