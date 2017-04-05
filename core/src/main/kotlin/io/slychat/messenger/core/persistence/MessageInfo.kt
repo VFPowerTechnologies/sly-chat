@@ -31,14 +31,14 @@ data class MessageInfo(
         fun newSent(message: String, timestamp: Long, ttlMs: Long, attachments: List<MessageAttachmentInfo>): MessageInfo =
             MessageInfo(randomMessageId(), message, timestamp, 0, true, false, true, false, ttlMs, 0, attachments)
 
-        fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, isRead: Boolean, ttlMs: Long): MessageInfo =
-            MessageInfo(id, message, timestamp, receivedTimestamp, false, true, isRead, false, ttlMs, 0)
+        fun newReceived(id: String, message: String, timestamp: Long, receivedTimestamp: Long, isRead: Boolean, ttlMs: Long, attachments: List<MessageAttachmentInfo>): MessageInfo =
+            MessageInfo(id, message, timestamp, receivedTimestamp, false, true, isRead, false, ttlMs, 0, attachments)
 
         fun newReceived(message: String, timestamp: Long, ttlMs: Long): MessageInfo =
             MessageInfo(randomMessageId(), message, timestamp, timestamp, false, true, false, false, ttlMs, 0)
 
-        fun newReceived(message: String, timestamp: Long, isRead: Boolean): MessageInfo =
-            MessageInfo(randomMessageId(), message, timestamp, timestamp, false, true, isRead, false, 0, 0)
+        fun newReceived(message: String, timestamp: Long, isRead: Boolean, attachments: List<MessageAttachmentInfo>): MessageInfo =
+            MessageInfo(randomMessageId(), message, timestamp, timestamp, false, true, isRead, false, 0, 0, attachments)
     }
 
     init {

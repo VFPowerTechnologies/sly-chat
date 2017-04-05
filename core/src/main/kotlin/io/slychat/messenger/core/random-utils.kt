@@ -177,8 +177,26 @@ fun randomMessageText(): String {
     return shuffleString("random message")
 }
 
-fun randomReceivedMessageInfo(isRead: Boolean = false, expiresAt: Long = 0): MessageInfo {
-    return MessageInfo.newReceived(randomMessageText(), currentTimestamp(), isRead).copy(expiresAt = expiresAt)
+fun randomMessageAttachmentInfo(n: Int): MessageAttachmentInfo {
+    return MessageAttachmentInfo(
+        n,
+        shuffleString("dummy.jpg"),
+        generateFileId(),
+        true
+    )
+}
+
+fun randomReceivedAttachment(n: Int): ReceivedAttachment {
+    return ReceivedAttachment(
+        n,
+        generateFileId(),
+        generateShareKey(),
+        Key(byteArrayOf(0x77))
+    )
+}
+
+fun randomReceivedMessageInfo(isRead: Boolean = false, expiresAt: Long = 0, attachments: List<MessageAttachmentInfo> = emptyList()): MessageInfo {
+    return MessageInfo.newReceived(randomMessageText(), currentTimestamp(), isRead, attachments).copy(expiresAt = expiresAt)
 }
 
 fun randomSentMessageInfo(ttlMs: Long = 0): MessageInfo {

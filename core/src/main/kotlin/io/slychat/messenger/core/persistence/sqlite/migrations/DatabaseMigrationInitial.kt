@@ -34,7 +34,8 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "uploads",
             "upload_parts",
             "downloads",
-            "attachments"
+            "attachments",
+            "received_attachments"
         )
     }
 

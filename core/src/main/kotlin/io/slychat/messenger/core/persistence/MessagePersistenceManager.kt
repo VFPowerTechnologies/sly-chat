@@ -7,9 +7,11 @@ interface MessagePersistenceManager {
     /**
      * Updates the conversation info for the given UserId.
      */
-    fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception>
+    fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception>
 
-    fun addMessages(conversationId: ConversationId, messages: Collection<ConversationMessageInfo>): Promise<Unit, Exception>
+    fun getReceivedAttachments(conversationId: ConversationId, messageId: String): Promise<List<ReceivedAttachment>, Exception>
+
+    fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception>
 
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
     fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>

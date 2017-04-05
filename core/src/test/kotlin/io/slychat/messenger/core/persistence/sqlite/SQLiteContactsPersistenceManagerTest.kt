@@ -350,7 +350,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         val conversationMessageInfo = randomSentConversationMessageInfo()
         val conversationId = userId.toConversationId()
-        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
         messagePersistenceManager.setExpiration(conversationId, conversationMessageInfo.info.id, 100).get()
 
         contactsPersistenceManager.remove(userId).get()
@@ -545,7 +545,7 @@ class SQLiteContactsPersistenceManagerTest {
 
         val conversationMessageInfo = randomSentConversationMessageInfo()
         val conversationId = userId.toConversationId()
-        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
         messagePersistenceManager.setExpiration(conversationId, conversationMessageInfo.info.id, 100).get()
 
         contactsPersistenceManager.block(userId).get()

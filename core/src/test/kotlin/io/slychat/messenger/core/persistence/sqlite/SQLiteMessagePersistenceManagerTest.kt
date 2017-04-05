@@ -4,8 +4,10 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.testutils.desc
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.*
+import org.whispersystems.libsignal.InvalidMessageException
 import java.util.*
 import kotlin.test.*
 
@@ -54,7 +56,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
                 val groupMessageInfo = randomReceivedConversationMessageInfo(member)
                 info.add(groupMessageInfo)
 
-                messagePersistenceManager.addMessage(id, groupMessageInfo).get()
+                messagePersistenceManager.addMessage(id, groupMessageInfo, emptyList()).get()
             }
         }
 
@@ -66,7 +68,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
     private fun insertRandomSentMessage(id: ConversationId): String {
         val conversationMessageInfo = randomSentConversationMessageInfo()
-        messagePersistenceManager.addMessage(id, conversationMessageInfo).get()
+        messagePersistenceManager.addMessage(id, conversationMessageInfo, emptyList()).get()
 
         return conversationMessageInfo.info.id
     }
@@ -90,7 +92,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         else
             ConversationMessageInfo(userId, randomReceivedMessageInfo().copy(message = message, ttlMs = ttl))
 
-        messagePersistenceManager.addMessage(ConversationId(userId), conversationMessageInfo).get()
+        messagePersistenceManager.addMessage(ConversationId(userId), conversationMessageInfo, emptyList()).get()
 
         return conversationMessageInfo
     }
@@ -101,7 +103,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
     //TODO we should clean up all these tests to use this instead, since due to the merge the majority of behavior is
     //identical between conversation types
-    private class MessageTestFixture() : GroupPersistenceManagerTestUtils {
+    private class MessageTestFixture : GroupPersistenceManagerTestUtils {
         private val persistenceManager = SQLitePersistenceManager(null, null)
 
         val messagePersistenceManager = SQLiteMessagePersistenceManager(persistenceManager)
@@ -126,7 +128,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
 
         fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): ConversationMessageInfo {
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
 
             return conversationMessageInfo
         }
@@ -157,7 +159,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messageId = sentMessage.info.id
             val expiresAt = 10L
 
-            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+            messagePersistenceManager.addMessage(conversationId, sentMessage, emptyList()).get()
             messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
 
             return ConversationMessageInfo(
@@ -171,7 +173,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messageId = sentMessage.info.id
             val expiresAt = 10L
 
-            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+            messagePersistenceManager.addMessage(conversationId, sentMessage, emptyList()).get()
             messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
 
             return ConversationMessageInfo(
@@ -246,8 +248,8 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
         val conversationMessageInfo = randomReceivedConversationMessageInfo(userId)
 
-        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
-        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
+        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
     }
 
     //not really sure there's a point to this
@@ -277,7 +279,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         val conversationId = ConversationId(addRandomContact())
 
         val conversationMessageInfo = randomSentConversationMessageInfo()
-        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+        messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
         val lastConversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
 
         assertEquals(conversationMessageInfo.info.timestamp, lastConversationInfo.lastTimestamp, "Timestamp wasn't updated")
@@ -293,7 +295,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         val messageInfo = randomReceivedConversationMessageInfo(userId)
 
         assertFailsWith(InvalidMessageLevelException::class) {
-            messagePersistenceManager.addMessage(ConversationId(userId), messageInfo).get()
+            messagePersistenceManager.addMessage(ConversationId(userId), messageInfo, emptyList()).get()
         }
     }
 
@@ -304,7 +306,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val sender = members.first()
             val groupMessageInfo = randomReceivedConversationMessageInfo(sender)
 
-            messagePersistenceManager.addMessage(conversationId, groupMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, groupMessageInfo, emptyList()).get()
 
             assertTrue(messagePersistenceManager.internalMessageExists(conversationId, groupMessageInfo.info.id), "Message not inserted")
         }
@@ -316,7 +318,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val conversationId = ConversationId(groupId)
             val groupMessageInfo = randomSentConversationMessageInfo()
 
-            messagePersistenceManager.addMessage(conversationId, groupMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, groupMessageInfo, emptyList()).get()
 
             assertTrue(messagePersistenceManager.internalMessageExists(conversationId, groupMessageInfo.info.id), "Message not inserted")
         }
@@ -328,7 +330,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val conversationId = ConversationId(groupId)
             val sender = members.first()
             val groupMessageInfo = randomReceivedConversationMessageInfo(sender)
-            messagePersistenceManager.addMessage(conversationId, groupMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, groupMessageInfo, emptyList()).get()
 
             val conversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
 
@@ -342,7 +344,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val conversationId = ConversationId(groupId)
 
             val groupMessageInfo = randomSentConversationMessageInfo()
-            messagePersistenceManager.addMessage(conversationId, groupMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, groupMessageInfo, emptyList()).get()
 
             val conversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
 
@@ -362,8 +364,8 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
                 first.info.copy(id = randomMessageId())
             )
 
-            messagePersistenceManager.addMessage(conversationId, first).get()
-            messagePersistenceManager.addMessage(conversationId, second).get()
+            messagePersistenceManager.addMessage(conversationId, first, emptyList()).get()
+            messagePersistenceManager.addMessage(conversationId, second, emptyList()).get()
 
             val messages = messagePersistenceManager.internalGetAllMessages(conversationId)
 
@@ -377,7 +379,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `addMessage should throw InvalidConversationException if the group id is invalid`() {
         assertFailsWithInvalidConversation {
-          messagePersistenceManager.addMessage(randomGroupConversationId(), randomReceivedConversationMessageInfo(null)).get()
+          messagePersistenceManager.addMessage(randomGroupConversationId(), randomReceivedConversationMessageInfo(null), emptyList()).get()
         }
     }
 
@@ -388,7 +390,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messageInfo = randomReceivedMessageInfo(isRead)
             val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
 
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
 
             val conversationInfo = conversationInfoTestUtils.getConversationInfo(conversationId)
 
@@ -432,7 +434,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
-    fun `addMessage should include attachment info if present`() {
+    fun `addMessage should insert attachment info if present`() {
         foreachConvType { conversationId, participants ->
             val speaker = participants.first()
 
@@ -443,17 +445,105 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
                 true
             )
 
-            val messageInfo = randomReceivedMessageInfo().copy(
-                attachments = listOf(attachmentInfo)
-            )
+            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
 
             val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
 
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
 
             val fromDb = getMessage(conversationId, messageInfo.id)
 
             assertEquals(conversationMessageInfo, fromDb, "Invalid serialization")
+        }
+    }
+
+    @Test
+    fun `addMessage should insert received attachment info if present`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val attachmentInfo = randomMessageAttachmentInfo(0)
+
+            val receivedAttachment = randomReceivedAttachment(0)
+
+            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
+
+            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, messageInfo.id).get()).desc("Should contain received attachments") {
+                containsOnly(receivedAttachment)
+            }
+        }
+    }
+
+    @Test
+    fun `addMessage should throw IllegalAttachmentException if given received attachments but no corresponding message attachments`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val receivedAttachment = randomReceivedAttachment(0)
+
+            val messageInfo = randomReceivedMessageInfo()
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            assertFailsWith(InvalidAttachmentException::class) {
+                messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
+            }
+        }
+    }
+
+    @Test
+    fun `getReceivedAttachments should return an empty list if no received attachments are available for the given message`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val info = randomReceivedMessageInfo()
+
+            addMessage(conversationId, speaker, info)
+
+            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, info.id).get()).isEmpty()
+        }
+    }
+
+    @Ignore
+    @Test
+    fun `getReceivedAttachments should throw InvalidMessageException if message doesn't exist`() {
+        foreachConvType { conversationId, participants ->
+            assertFailsWith(InvalidMessageException::class) {
+                messagePersistenceManager.getReceivedAttachments(conversationId, randomMessageId()).get()
+            }
+        }
+    }
+
+    @Ignore
+    @Test
+    fun `getReceivedAttachments should throw InvalidConversationException if the conversation doesn't exist`() {
+        assertFailsWithInvalidConversation {
+            messagePersistenceManager.getReceivedAttachments(randomUserConversationId(), randomMessageId()).get()
+        }
+    }
+
+    @Test
+    fun `deleteReceivedAttachments should remove attachments`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val attachmentInfo = randomMessageAttachmentInfo(0)
+
+            val receivedAttachment = randomReceivedAttachment(0)
+
+            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
+
+            messagePersistenceManager.deleteReceivedAttachments(conversationId, messageInfo.id, listOf(0)).get()
+
+            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, messageInfo.id).get()).isEmpty()
         }
     }
 
@@ -466,7 +556,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             )
 
             val conversationMessageInfo = ConversationMessageInfo(speaker, randomReceivedMessageInfo(), failures)
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo).get()
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
 
             val messageId = conversationMessageInfo.info.id
 
@@ -881,7 +971,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messageId = sentMessage.info.id
             val expiresAt = 10L
 
-            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+            messagePersistenceManager.addMessage(conversationId, sentMessage, emptyList()).get()
 
             messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
 
@@ -945,7 +1035,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val messageId = sentMessage.info.id
             val expiresAt = 10L
 
-            messagePersistenceManager.addMessage(conversationId, sentMessage).get()
+            messagePersistenceManager.addMessage(conversationId, sentMessage, emptyList()).get()
 
             messagePersistenceManager.setExpiration(conversationId, messageId, expiresAt).get()
 

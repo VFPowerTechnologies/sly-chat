@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS attachments (
 
     message_id TEXT NOT NULL,
 
-   n INTEGER NOT NULL,
+    n INTEGER NOT NULL,
 
     -- name given by the sender (for display purposes in message logs)
     display_name TEXT NOT NULL,

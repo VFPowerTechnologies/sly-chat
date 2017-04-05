@@ -25,7 +25,7 @@ class SQLiteMessagePersistenceManager(
 
     private val objectMapper = ObjectMapper()
 
-    override fun addMessages(conversationId: ConversationId, messages: Collection<ConversationMessageInfo>): Promise<Unit, Exception> {
+    fun addMessages(conversationId: ConversationId, messages: Collection<ConversationMessageInfo>): Promise<Unit, Exception> {
         if (messages.isEmpty())
             return Promise.ofSuccess(Unit)
 
@@ -90,7 +90,7 @@ class SQLiteMessagePersistenceManager(
         conversationInfoUtils.getAllUserConversations(connection)
     }
 
-    override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+    override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             try {
                 insertMessage(connection, conversationId, conversationMessageInfo)
@@ -106,7 +106,100 @@ class SQLiteMessagePersistenceManager(
                     throw e
             }
 
+            insertReceivedAttachments(connection, conversationId, conversationMessageInfo.info.id, receivedAttachments)
+
             updateConversationInfo(connection, conversationId)
+        }
+    }
+
+    private fun insertReceivedAttachments(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, receivedAttachments: List<ReceivedAttachment>) {
+        //language=SQLite
+        val sql = """
+INSERT INTO
+    received_attachments
+    (conversation_id, message_id, n, their_file_id, their_share_key, file_key)
+VALUES
+    (:conversationId, :messageId, :n, :theirFileId, :theirShareKey, :fileKey)
+"""
+
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(":conversationId", conversationId)
+            stmt.bind(":messageId", messageId)
+
+            receivedAttachments.forEach {
+                stmt.bind(":n", it.n)
+                stmt.bind(":theirFileId", it.theirFileId)
+                stmt.bind(":theirShareKey", it.theirShareKey)
+                stmt.bind(":fileKey", it.fileKey)
+
+                try {
+                    stmt.step()
+                }
+                catch (e: SQLiteException) {
+                    if (e.errorCode == SQLiteConstants.SQLITE_CONSTRAINT_FOREIGNKEY)
+                        throw InvalidAttachmentException(conversationId, messageId, it.n)
+                    else
+                        throw e
+                }
+
+                stmt.reset(false)
+            }
+        }
+    }
+
+    override fun getReceivedAttachments(conversationId: ConversationId, messageId: String): Promise<List<ReceivedAttachment>, Exception> = sqlitePersistenceManager.runQuery {
+        //language=SQLite
+        val sql = """
+SELECT
+    n,
+    their_file_id,
+    their_share_key,
+    file_key
+FROM
+    received_attachments
+WHERE
+    conversation_id = :conversationId
+AND
+    message_id = :messageId
+"""
+        it.withPrepared(sql) {
+            it.bind(":conversationId", conversationId)
+            it.bind(":messageId", messageId)
+            it.map {
+                ReceivedAttachment(
+                    it.columnInt(0),
+                    it.columnString(1),
+                    it.columnString(2),
+                    it.columnKey(3)
+                )
+            }
+        }
+    }
+
+    override fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception> {
+        return if (ns.isEmpty())
+            Promise.ofSuccess(Unit)
+        else
+            sqlitePersistenceManager.runQuery {
+            //language=SQLite
+            val sql = """
+DELETE FROM
+    received_attachments
+WHERE
+    conversation_id = :conversationId
+AND
+    message_id = :messageId
+AND
+    n IN (${ns.joinToString(", ")})
+"""
+
+            it.withPrepared(sql) {
+                it.bind(":conversationId", conversationId)
+                it.bind(":messageId", messageId)
+                it.step()
+            }
+
+            Unit
         }
     }
 

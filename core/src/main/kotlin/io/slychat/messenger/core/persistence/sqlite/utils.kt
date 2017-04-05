@@ -4,6 +4,7 @@ package io.slychat.messenger.core.persistence.sqlite
 import com.almworks.sqlite4java.*
 import io.slychat.messenger.core.Os
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.loadSharedLibFromResource
 import io.slychat.messenger.core.persistence.*
@@ -28,6 +29,9 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         this.reset()
         this.dispose()
     }
+
+fun SQLiteStatement.columnKey(index: Int): Key =
+    Key(columnBlob(index))
 
 fun SQLiteStatement.columnNullableInt(index: Int): Int? =
     if (columnNull(index)) null else columnInt(index)
@@ -141,6 +145,10 @@ private fun Int.toGroupMembershipLevel(): GroupMembershipLevel = when (this) {
 
 fun SQLiteStatement.bind(name: String, conversationId: ConversationId?) {
     bind(name, conversationId?.asString())
+}
+
+fun SQLiteStatement.bind(name: String, key: Key?) {
+    bind(name, key?.raw)
 }
 
 fun SQLiteStatement.bind(index: Int, conversationId: ConversationId?) {
