@@ -709,4 +709,14 @@ class SQLiteFileListPersistenceManagerTest {
             containsEntry(file2.id, file2)
         }
     }
+
+    @Test
+    fun `filterOwnedFiles should return only file ids which are currently not in the list`() {
+        val file = insertFile()
+        val fileId = generateFileId()
+
+        assertThat(fileListPersistenceManager.filterOwnedFiles(listOf(file.id, fileId)).get()).desc("Should not contain an owned file") {
+            containsOnly(fileId)
+        }
+    }
 }
