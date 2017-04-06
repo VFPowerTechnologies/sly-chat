@@ -3,10 +3,9 @@ CREATE TABLE received_attachments (
     message_id TEXT NOT NULL,
     n INTEGER NOT NULL,
 
-    their_file_id TEXT NOT NULL,
-    their_share_key TEXT NOT NULL,
     -- duplicated for simplicity
-    our_file_id TEXT NOT NULL,
+    file_id TEXT NOT NULL,
+    their_share_key TEXT NOT NULL,
 
     -- UserMetadata
     file_key TEXT NOT NULL,

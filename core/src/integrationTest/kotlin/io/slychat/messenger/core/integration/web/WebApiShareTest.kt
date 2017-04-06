@@ -60,7 +60,6 @@ class WebApiShareTest {
         )
         devClient.addFile(sendingUser.user.id, fileInfo)
 
-        val ourFileId = generateFileId()
         val ourShareKey = generateShareKey()
         val userMetadata = byteArrayOf(0x77)
         val request = AcceptShareRequest(
@@ -69,7 +68,6 @@ class WebApiShareTest {
                 ShareInfo(
                     fileInfo.id,
                     fileInfo.shareKey,
-                    ourFileId,
                     ourShareKey,
                     userMetadata,
                     randomPathHash()
@@ -82,7 +80,7 @@ class WebApiShareTest {
             isEmpty()
         }
 
-        val ourFileInfo = assertNotNull(devClient.getFileInfo(receivingUser.user.id, ourFileId), "File not added to list")
+        val ourFileInfo = assertNotNull(devClient.getFileInfo(receivingUser.user.id, fileInfo.id), "File not added to list")
 
         assertEquals(ourShareKey, ourFileInfo.shareKey, "Invalid share key")
         Assertions.assertThat(ourFileInfo.userMetadata).desc("Invalid file info") {
