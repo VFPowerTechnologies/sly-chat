@@ -189,14 +189,15 @@ fun randomMessageAttachmentInfo(n: Int): MessageAttachmentInfo {
 
 fun randomSharedFrom(): SharedFrom = SharedFrom(randomUserId(), randomGroupId())
 
-fun randomReceivedAttachment(n: Int, fileId: String? = null, isInline: Boolean = false, downloadId: String? = null): ReceivedAttachment {
+fun randomReceivedAttachment(n: Int, fileId: String? = null, isInline: Boolean = false, downloadId: String? = null, error: AttachmentError? = null): ReceivedAttachment {
     return ReceivedAttachment(
         n,
         fileId ?: generateFileId(),
         generateShareKey(),
         randomUserMetadata(sharedFrom = randomSharedFrom()),
         isInline,
-        downloadId
+        downloadId,
+        error
     )
 }
 

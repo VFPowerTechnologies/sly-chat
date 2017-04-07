@@ -26,7 +26,7 @@ interface MessageService {
 
     fun markConversationAsRead(conversationId: ConversationId): Promise<Unit, Exception>
 
-    fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception>
+    fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception>
 
     fun addFailures(conversationId: ConversationId, messageId: String, failures: Map<UserId, MessageSendFailure>): Promise<Unit, Exception>
 
@@ -45,4 +45,6 @@ interface MessageService {
     fun getGroupConversation(groupId: GroupId): Promise<GroupConversation?, Exception>
 
     fun getUserConversation(userId: UserId): Promise<UserConversation?, Exception>
+
+    fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception>
 }

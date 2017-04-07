@@ -5,6 +5,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
+import io.slychat.messenger.core.files.FileId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
@@ -67,7 +68,7 @@ class MessengerServiceImplTest {
         whenever(messageSender.addToQueue(anyList())).thenResolve(Unit)
 
         //some useful defaults
-        whenever(messageService.addMessage(any(), any())).thenResolveUnit()
+        whenever(messageService.addMessage(any(), any(), any())).thenResolveUnit()
 
         whenever(contactsService.addMissingContacts(any())).thenResolve(emptySet())
         whenever(messageReceiver.processPackages(any())).thenResolve(Unit)
@@ -267,7 +268,7 @@ class MessengerServiceImplTest {
         verify(messageService).addMessage(eq(userId.toConversationId()), capture {
             assertFalse(it.info.isDelivered, "Should not be marked as delivered")
             assertEquals(0, it.info.receivedTimestamp, "Received timestamp should not be set")
-        })
+        }, any())
     }
 
     @Test
@@ -283,7 +284,7 @@ class MessengerServiceImplTest {
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertFalse(it.info.isDelivered, "Should not be marked as delivered")
             assertEquals(0, it.info.receivedTimestamp, "Received timestamp should not be set")
-        })
+        }, any())
     }
 
     private fun deserializeTextMessage(bytes: ByteArray): TextMessage {
@@ -312,7 +313,7 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(userId.toConversationId()), capture {
             assertEquals(currentTime, it.info.timestamp, "RelayClock time not used")
-        })
+        }, any())
     }
 
     @Test
@@ -339,7 +340,7 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(currentTime, it.info.timestamp, "RelayClock time not used")
-        })
+        }, any())
     }
 
     @Test
@@ -365,7 +366,7 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(userId.toConversationId()), capture {
             assertEquals(ttl, it.info.ttlMs, "Invalid TTL value")
-        })
+        }, any())
     }
 
     @Test
@@ -381,7 +382,7 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(ttl, it.info.ttlMs, "Invalid TTL value")
-        })
+        }, any())
     }
 
     @Test
@@ -485,7 +486,7 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Message is invalid")
-        })
+        }, any())
 
         verify(messageSender, never()).addToQueue(any<List<SenderMessageEntry>>())
     }
@@ -505,7 +506,7 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(message, it.info.message, "Text message doesn't match")
-        })
+        }, any())
     }
 
     @Test
@@ -528,7 +529,7 @@ class MessengerServiceImplTest {
 
         verify(messageService).addMessage(eq(groupId.toConversationId()), capture {
             assertEquals(sentMessageId!!, it.info.id, "Message IDs don't match")
-        })
+        }, any())
     }
 
     @Test
@@ -996,7 +997,7 @@ class MessengerServiceImplTest {
             assertEquals(messageText, it.info.message, "Invalid message")
             assertTrue(it.info.isSent, "Not marked as sent")
             assertEquals(it.info.receivedTimestamp, relayClock.currentTime(), "Invalid received timestamp")
-        })
+        }, any())
     }
 
     @Test
@@ -1084,7 +1085,7 @@ class MessengerServiceImplTest {
             assertThat(it.info.attachments).desc("Should contain a valid attachment description") {
                 containsOnly(expected)
             }
-        })
+        }, any())
     }
 
     @Test
@@ -1095,10 +1096,11 @@ class MessengerServiceImplTest {
         whenever(storageService.getFilesById(listOf(file.id))).thenResolve(mapOf(file.id to file))
 
         val expected = TextMessageAttachment(
-            file.id,
+            FileId(file.id),
             file.shareKey,
             file.userMetadata.fileName,
-            file.userMetadata.fileKey
+            file.userMetadata.fileKey,
+            file.userMetadata.cipherId
         )
 
         val attachment = AttachmentSource.Remote(file.id, false)

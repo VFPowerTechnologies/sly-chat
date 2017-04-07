@@ -51,4 +51,6 @@ interface StorageService {
 
     /** Will list directories, then files. */
     fun getEntriesAt(startingAt: Int, count: Int, path: String): Promise<List<DirEntry>, Exception>
+
+    fun filterOwnedFiles(fileIds: List<String>): Promise<List<String>, Exception>
 }

@@ -32,7 +32,7 @@ class MessageServiceImplTest {
 
     @Before
     fun before() {
-        whenever(messagePersistenceManager.addMessage(any(), any())).thenResolveUnit()
+        whenever(messagePersistenceManager.addMessage(any(), any(), emptyList())).thenResolveUnit()
         whenever(messagePersistenceManager.markMessageAsDelivered(any(), any(), any())).thenResolve(null)
         whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(randomMessageIds())
         whenever(messagePersistenceManager.markConversationMessagesAsRead(any(), any())).thenAnswerWithArg(1)
@@ -106,7 +106,7 @@ class MessageServiceImplTest {
 
                 val testSubscriber = messageService.newMessages.testSubscriber()
 
-                messageService.addMessage(conversationId, conversationMessageInfo).get()
+                messageService.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
 
                 assertThat(testSubscriber.onNextEvents).apply {
                     `as`("Should emit an event")
@@ -245,14 +245,14 @@ class MessageServiceImplTest {
         testConversationInfoUpdate { conversationId ->
             val conversationMessageInfo = randomReceivedConversationMessageInfo(randomUserId())
 
-            messageService.addMessage(conversationId, conversationMessageInfo).get()
+            messageService.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
         }
     }
 
     @Test
     fun `it should emit a conversation info update when addMessage is called for a sent message`() {
         testConversationInfoUpdate {
-            messageService.addMessage(it, randomSentConversationMessageInfo()).get()
+            messageService.addMessage(it, randomSentConversationMessageInfo(), emptyList()).get()
         }
     }
 

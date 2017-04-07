@@ -46,8 +46,8 @@ class MessageServiceImpl(
         }
     }
 
-    override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
-        return messagePersistenceManager.addMessage(conversationId, conversationMessageInfo) mapUi {
+    override fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
+        return messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, receivedAttachments) mapUi {
             val conversationMessage = ConversationMessage(conversationId, conversationMessageInfo)
 
             newMessagesSubject.onNext(conversationMessage)
@@ -134,6 +134,10 @@ class MessageServiceImpl(
 
     override fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception> {
         return messagePersistenceManager.getLastMessages(conversationId, startingAt, count)
+    }
+
+    override fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteReceivedAttachments(conversationId, messageId, ns)
     }
 
     private fun startMessageExpiration(conversationId: ConversationId, messageId: String, conversationMessageInfo: ConversationMessageInfo?): Promise<Unit, Exception> {

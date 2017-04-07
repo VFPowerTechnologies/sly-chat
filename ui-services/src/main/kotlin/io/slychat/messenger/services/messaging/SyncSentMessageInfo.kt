@@ -3,6 +3,7 @@ package io.slychat.messenger.services.messaging
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.MessageAttachmentInfo
 import io.slychat.messenger.core.persistence.MessageInfo
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -18,7 +19,9 @@ data class SyncSentMessageInfo(
     @JsonProperty("receivedTimestamp")
     val receivedTimestamp: Long,
     @JsonProperty("ttl")
-    val ttlMs: Long
+    val ttlMs: Long,
+    @JsonProperty("attachments")
+    val attachments: List<MessageAttachmentInfo> = emptyList()
 ) {
     fun toMessageInfo(): MessageInfo {
         return MessageInfo(
@@ -31,7 +34,8 @@ data class SyncSentMessageInfo(
             true,
             false,
             ttlMs,
-            0
+            0,
+            attachments
         )
     }
 }

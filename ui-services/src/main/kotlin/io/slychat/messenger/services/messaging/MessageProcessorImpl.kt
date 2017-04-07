@@ -1,6 +1,9 @@
 package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.crypto.generateFileId
+import io.slychat.messenger.core.files.SharedFrom
+import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.*
@@ -152,21 +155,48 @@ class MessageProcessorImpl(
         return when (conversationId) {
             //if we add a new contact, then message them right away, the SelfMessage'll get here before the AddressBookSync one
             is ConversationId.User -> contactsService.addMissingContacts(setOf(conversationId.id)) bindUi {
-                addSingleMessage(conversationId.id, conversationMessageInfo)
+                addSingleMessage(conversationId.id, conversationMessageInfo, emptyList())
             }
             is ConversationId.Group -> addGroupMessage(conversationId.id, conversationMessageInfo)
         }
     }
 
-    private fun addSingleMessage(userId: UserId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
+    private fun addSingleMessage(userId: UserId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
         val conversationId = userId.toConversationId()
-        return messageService.addMessage(conversationId, conversationMessageInfo) bindRecoverForUi { e: InvalidMessageLevelException ->
+        return messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments) bindRecoverForUi { e: InvalidMessageLevelException ->
             log.debug("User doesn't have appropriate message level, upgrading")
 
             contactsService.allowAll(userId) bindUi {
-                messageService.addMessage(conversationId, conversationMessageInfo)
+                messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments)
             }
         }
+    }
+
+    private fun generateAttachmentInfo(sender: UserId, groupId: GroupId?, textAttachments: List<TextMessageAttachment>): Pair<List<MessageAttachmentInfo>, List<ReceivedAttachment>> {
+        val attachments = ArrayList<MessageAttachmentInfo>()
+        val receivedAttachments = ArrayList<ReceivedAttachment>()
+
+        val subdir = groupId?.toString() ?: sender.toString()
+
+        textAttachments.forEachIndexed { i, a ->
+            val fileId = generateFileId()
+
+            val isInline = false
+
+            attachments.add(MessageAttachmentInfo(i, a.fileName, fileId, isInline))
+
+            val userMetadata = UserMetadata(
+                a.fileKey,
+                a.cipherId,
+                "/_attachments/$subdir",
+                fileId,
+                SharedFrom(sender, null)
+            )
+
+            receivedAttachments.add(ReceivedAttachment(i, a.fileId.string, a.shareKey, userMetadata, isInline, null, null))
+        }
+
+        return attachments to receivedAttachments
     }
 
     private fun handleTextMessage(sender: UserId, m: TextMessage): Promise<Unit, Exception> {
@@ -181,11 +211,13 @@ class MessageProcessorImpl(
         else
             false
 
-        val messageInfo = MessageInfo.newReceived(m.id.string, m.message, m.timestamp, relayClock.currentTime(), isRead, m.ttlMs)
+        val (attachments, receivedAttachments) = generateAttachmentInfo(sender, groupId, m.attachments)
+
+        val messageInfo = MessageInfo.newReceived(m.id.string, m.message, m.timestamp, relayClock.currentTime(), isRead, m.ttlMs, attachments)
         val conversationInfo = ConversationMessageInfo(sender, messageInfo)
 
         return if (groupId == null) {
-            addSingleMessage(sender, conversationInfo)
+            addSingleMessage(sender, conversationInfo, receivedAttachments)
         }
         else {
             groupService.getInfo(groupId) bindUi { groupInfo ->
@@ -195,7 +227,7 @@ class MessageProcessorImpl(
     }
 
     private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
-        return messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
+        return messageService.addMessage(groupId.toConversationId(), conversationMessageInfo, emptyList())
     }
 
     private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {

@@ -2,8 +2,13 @@ package io.slychat.messenger.services.messaging
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.ciphers.CipherList
+import io.slychat.messenger.core.crypto.ciphers.Key
+import io.slychat.messenger.core.crypto.generateFileId
+import io.slychat.messenger.core.crypto.generateShareKey
 import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
+import io.slychat.messenger.core.files.FileId
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.persistence.sqlite.InvalidMessageLevelException
 import io.slychat.messenger.services.*
@@ -45,8 +50,8 @@ class MessageProcessorImplTest {
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
     private val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
-    private fun randomTextMessage(groupId: GroupId? = null): TextMessage =
-        TextMessage(MessageId(randomMessageId()), currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong())
+    private fun randomTextMessage(groupId: GroupId? = null, attachments: List<TextMessageAttachment>? = null): TextMessage =
+        TextMessage(MessageId(randomMessageId()), currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong(), attachments ?: emptyList())
 
     private fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
@@ -62,7 +67,7 @@ class MessageProcessorImplTest {
 
     @Before
     fun before() {
-        whenever(messageService.addMessage(any(), any())).thenResolveUnit()
+        whenever(messageService.addMessage(any(), any(), any())).thenResolveUnit()
         whenever(messageService.markConversationMessagesAsRead(any(), any())).thenResolveUnit()
         whenever(messageService.deleteMessages(any(), any(), any())).thenResolveUnit()
         whenever(messageService.deleteAllMessagesUntil(any(), any())).thenResolveUnit()
@@ -120,7 +125,32 @@ class MessageProcessorImplTest {
             assertFalse(info.isRead, "Message should not be marked as read")
             assertEquals(m.message, info.message, "Invalid message text")
             assertEquals(relayTime, info.receivedTimestamp, "Invalid received timestamp")
-        })
+        }, any())
+    }
+
+    @Test
+    fun `it should process attachments in user conversation TextMessages`() {
+        val processor = createProcessor()
+
+        val attachment = TextMessageAttachment(
+            FileId(generateFileId()),
+            generateShareKey(),
+            "dummy.jpg",
+            Key(byteArrayOf(0x77)),
+            CipherList.defaultDataEncryptionCipher.id
+        )
+
+        val m = randomTextMessage(attachments = listOf(attachment))
+        val sender = randomUserId()
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(messageService).addMessage(eq(sender.toConversationId()), capture {
+            assertThat(it.info.attachments).hasSize(1)
+            val a = it.info.attachments.first()
+
+            assertEquals(attachment.fileName, a.displayName, "Invalid displayName")
+        }, any())
     }
 
     @Test
@@ -139,7 +169,7 @@ class MessageProcessorImplTest {
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
             assertTrue(it.info.isRead, "Message should be marked as read")
-        })
+        }, any())
     }
 
     @Test
@@ -159,7 +189,7 @@ class MessageProcessorImplTest {
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
             assertFalse(it.info.isRead, "Message should be not marked as read")
-        })
+        }, any())
     }
 
     @Test
@@ -180,7 +210,7 @@ class MessageProcessorImplTest {
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
             assertTrue(it.info.isRead, "Message should be marked as read")
-        })
+        }, emptyList())
     }
 
     @Test
@@ -194,21 +224,21 @@ class MessageProcessorImplTest {
         val from = randomUserId()
 
         whenever(contactsService.allowAll(from)).thenResolve(Unit)
-        whenever(messageService.addMessage(any(), any()))
+        whenever(messageService.addMessage(any(), any(), any()))
             .thenReject(InvalidMessageLevelException(from))
             .thenResolve(Unit)
 
         processor.processMessage(from, message).get()
 
         verify(contactsService).allowAll(from)
-        verify(messageService, times(2)).addMessage(any(), any())
+        verify(messageService, times(2)).addMessage(any(), any(), any())
     }
 
     /* Group stuff */
 
     fun generateInvite(): GroupEventMessage.Invitation {
         val groupId = randomGroupId()
-        val members = (1..3L).mapTo(HashSet()) { UserId(it) }
+        val members = (1..3L).mapTo(HashSet(), ::UserId)
 
         return GroupEventMessage.Invitation(groupId, randomGroupName(), members)
     }
@@ -566,7 +596,7 @@ class MessageProcessorImplTest {
             assertFalse(messageInfo.isSent, "Message marked as sent")
             assertFalse(messageInfo.isRead, "Message should not be marked as read")
             assertEquals(m.message, messageInfo.message, "Invalid message")
-        })
+        }, any())
     }
 
     @Test
@@ -586,10 +616,10 @@ class MessageProcessorImplTest {
 
         verify(messageService).addMessage(eq(groupInfo.id.toConversationId()), capture {
             assertTrue(it.info.isRead, "Message should be marked as read")
-        })
+        }, any())
     }
 
-    fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
+    private fun testDropGroupTextMessage(senderIsMember: Boolean, membershipLevel: GroupMembershipLevel) {
         val sender = randomUserId()
 
         val groupInfo = randomGroupInfo(membershipLevel)
@@ -603,7 +633,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(sender, wrap(m)).get()
 
-        verify(messageService, never()).addMessage(any(), any())
+        verify(messageService, never()).addMessage(any(), any(), any())
     }
 
     @Test
@@ -683,7 +713,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(selfId, wrap(m)).get()
 
-        verify(messageService).addMessage(recipient.toConversationId(), conversationMessageInfo)
+        verify(messageService).addMessage(recipient.toConversationId(), conversationMessageInfo, emptyList())
     }
 
     @Test
@@ -710,7 +740,7 @@ class MessageProcessorImplTest {
 
         processor.processMessage(selfId, wrap(m)).get()
 
-        verify(messageService).addMessage(recipient.toConversationId(), groupMessageInfo)
+        verify(messageService).addMessage(recipient.toConversationId(), groupMessageInfo, emptyList())
     }
 
     @Test

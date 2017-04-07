@@ -198,7 +198,8 @@ AND
                         )
                     ),
                     it.columnBool(9),
-                    it.columnString(10)
+                    it.columnString(10),
+                    null
                 )
             }
         }

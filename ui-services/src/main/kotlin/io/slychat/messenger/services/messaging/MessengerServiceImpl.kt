@@ -6,6 +6,7 @@ import io.slychat.messenger.core.crypto.randomMessageId
 import io.slychat.messenger.core.crypto.randomUUID
 import io.slychat.messenger.core.currentTimestamp
 import io.slychat.messenger.core.enforceExhaustive
+import io.slychat.messenger.core.files.FileId
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
@@ -22,6 +23,7 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.subscriptions.CompositeSubscription
+import java.io.File
 import java.util.*
 
 /**
@@ -212,10 +214,11 @@ class MessengerServiceImpl(
                     val file = it.value
 
                     TextMessageAttachment(
-                        file.id,
+                        FileId(file.id),
                         file.shareKey,
                         file.userMetadata.fileName,
-                        file.userMetadata.fileKey
+                        file.userMetadata.fileKey,
+                        file.userMetadata.cipherId
                     )
                 }
 
@@ -226,14 +229,14 @@ class MessengerServiceImpl(
 
                 //this is in this order since right now there's nothing to detect missing queued messages from addMessage
                 messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
-                    messageService.addMessage(userId.toConversationId(), conversationMessageInfo)
+                    messageService.addMessage(userId.toConversationId(), conversationMessageInfo, TODO())
                 }
             }
             else {
                 //we don't actually wanna send a text message to ourselves; mostly because both the sent and received ids would be the same
                 //so we just add a new sent message, then broadcast the sync message to other devices
 
-                messageService.addMessage(userId.toConversationId(), conversationMessageInfo) bindUi {
+                messageService.addMessage(userId.toConversationId(), conversationMessageInfo, TODO()) bindUi {
                     broadcastSentMessage(metadata, conversationMessageInfo) map { Unit }
                 }
             }
@@ -278,7 +281,7 @@ class MessengerServiceImpl(
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs, emptyList()).copy(id = messageId)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            messageService.addMessage(groupId.toConversationId(), conversationMessageInfo)
+            messageService.addMessage(groupId.toConversationId(), conversationMessageInfo, TODO())
         }
     }
 
