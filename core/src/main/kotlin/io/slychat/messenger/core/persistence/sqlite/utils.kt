@@ -12,7 +12,7 @@ import io.slychat.messenger.core.persistence.*
 import org.slf4j.LoggerFactory
 import java.util.*
 
-inline fun <R> SQLiteConnection.use(body: (SQLiteConnection) -> R): R =
+internal inline fun <R> SQLiteConnection.use(body: (SQLiteConnection) -> R): R =
     try {
         body(this)
     }
@@ -20,7 +20,7 @@ inline fun <R> SQLiteConnection.use(body: (SQLiteConnection) -> R): R =
         this.dispose()
     }
 
-inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
+internal inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
     try {
         body(this)
     }
@@ -31,113 +31,113 @@ inline fun <R> SQLiteStatement.use(body: (SQLiteStatement) -> R): R =
         this.dispose()
     }
 
-fun SQLiteStatement.columnKey(index: Int): Key =
+internal fun SQLiteStatement.columnKey(index: Int): Key =
     Key(columnBlob(index))
 
-fun SQLiteStatement.columnCipherId(index: Int): CipherId =
+internal fun SQLiteStatement.columnCipherId(index: Int): CipherId =
     CipherId(columnInt(index).toShort())
 
-fun SQLiteStatement.columnUserId(index: Int): UserId =
+internal fun SQLiteStatement.columnUserId(index: Int): UserId =
     UserId(columnLong(index))
 
-fun SQLiteStatement.columnGroupId(index: Int): GroupId =
+internal fun SQLiteStatement.columnGroupId(index: Int): GroupId =
     GroupId(columnString(index))
 
-fun SQLiteStatement.columnNullableUserId(index: Int): UserId? {
+internal fun SQLiteStatement.columnNullableUserId(index: Int): UserId? {
     return if (!columnNull(index))
         UserId(columnLong(index))
     else
         null
 }
 
-fun SQLiteStatement.columnNullableGroupId(index: Int): GroupId? =
+internal fun SQLiteStatement.columnNullableGroupId(index: Int): GroupId? =
     columnString(index)?.let(::GroupId)
 
-fun SQLiteStatement.columnNullableInt(index: Int): Int? =
+internal fun SQLiteStatement.columnNullableInt(index: Int): Int? =
     if (columnNull(index)) null else columnInt(index)
 
-fun SQLiteStatement.columnNullableLong(index: Int): Long? =
+internal fun SQLiteStatement.columnNullableLong(index: Int): Long? =
     if (columnNull(index)) null else columnLong(index)
 
-fun SQLiteStatement.columnBool(index: Int): Boolean =
+internal fun SQLiteStatement.columnBool(index: Int): Boolean =
     columnInt(index) != 0
 
-fun SQLiteStatement.bind(name: String, value: GroupId?) {
+internal fun SQLiteStatement.bind(name: String, value: GroupId?) {
     bind(name, value?.string)
 }
 
-fun SQLiteStatement.bind(index: Int, value: GroupId?) {
+internal fun SQLiteStatement.bind(index: Int, value: GroupId?) {
     bind(index, value?.string)
 }
 
-fun SQLiteStatement.bind(index: Int, enum: Enum<*>?) {
+internal fun SQLiteStatement.bind(index: Int, enum: Enum<*>?) {
     bind(index, enum?.toString())
 }
 
-fun SQLiteStatement.bind(name: String, boolean: Boolean) {
+internal fun SQLiteStatement.bind(name: String, boolean: Boolean) {
     val v = if (boolean) 1 else 0
     bind(name, v)
 }
 
-fun SQLiteStatement.bind(index: Int, boolean: Boolean) {
+internal fun SQLiteStatement.bind(index: Int, boolean: Boolean) {
     val v = if (boolean) 1 else 0
     bind(index, v)
 }
 
-fun SQLiteStatement.bind(name: String, value: UserId?) {
+internal fun SQLiteStatement.bind(name: String, value: UserId?) {
     if (value != null)
         bind(name, value.long)
     else
         bindNull(name)
 }
 
-fun SQLiteStatement.bind(index: Int, value: UserId?) {
+internal fun SQLiteStatement.bind(index: Int, value: UserId?) {
     if (value != null)
         bind(index, value.long)
     else
         bindNull(index)
 }
 
-fun SQLiteStatement.bind(index: Int, value: Int?) {
+internal fun SQLiteStatement.bind(index: Int, value: Int?) {
     if (value != null)
         bind(index, value)
     else
         bindNull(index)
 }
 
-fun SQLiteStatement.bind(index: Int, value: Long?) {
+internal fun SQLiteStatement.bind(index: Int, value: Long?) {
     if (value != null)
         bind(index, value)
     else
         bindNull(index)
 }
 
-fun SQLiteStatement.bind(index: Int, allowedMessageLevel: AllowedMessageLevel) {
+internal fun SQLiteStatement.bind(index: Int, allowedMessageLevel: AllowedMessageLevel) {
     bind(index, allowedMessageLevel.toInt())
 }
 
-fun SQLiteStatement.bind(index: Int, groupMembershipLevel: GroupMembershipLevel) {
+internal fun SQLiteStatement.bind(index: Int, groupMembershipLevel: GroupMembershipLevel) {
     bind(index, groupMembershipLevel.toInt())
 }
 
-fun SQLiteStatement.columnAllowedMessageLevel(index: Int): AllowedMessageLevel {
+internal fun SQLiteStatement.columnAllowedMessageLevel(index: Int): AllowedMessageLevel {
     return columnInt(index).toAllowedMessageLevel()
 }
 
-fun SQLiteStatement.columnConversationId(index: Int): ConversationId {
+internal fun SQLiteStatement.columnConversationId(index: Int): ConversationId {
     return ConversationId.fromString(columnString(index))
 }
 
-fun SQLiteStatement.columnNullableConversationId(index: Int): ConversationId? {
+internal fun SQLiteStatement.columnNullableConversationId(index: Int): ConversationId? {
     val string = columnString(index)
     return string?.let { ConversationId.fromString(it) }
 }
 
-fun SQLiteStatement.columnGroupMembershipLevel(index: Int): GroupMembershipLevel {
+internal fun SQLiteStatement.columnGroupMembershipLevel(index: Int): GroupMembershipLevel {
     return columnInt(index).toGroupMembershipLevel()
 }
 
-fun SQLiteStatement.columnLogEventType(index: Int): LogEventType {
+internal fun SQLiteStatement.columnLogEventType(index: Int): LogEventType {
     return LogEventType.valueOf(columnString(index))
 }
 
@@ -167,31 +167,31 @@ private fun Int.toGroupMembershipLevel(): GroupMembershipLevel = when (this) {
     else -> throw IllegalArgumentException("Invalid integer value for MembershipLevel: $this")
 }
 
-fun SQLiteStatement.bind(name: String, conversationId: ConversationId?) {
+internal fun SQLiteStatement.bind(name: String, conversationId: ConversationId?) {
     bind(name, conversationId?.asString())
 }
 
-fun SQLiteStatement.bind(name: String, key: Key?) {
+internal fun SQLiteStatement.bind(name: String, key: Key?) {
     bind(name, key?.raw)
 }
 
-fun SQLiteStatement.bind(name: String, cipherId: CipherId) {
+internal fun SQLiteStatement.bind(name: String, cipherId: CipherId) {
     bind(name, cipherId.short.toInt())
 }
 
-fun SQLiteStatement.bind(index: Int, conversationId: ConversationId?) {
+internal fun SQLiteStatement.bind(index: Int, conversationId: ConversationId?) {
     bind(index, conversationId?.asString())
 }
 
-fun SQLiteStatement.bind(index: Int, logEventType: LogEventType) {
+internal fun SQLiteStatement.bind(index: Int, logEventType: LogEventType) {
     bind(index, logEventType.toString())
 }
 
-inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
+internal inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
     return this.prepare(sql).use { body(it) }
 }
 
-inline fun <R> SQLiteConnection.withTransaction(body: (SQLiteConnection) -> R): R {
+internal inline fun <R> SQLiteConnection.withTransaction(body: (SQLiteConnection) -> R): R {
     this.exec("BEGIN TRANSACTION")
     return try {
         val r = body(this)
@@ -207,7 +207,7 @@ inline fun <R> SQLiteConnection.withTransaction(body: (SQLiteConnection) -> R): 
 /**
  * @param binder Function that binds values of T to an SQLiteStatement
  */
-fun <T> SQLiteConnection.batchInsert(sql: String, items: Collection<T>, binder: (SQLiteStatement, T) -> Unit) {
+internal fun <T> SQLiteConnection.batchInsert(sql: String, items: Collection<T>, binder: (SQLiteStatement, T) -> Unit) {
     if (items.isEmpty())
         return
 
@@ -220,16 +220,16 @@ fun <T> SQLiteConnection.batchInsert(sql: String, items: Collection<T>, binder: 
     }
 }
 
-fun <T> SQLiteConnection.batchInsertWithinTransaction(sql: String, items: Collection<T>, binder: (SQLiteStatement, T) -> Unit) =
+internal fun <T> SQLiteConnection.batchInsertWithinTransaction(sql: String, items: Collection<T>, binder: (SQLiteStatement, T) -> Unit) =
     withTransaction { batchInsert(sql, items, binder) }
 
 /** Escapes the given string for use with the LIKE operator. */
-fun escapeLikeString(s: String, escape: Char): String =
+internal fun escapeLikeString(s: String, escape: Char): String =
     Regex("[%_$escape]").replace(s) { m ->
         "$escape${m.groups[0]!!.value}"
     }
 
-fun isInvalidTableException(e: SQLiteException): Boolean {
+internal fun isInvalidTableException(e: SQLiteException): Boolean {
     val message = e.message
     return if (message == null)
         false
@@ -238,7 +238,7 @@ fun isInvalidTableException(e: SQLiteException): Boolean {
 }
 
 /** Collects all results into the given mutable collection and returns the same collection. */
-inline fun <T, C : MutableCollection<T>> SQLiteStatement.mapToCollection(body: (SQLiteStatement) -> T, results: C): C {
+internal inline fun <T, C : MutableCollection<T>> SQLiteStatement.mapToCollection(body: (SQLiteStatement) -> T, results: C): C {
     while (step())
         results.add(body(this))
 
@@ -246,21 +246,21 @@ inline fun <T, C : MutableCollection<T>> SQLiteStatement.mapToCollection(body: (
 }
 
 /** Calls the given function on all available query results. */
-inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> =
+internal inline fun <T> SQLiteStatement.map(body: (SQLiteStatement) -> T): List<T> =
     mapToCollection(body, ArrayList<T>())
 
-inline fun <T> SQLiteStatement.mapToSet(body: (SQLiteStatement) -> T): Set<T> =
+internal inline fun <T> SQLiteStatement.mapToSet(body: (SQLiteStatement) -> T): Set<T> =
     mapToCollection(body, HashSet<T>())
 
 /** Iterates through all results. */
-inline fun SQLiteStatement.foreach(body: (SQLiteStatement) -> Unit) {
+internal inline fun SQLiteStatement.foreach(body: (SQLiteStatement) -> Unit) {
     while (step())
         body(this)
 }
 
-fun escapeBackticks(s: String) = s.replace("`", "``")
+internal fun escapeBackticks(s: String) = s.replace("`", "``")
 
-fun getPlaceholders(n: Int): String =
+internal fun getPlaceholders(n: Int): String =
     "?".repeat(n).toList().joinToString(", ")
 
 //not exposed; taken from Internal.getArch, getOS so we can unpack + load the shared lib from resources for the proper OS
