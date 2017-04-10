@@ -232,11 +232,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
             uc.storageService.cancel(getSelectedStatuses().map { it.id })
         }
 
-        val errorRemove = MenuItem("Remove")
-        errorRemove.setOnAction { onTransferRemoveSelected() }
-
-        //XXX for uploads, this shouldn't display remove, only cancel
-        errorTransferContextMenu.items.addAll(retry, errorCancel, errorRemove)
+        errorTransferContextMenu.items.addAll(retry, errorCancel)
 
         val cancelRemove = MenuItem("Remove")
         cancelRemove.setOnAction { onTransferRemoveSelected() }
