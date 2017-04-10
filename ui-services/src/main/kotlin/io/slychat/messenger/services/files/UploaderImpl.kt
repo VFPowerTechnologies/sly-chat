@@ -199,7 +199,7 @@ class UploaderImpl(
             list.active -= uploadId
             list.inactive += uploadId
         } failUi {
-            handleUploadException(uploadId, it, "cancelUpload")
+            handleUploadException(uploadId, 0, it, "cancelUpload")
         }
     }
 
@@ -228,7 +228,7 @@ class UploaderImpl(
                 }
 
                 override fun onError(e: Throwable) {
-                    handleUploadException(uploadId, e, "cacheFile")
+                    handleUploadException(uploadId, 0, e, "cacheFile")
                 }
             })
 
@@ -286,11 +286,11 @@ class UploaderImpl(
         updateTransferState(uploadId, TransferState.ERROR)
     }
 
-    private fun receivePartProgress(uploadId: String, partN: Int, transferedBytes: Long) {
+    private fun updatePartProgress(uploadId: String, partN: Int, body: (UploadPartTransferProgress) -> UploadPartTransferProgress) {
         val status = list.updateStatus(uploadId) {
             val progress = it.progress.mapIndexed { i, uploadPartTransferProgress ->
                 if (i == partN - 1)
-                    uploadPartTransferProgress.add(transferedBytes)
+                    body(uploadPartTransferProgress)
                 else
                     uploadPartTransferProgress
             }
@@ -302,11 +302,25 @@ class UploaderImpl(
         subject.onNext(TransferEvent.Progress(status.upload, progress))
     }
 
+    private fun resetPartProgress(uploadId: String, partN: Int) {
+        updatePartProgress(uploadId, partN) {
+            it.copy(transferedBytes = 0)
+        }
+    }
+
+    private fun receivePartProgress(uploadId: String, partN: Int, transferedBytes: Long) {
+        updatePartProgress(uploadId, partN) {
+            it.add(transferedBytes)
+        }
+    }
+
     private fun removeCancellationToken(uploadId: String) {
         cancellationTokens.remove(uploadId)
     }
 
-    private fun handleUploadException(uploadId: String, e: Throwable, origin: String) {
+    private fun handleUploadException(uploadId: String, partN: Int, e: Throwable, origin: String) {
+        resetPartProgress(uploadId, partN)
+
         if (e is CancellationException) {
             moveUploadToCancellingState(uploadId) successUi {
                 nextStep(uploadId)
@@ -362,7 +376,7 @@ class UploaderImpl(
                     markUploadComplete(status)
                 }
             } failUi {
-                handleUploadException(status.upload.id, it, "completeUpload")
+                handleUploadException(status.upload.id, 0, it, "completeUpload")
             }
 
             return
@@ -379,7 +393,7 @@ class UploaderImpl(
             .subscribe(object : Subscriber<Long>() {
                 override fun onError(e: Throwable) {
                     removeCancellationToken(uploadId)
-                    handleUploadException(uploadId, e, "uploadPart")
+                    handleUploadException(uploadId, nextPart.n, e, "uploadPart")
                 }
 
                 override fun onNext(t: Long) {
@@ -453,7 +467,7 @@ class UploaderImpl(
         } successUi {
             nextStep(uploadId)
         } failUi {
-            handleUploadException(uploadId, it, "create")
+            handleUploadException(uploadId, 0, it, "create")
         }
     }
 

@@ -31,7 +31,6 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
 
     private data class CreateArgs(val upload: Upload, val file: RemoteFile)
     private data class UploadArgs(val upload: Upload, val part: UploadPart, val file: RemoteFile)
-    private data class CacheArgs(val upload: Upload, val file: RemoteFile)
 
     private var createArgs: CreateArgs? = null
     private var uploadArgs = HashMap<Pair<String, Int>, UploadArgs>()
@@ -51,9 +50,6 @@ class MockUploadOperations(private val scheduler: TestScheduler) : UploadOperati
     override fun uploadPart(upload: Upload, part: UploadPart, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         uploadArgs[upload.id to part.n] = UploadArgs(upload, part, file)
         uploadPartCancellations[upload.id to part.n] = isCancelled
-
-        if (part.n in uploadSubjects)
-            throw RuntimeException("Attempted to upload part ${part.n} twice")
 
         val s = PublishSubject.create<Long>()
         uploadSubjects[part.n] = s

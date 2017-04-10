@@ -63,6 +63,10 @@ class UploaderImplTest {
         )
     }
 
+    private fun advanceUploadProgressBuffer() {
+        scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
+    }
+
     private fun randomMultipartUpload(isPart1Complete: Boolean, isPart2Complete: Boolean): UploadInfo {
         val file = randomRemoteFile()
 
@@ -630,7 +634,29 @@ class UploaderImplTest {
 
         val event = TransferEvent.Progress(info.upload, progress)
         assertEventEmitted(uploader, event) {
-            scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
+            advanceUploadProgressBuffer()
+        }
+    }
+
+    @Test
+    fun `an error should reset the upload part's transfer progress amount`() {
+        val info = randomUploadInfo(state = UploadState.CREATED)
+        val uploader = newUploaderWithUpload(info)
+
+        uploadOperations.sendUploadProgress(info.upload.id, 1, 1000)
+        advanceUploadProgressBuffer()
+
+        val partProgress = info.upload.parts.map { UploadPartTransferProgress(0, it.remoteSize) }
+
+        val progress = UploadTransferProgress(
+            partProgress,
+            0,
+            info.file!!.remoteFileSize
+        )
+
+        val event = TransferEvent.Progress(info.upload, progress)
+        assertEventEmitted(uploader, event) {
+            uploadOperations.errorUploadPartOperation(1, TestException())
         }
     }
 
