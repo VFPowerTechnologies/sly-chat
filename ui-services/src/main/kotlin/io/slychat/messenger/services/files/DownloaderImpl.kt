@@ -130,7 +130,15 @@ class DownloaderImpl(
         }
     }
 
+    private fun resetProgress(downloadId: String) {
+        updateProgress(downloadId) {
+            it.copy(transferedBytes = 0)
+        }
+    }
+
     private fun handleDownloadException(downloadId: String, e: Throwable) {
+        resetProgress(downloadId)
+
         if (e is CancellationException) {
             downloadPersistenceManager.setState(downloadId, DownloadState.CANCELLED) successUi {
                 markDownloadCancelled(downloadId)
@@ -247,12 +255,19 @@ class DownloaderImpl(
         updateTransferState(downloadId, TransferState.COMPLETE)
     }
 
-    private fun receiveProgress(downloadId: String, transferedBytes: Long) {
+    private fun updateProgress(downloadId: String, body: (DownloadTransferProgress) -> DownloadTransferProgress) {
+
         val status = list.updateStatus(downloadId) {
-            it.copy(progress = it.progress.add(transferedBytes))
+            it.copy(progress = body(it.progress))
         }
 
         subject.onNext(TransferEvent.Progress(status.download, status.progress))
+    }
+
+    private fun receiveProgress(downloadId: String, transferedBytes: Long) {
+        updateProgress(downloadId) {
+            it.add(transferedBytes)
+        }
     }
 
     override fun shutdown() {
@@ -278,8 +293,7 @@ class DownloaderImpl(
             val status = list.updateStatus(downloadId) {
                 it.copy(
                     download = it.download.copy(error = null),
-                    state = TransferState.QUEUED,
-                    progress = DownloadTransferProgress(0, it.file.remoteFileSize)
+                    state = TransferState.QUEUED
                 )
             }
 

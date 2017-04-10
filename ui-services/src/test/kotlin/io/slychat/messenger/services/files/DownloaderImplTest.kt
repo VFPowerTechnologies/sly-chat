@@ -334,20 +334,15 @@ class DownloaderImplTest {
     }
 
     @Test
-    fun `clearError should reset the download's transfer progress amount`() {
+    fun `an error should reset the download's transfer progress amount`() {
         val info = randomDownloadInfo()
         val downloader = newDownloaderWithDownload(info)
 
         downloadOperations.sendDownloadProgress(info.download.id, 1000)
         advanceDownloadProgressBuffer()
 
-        downloadOperations.errorDownload(info.download.id, TestException())
-
-        downloader.clearError(info.download.id).get()
-
-        assertEventEmitted(downloader, TransferEvent.Progress(info.download, DownloadTransferProgress(1000, info.file.remoteFileSize))) {
-            downloadOperations.sendDownloadProgress(info.download.id, 1000)
-            advanceDownloadProgressBuffer()
+        assertEventEmitted(downloader, TransferEvent.Progress(info.download, DownloadTransferProgress(0, info.file.remoteFileSize))) {
+            downloadOperations.errorDownload(info.download.id, TestException())
         }
     }
 
