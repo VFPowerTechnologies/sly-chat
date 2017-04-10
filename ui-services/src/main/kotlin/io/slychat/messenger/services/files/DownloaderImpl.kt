@@ -278,7 +278,8 @@ class DownloaderImpl(
             val status = list.updateStatus(downloadId) {
                 it.copy(
                     download = it.download.copy(error = null),
-                    state = TransferState.QUEUED
+                    state = TransferState.QUEUED,
+                    progress = DownloadTransferProgress(0, it.file.remoteFileSize)
                 )
             }
 

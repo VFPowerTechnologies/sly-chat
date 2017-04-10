@@ -7,10 +7,7 @@ import io.slychat.messenger.core.randomDownload
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.testSubscriber
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenResolveUnit
+import io.slychat.messenger.testutils.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -79,6 +76,10 @@ class DownloaderImplTest {
             randomDownload(file.id, state = state, error = error),
             file
         )
+    }
+
+    private fun advanceDownloadProgressBuffer() {
+        scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
     }
 
     private fun testClearError(manager: Downloader): DownloadInfo {
@@ -333,6 +334,24 @@ class DownloaderImplTest {
     }
 
     @Test
+    fun `clearError should reset the download's transfer progress amount`() {
+        val info = randomDownloadInfo()
+        val downloader = newDownloaderWithDownload(info)
+
+        downloadOperations.sendDownloadProgress(info.download.id, 1000)
+        advanceDownloadProgressBuffer()
+
+        downloadOperations.errorDownload(info.download.id, TestException())
+
+        downloader.clearError(info.download.id).get()
+
+        assertEventEmitted(downloader, TransferEvent.Progress(info.download, DownloadTransferProgress(1000, info.file.remoteFileSize))) {
+            downloadOperations.sendDownloadProgress(info.download.id, 1000)
+            advanceDownloadProgressBuffer()
+        }
+    }
+
+    @Test
     fun `clearError should queue the upload for processing if network is available`() {
         val downloader = newDownloader(true)
         val info = testClearError(downloader)
@@ -353,7 +372,7 @@ class DownloaderImplTest {
 
         val event = TransferEvent.Progress(info.download, DownloadTransferProgress(1000, info.file.remoteFileSize))
         assertEventEmitted(downloader, event) {
-            scheduler.advanceTimeBy(DownloaderImpl.PROGRESS_TIME_MS, TimeUnit.MILLISECONDS)
+            advanceDownloadProgressBuffer()
         }
     }
 
