@@ -16,7 +16,9 @@ import rx.schedulers.TestScheduler
 import java.net.SocketTimeoutException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
-import kotlin.test.*
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class DownloaderImplTest {
     companion object {
@@ -378,19 +380,53 @@ class DownloaderImplTest {
 
         downloader.download(info).get()
 
-        assertTrue(downloader.cancel(info.download.id), "Invalid return value")
+        downloader.cancel(info.download.id)
 
         downloadOperations.assertCancelled(info.download.id)
     }
 
     @Test
-    fun `cancel should return false if download wasn't running`() {
+    fun `cancel should delete a partially downloaded file after stopping a running download`() {
+        val downloader = newDownloader()
+        val info = randomDownloadInfo()
+
+        downloader.download(info).get()
+
+        downloader.cancel(info.download.id)
+
+        downloadOperations.errorDownload(info.download.id, CancellationException())
+
+        downloadOperations.assertDeleteCalled(info.download)
+    }
+
+    @Test
+    fun `cancel should delete a partially downloaded file if in error state`() {
+        val info = randomDownloadInfo(error = DownloadError.CORRUPTED)
+        val downloader = newDownloaderWithDownload(info)
+
+        downloader.cancel(info.download.id)
+
+        downloadOperations.assertDeleteCalled(info.download)
+    }
+
+    @Test
+    fun `cancel should delete a partially downloaded file if in queued state`() {
+        val info = randomDownloadInfo()
+        val downloader = newDownloaderWithDownload(info, false)
+
+        downloader.cancel(info.download.id)
+
+        downloadOperations.assertDeleteCalled(info.download)
+    }
+
+    @Test
+    fun `cancel should do nothing if download wasn't running`() {
         val downloader = newDownloader(false)
         val info = randomDownloadInfo()
 
         downloader.download(info).get()
 
-        assertFalse(downloader.cancel(info.download.id), "Invalid return value")
+        downloader.cancel(info.download.id)
     }
 
     @Test

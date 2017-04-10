@@ -4,6 +4,8 @@ import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.Download
 import io.slychat.messenger.services.StorageClientFactory
 import io.slychat.messenger.services.auth.AuthTokenManager
+import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.task
 import rx.Observable
 import rx.Scheduler
 import java.util.concurrent.atomic.AtomicBoolean
@@ -28,5 +30,11 @@ class DownloadOperationsImpl(
                 subscriber.onError(t)
             }
         }).subscribeOn(subscribeScheduler)
+    }
+
+    override fun deleteFile(download: Download): Promise<Unit, Exception> {
+        return task {
+            fileAccess.delete(download.filePath)
+        }
     }
 }

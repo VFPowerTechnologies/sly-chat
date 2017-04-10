@@ -6,6 +6,8 @@ import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.http.api.ServiceUnavailableException
 import io.slychat.messenger.core.isNotNetworkError
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -136,15 +138,17 @@ class DownloaderImpl(
         }
     }
 
+    private fun moveToCancelledState(downloadId: String): Promise<Unit, Exception> {
+        return downloadPersistenceManager.setState(downloadId, DownloadState.CANCELLED) mapUi {
+            markDownloadCancelled(downloadId)
+        }
+    }
+
     private fun handleDownloadException(downloadId: String, e: Throwable) {
         resetProgress(downloadId)
 
         if (e is CancellationException) {
-            downloadPersistenceManager.setState(downloadId, DownloadState.CANCELLED) successUi {
-                markDownloadCancelled(downloadId)
-            } fail {
-                log.error("Unable to mark download as cancelled: {}", it.message, it)
-            }
+            deleteAndMarkCancelled(downloadId)
 
             return
         }
@@ -335,15 +339,45 @@ class DownloaderImpl(
         updateTransferState(downloadId, TransferState.ERROR)
     }
 
-    override fun cancel(downloadId: String): Boolean {
+    private fun deleteAndMarkCancelled(downloadId: String) {
+        val status = list.getStatus(downloadId)
+
+        downloadOperations.deleteFile(status.download) bindUi {
+            moveToCancelledState(downloadId)
+        } fail {
+            log.error("Unable to mark download as cancelled: {}", it.message, it)
+        }
+    }
+
+    private fun cancelQueued(status: DownloadStatus) {
+        list.queued.remove(status.download.id)
+        deleteAndMarkCancelled(status.download.id)
+    }
+
+    private fun attemptCancelActive(status: DownloadStatus) {
+        val token = cancellationTokens[status.download.id] ?: return
+
+        token.set(true)
+    }
+
+    private fun cancelError(status: DownloadStatus) {
+        deleteAndMarkCancelled(status.download.id)
+    }
+
+    override fun cancel(downloadId: String) {
         if (downloadId !in list.all)
             throw InvalidDownloadException(downloadId)
 
-        val token = cancellationTokens[downloadId] ?: return false
+        val status = list.getStatus(downloadId)
 
-        token.set(true)
-
-        return true
+        when (status.state) {
+            TransferState.QUEUED -> cancelQueued(status)
+            TransferState.ACTIVE -> attemptCancelActive(status)
+            TransferState.CANCELLING -> {}
+            TransferState.CANCELLED -> {}
+            TransferState.COMPLETE -> {}
+            TransferState.ERROR -> cancelError(status)
+        }.enforceExhaustive()
     }
 
     override fun remove(downloadIds: List<String>): Promise<Unit, Exception> {

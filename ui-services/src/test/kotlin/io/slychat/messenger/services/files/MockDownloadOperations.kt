@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.Download
+import nl.komponents.kovenant.Promise
 import rx.Observable
 import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
@@ -18,6 +19,7 @@ class MockDownloadOperations(private val scheduler: TestScheduler) : DownloadOpe
     private val cancellationTokens = HashMap<String, AtomicBoolean>()
 
     private var downloadArgs: DownloadArgs? = null
+    private var deleteArgs = HashSet<Download>()
 
     override fun download(download: Download, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         downloadArgs = DownloadArgs(download, file)
@@ -26,6 +28,16 @@ class MockDownloadOperations(private val scheduler: TestScheduler) : DownloadOpe
         downloadObservables[download.id] = s
         cancellationTokens[download.id] = isCancelled
         return s
+    }
+
+    override fun deleteFile(download: Download): Promise<Unit, Exception> {
+        deleteArgs.add(download)
+        return Promise.ofSuccess(Unit)
+    }
+
+    fun assertDeleteCalled(download: Download) {
+        if (download !in deleteArgs)
+            fail("delete() not called for ${download.id}")
     }
 
     fun assertDownloadNotCalled() {
