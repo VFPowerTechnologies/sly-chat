@@ -154,6 +154,10 @@ class DownloaderImpl(
 
             is InvalidCipherTextException -> DownloadError.CORRUPTED
 
+            //assume network issue if this happens, otherwise the upload would actually fail
+            //only other outcome is somehow the uploaded copy is corrupted
+            is TruncatedFileException -> DownloadError.NETWORK_ISSUE
+
             is UnknownCipherException -> DownloadError.UNKNOWN_CIPHER
 
             is ServiceUnavailableException -> DownloadError.SERVICE_UNAVAILABLE

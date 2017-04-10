@@ -32,19 +32,30 @@ class DownloadOperation(
         else
             resp.inputStream
 
+        val expectedSize = if (download.doDecrypt)
+            file.fileMetadata!!.size
+        else
+            file.remoteFileSize
+
         inputStream.use { inputStream ->
             val buffer = ByteArray(8 * 1024)
             fileAccess.openFileForWrite(download.filePath).use { outputStream ->
+                var readSoFar = 0L
+
                 while (true) {
                     val read = inputStream.read(buffer)
 
                     //EOF
                     if (read == -1) {
+                        if (readSoFar != expectedSize)
+                            throw TruncatedFileException(readSoFar, expectedSize)
+
                         break
                     }
                     else if (read == 0) {
                         continue
                     }
+                    readSoFar += read
 
                     outputStream.write(buffer, 0, read)
                     subscriber.onNext(read.toLong())
