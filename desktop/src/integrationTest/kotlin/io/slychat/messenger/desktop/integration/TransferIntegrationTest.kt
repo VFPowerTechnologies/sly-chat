@@ -220,7 +220,7 @@ class TransferIntegrationTest {
             .replay()
 
         resultObservable.connect().use {
-            storageService.downloadFile(
+            storageService.downloadFiles(
                 file.id,
                 outputFile.path
             ).get()

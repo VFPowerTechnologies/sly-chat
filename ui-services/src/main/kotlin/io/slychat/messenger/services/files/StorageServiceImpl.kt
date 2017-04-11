@@ -21,7 +21,6 @@ import rx.Observable
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
-import java.io.FileNotFoundException
 import java.util.*
 
 //XXX an issue right now is that upload adds a file to the list but it isn't reflected in the file list until the upload completes
@@ -275,27 +274,28 @@ class StorageServiceImpl(
         }
     }
 
-    override fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception> {
-        return getFile(fileId) bindUi { file ->
-            if (file == null)
-                throw FileNotFoundException()
+    override fun downloadFiles(requests: List<DownloadRequest>): Promise<Unit, Exception> {
+        return getFilesById(requests.map { it.fileId }) bindUi { files ->
+            val downloads = requests.map {
+                val file = files[it.fileId]!!
 
-            val download = Download(
-                generateDownloadId(),
-                file.id,
-                DownloadState.CREATED,
-                localFilePath,
-                "${file.userMetadata.directory}/${file.userMetadata.fileName}",
-                true,
-                null
-            )
+                val download = Download(
+                    generateDownloadId(),
+                    it.fileId,
+                    DownloadState.CREATED,
+                    it.localFilePath,
+                    "${file.userMetadata.directory}/${file.userMetadata.fileName}",
+                    true,
+                    null
+                )
 
-            val info = DownloadInfo(
-                download,
-                file
-            )
+                DownloadInfo(
+                    download,
+                    file
+                )
+            }
 
-            transferManager.download(info)
+            transferManager.download(downloads)
         }
     }
 

@@ -17,7 +17,7 @@ interface Downloader {
 
     fun shutdown()
 
-    fun download(info: DownloadInfo): Promise<Unit, Exception>
+    fun download(downloads: List<DownloadInfo>): Promise<Unit, Exception>
 
     //throws IllegalStateException if called on an active download
     fun remove(downloadIds: List<String>): Promise<Unit, Exception>

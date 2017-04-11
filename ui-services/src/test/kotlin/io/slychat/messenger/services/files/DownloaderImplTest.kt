@@ -101,10 +101,10 @@ class DownloaderImplTest {
     private fun testDownloadError(e: Exception, expectedError: DownloadError) {
         val downloader = newDownloader(true)
 
-        val downloadInfo = randomDownloadInfo()
-        downloader.download(downloadInfo).get()
+        val info = randomDownloadInfo()
+        downloader.download(listOf(info)).get()
 
-        val download = downloadInfo.download
+        val download = info.download
 
         val event = TransferEvent.StateChanged(download.copy(error = expectedError), TransferState.ERROR)
         assertEventEmitted(downloader, event) {
@@ -194,22 +194,22 @@ class DownloaderImplTest {
     fun `adding a new download should persist the download info`() {
         val downloader = newDownloader(false)
 
-        val downloadInfo = randomDownloadInfo()
+        val info = randomDownloadInfo()
 
-        downloader.download(downloadInfo).get()
+        downloader.download(listOf(info)).get()
 
-        verify(downloadPersistenceManager).add(downloadInfo.download)
+        verify(downloadPersistenceManager).add(listOf(info.download))
     }
 
     @Test
     fun `adding a new download should emit a DownloadAdded event`() {
         val downloader = newDownloader(false)
 
-        val downloadInfo = randomDownloadInfo()
+        val info = randomDownloadInfo()
 
-        val event = TransferEvent.Added(downloadInfo.download, TransferState.QUEUED)
+        val event = TransferEvent.Added(info.download, TransferState.QUEUED)
         assertEventEmitted(downloader, event) {
-            downloader.download(downloadInfo).get()
+            downloader.download(listOf(info)).get()
         }
     }
 
@@ -217,23 +217,23 @@ class DownloaderImplTest {
     fun `it should start queued downloads when network becomes available`() {
         val downloader = newDownloader(false)
 
-        val downloadInfo = randomDownloadInfo()
+        val info = randomDownloadInfo()
 
-        downloader.download(downloadInfo).get()
+        downloader.download(listOf(info)).get()
 
         downloader.isNetworkAvailable = true
 
-        downloadOperations.assertDownloadCalled(downloadInfo.download, downloadInfo.file)
+        downloadOperations.assertDownloadCalled(info.download, info.file)
     }
 
     @Test
     fun `it should emit a TransferEvent when moving a download to completion state`() {
         val downloader = newDownloader(true)
 
-        val downloadInfo = randomDownloadInfo()
-        downloader.download(downloadInfo).get()
+        val info = randomDownloadInfo()
+        downloader.download(listOf(info)).get()
 
-        val download = downloadInfo.download
+        val download = info.download
 
         val event = TransferEvent.StateChanged(download.copy(state = DownloadState.COMPLETE), TransferState.COMPLETE)
         assertEventEmitted(downloader, event) {
@@ -245,12 +245,12 @@ class DownloaderImplTest {
     fun `it should mark a download as completed when a download completes successfully`() {
         val downloader = newDownloader(true)
 
-        val downloadInfo = randomDownloadInfo()
-        downloader.download(downloadInfo).get()
+        val info = randomDownloadInfo()
+        downloader.download(listOf(info)).get()
 
-        downloadOperations.completeDownload(downloadInfo.download.id)
+        downloadOperations.completeDownload(info.download.id)
 
-        verify(downloadPersistenceManager).setState(downloadInfo.download.id, DownloadState.COMPLETE)
+        verify(downloadPersistenceManager).setState(info.download.id, DownloadState.COMPLETE)
     }
 
     @Test
@@ -267,23 +267,23 @@ class DownloaderImplTest {
     fun `it should set the download state to CANCELLED when download fails with CancellationException`() {
         val downloader = newDownloader(true)
 
-        val downloadInfo = randomDownloadInfo()
-        downloader.download(downloadInfo).get()
+        val info = randomDownloadInfo()
+        downloader.download(listOf(info)).get()
 
-        val download = downloadInfo.download
+        val download = info.download
         downloadOperations.errorDownload(download.id, CancellationException())
 
-        verify(downloadPersistenceManager).setState(downloadInfo.download.id, DownloadState.CANCELLED)
+        verify(downloadPersistenceManager).setState(info.download.id, DownloadState.CANCELLED)
     }
 
     @Test
     fun `it should emit a TransferEvent with state=CANCELLED when a download is cancelled`() {
         val downloader = newDownloader(true)
 
-        val downloadInfo = randomDownloadInfo()
-        downloader.download(downloadInfo).get()
+        val info = randomDownloadInfo()
+        downloader.download(listOf(info)).get()
 
-        val download = downloadInfo.download
+        val download = info.download
 
         val event = TransferEvent.StateChanged(download.copy(state = DownloadState.CANCELLED), TransferState.CANCELLED)
         assertEventEmitted(downloader, event) {
@@ -361,7 +361,7 @@ class DownloaderImplTest {
         val downloader = newDownloader(true)
         val info = randomDownloadInfo()
 
-        downloader.download(info).get()
+        downloader.download(listOf(info)).get()
 
         val downloadId = info.download.id
         downloadOperations.sendDownloadProgress(downloadId, 500L)
@@ -378,7 +378,7 @@ class DownloaderImplTest {
         val downloader = newDownloader()
         val info = randomDownloadInfo()
 
-        downloader.download(info).get()
+        downloader.download(listOf(info)).get()
 
         downloader.cancel(info.download.id)
 
@@ -390,7 +390,7 @@ class DownloaderImplTest {
         val downloader = newDownloader()
         val info = randomDownloadInfo()
 
-        downloader.download(info).get()
+        downloader.download(listOf(info)).get()
 
         downloader.cancel(info.download.id)
 
@@ -424,7 +424,7 @@ class DownloaderImplTest {
         val downloader = newDownloader(false)
         val info = randomDownloadInfo()
 
-        downloader.download(info).get()
+        downloader.download(listOf(info)).get()
 
         downloader.cancel(info.download.id)
     }
@@ -442,12 +442,12 @@ class DownloaderImplTest {
     fun `remove should throw IllegalStateException if called for an active download`() {
         val downloader = newDownloader()
 
-        val downloadInfo = randomDownloadInfo()
+        val info = randomDownloadInfo()
 
-        downloader.download(downloadInfo).get()
+        downloader.download(listOf(info)).get()
 
         assertFailsWith(IllegalStateException::class) {
-            downloader.remove(listOf(downloadInfo.download.id)).get()
+            downloader.remove(listOf(info.download.id)).get()
         }
     }
 

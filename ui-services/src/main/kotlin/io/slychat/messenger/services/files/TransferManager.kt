@@ -21,7 +21,7 @@ interface TransferManager {
 
     fun clearError(transferId: String): Promise<Unit, Exception>
 
-    fun download(info: DownloadInfo): Promise<Unit, Exception>
+    fun download(downloads: List<DownloadInfo>): Promise<Unit, Exception>
 
     fun cancel(transferIds: List<String>)
 

@@ -14,9 +14,9 @@ import io.slychat.messenger.core.persistence.DuplicateFilePathException
 
 internal class FileUtils {
     fun rowToRemoteFile(stmt: SQLiteStatement, colOffset: Int = 0): RemoteFile {
-        val sharedFromUserId = stmt.columnNullableUserId(14)
+        val sharedFromUserId = stmt.columnNullableUserId(colOffset + 14)
         val sharedFrom = sharedFromUserId?.let {
-            SharedFrom(it, stmt.columnNullableGroupId(15))
+            SharedFrom(it, stmt.columnNullableGroupId(colOffset + 15))
         }
 
         val userMetadata = UserMetadata(

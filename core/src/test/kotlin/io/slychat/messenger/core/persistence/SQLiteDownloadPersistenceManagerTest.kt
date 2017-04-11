@@ -44,7 +44,7 @@ class SQLiteDownloadPersistenceManagerTest {
     private fun insertDownloadFull(error: DownloadError? = null): DownloadInfo {
         val file = insertFile()
         val download = randomDownload(file.id, error = error)
-        downloadPersistenceManager.add(download).get()
+        downloadPersistenceManager.add(listOf(download)).get()
 
         return DownloadInfo(download, file)
     }

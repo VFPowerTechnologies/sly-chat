@@ -201,8 +201,8 @@ class TransferManagerImpl(
             throw InvalidTransferException(transferId)
     }
 
-    override fun download(info: DownloadInfo): Promise<Unit, Exception> {
-        return downloader.download(info)
+    override fun download(downloads: List<DownloadInfo>): Promise<Unit, Exception> {
+        return downloader.download(downloads)
     }
 
     override fun cancel(transferIds: List<String>) {

@@ -32,8 +32,12 @@ VALUES
         }
     }
 
-    override fun add(download: Download): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery {
-        insertDownload(it, download)
+    override fun add(downloads: List<Download>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
+        connection.withTransaction {
+            downloads.forEach {
+                insertDownload(connection, it)
+            }
+        }
     }
 
     override fun remove(downloadIds: List<String>): Promise<Unit, Exception> {

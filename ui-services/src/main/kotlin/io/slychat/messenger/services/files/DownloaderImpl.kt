@@ -284,9 +284,9 @@ class DownloaderImpl(
         }
     }
 
-    override fun download(info: DownloadInfo): Promise<Unit, Exception> {
-        return downloadPersistenceManager.add(info.download) successUi {
-            addDownloads(listOf(info))
+    override fun download(downloads: List<DownloadInfo>): Promise<Unit, Exception> {
+        return downloadPersistenceManager.add(downloads.map { it.download }) successUi {
+            addDownloads(downloads)
         }
     }
 

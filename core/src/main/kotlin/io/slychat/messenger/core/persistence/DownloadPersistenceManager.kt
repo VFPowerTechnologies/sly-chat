@@ -3,7 +3,7 @@ package io.slychat.messenger.core.persistence
 import nl.komponents.kovenant.Promise
 
 interface DownloadPersistenceManager {
-    fun add(download: Download): Promise<Unit, Exception>
+    fun add(downloads: List<Download>): Promise<Unit, Exception>
 
     //remove a download from the list
     fun remove(downloadIds: List<String>): Promise<Unit, Exception>
