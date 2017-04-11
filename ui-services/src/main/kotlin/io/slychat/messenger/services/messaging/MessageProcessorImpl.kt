@@ -172,7 +172,7 @@ class MessageProcessorImpl(
         }
     }
 
-    private fun generateAttachmentInfo(sender: UserId, groupId: GroupId?, textAttachments: List<TextMessageAttachment>): Pair<List<MessageAttachmentInfo>, List<ReceivedAttachment>> {
+    private fun generateAttachmentInfo(conversationId: ConversationId, messageId: String, sender: UserId, groupId: GroupId?, textAttachments: List<TextMessageAttachment>): Pair<List<MessageAttachmentInfo>, List<ReceivedAttachment>> {
         val attachments = ArrayList<MessageAttachmentInfo>()
         val receivedAttachments = ArrayList<ReceivedAttachment>()
 
@@ -193,7 +193,7 @@ class MessageProcessorImpl(
                 SharedFrom(sender, null)
             )
 
-            receivedAttachments.add(ReceivedAttachment(i, a.fileId.string, a.shareKey, userMetadata, isInline, null, null))
+            receivedAttachments.add(ReceivedAttachment(conversationId, messageId, i, a.fileId.string, a.shareKey, userMetadata, isInline, null, null))
         }
 
         return attachments to receivedAttachments
@@ -211,7 +211,12 @@ class MessageProcessorImpl(
         else
             false
 
-        val (attachments, receivedAttachments) = generateAttachmentInfo(sender, groupId, m.attachments)
+        val conversationId = if (groupId != null)
+            groupId.toConversationId()
+        else
+            sender.toConversationId()
+
+        val (attachments, receivedAttachments) = generateAttachmentInfo(conversationId, m.id.string, sender, groupId, m.attachments)
 
         val messageInfo = MessageInfo.newReceived(m.id.string, m.message, m.timestamp, relayClock.currentTime(), isRead, m.ttlMs, attachments)
         val conversationInfo = ConversationMessageInfo(sender, messageInfo)

@@ -464,9 +464,9 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             val attachmentInfo = randomMessageAttachmentInfo(0)
 
-            val receivedAttachment = randomReceivedAttachment(0)
-
             val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
+
+            val receivedAttachment = randomReceivedAttachment(0, conversationId = conversationId, messageId = messageInfo.id)
 
             val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
 

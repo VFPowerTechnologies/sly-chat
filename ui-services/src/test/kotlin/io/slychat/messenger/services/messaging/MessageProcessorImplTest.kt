@@ -210,7 +210,7 @@ class MessageProcessorImplTest {
 
         verify(messageService).addMessage(eq(sender.toConversationId()), capture {
             assertTrue(it.info.isRead, "Message should be marked as read")
-        }, emptyList())
+        }, eq(emptyList()))
     }
 
     @Test
@@ -832,7 +832,7 @@ class MessageProcessorImplTest {
     fun `it should drop MessagesRead where the sender is not yourself`() {
         val processor = createProcessor()
 
-        val m = SyncMessage.MessagesRead(randomUserConversationId(), randomMessageIds().map { MessageId(it) })
+        val m = SyncMessage.MessagesRead(randomUserConversationId(), randomMessageIds().map(::MessageId))
 
         assertFailsWithSyncMessageFromOtherSecurityException {
             processor.processMessage(randomUserId(), wrap(m)).get()

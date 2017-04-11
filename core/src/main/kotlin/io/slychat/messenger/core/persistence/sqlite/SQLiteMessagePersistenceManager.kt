@@ -161,6 +161,8 @@ VALUES
         //language=SQLite
         val sql = """
 SELECT
+    conversation_id,
+    message_id,
     n,
     file_id,
     their_share_key,
@@ -184,21 +186,23 @@ AND
             it.bind(":messageId", messageId)
             it.map {
                 ReceivedAttachment(
-                    it.columnInt(0),
+                    it.columnConversationId(0),
                     it.columnString(1),
-                    it.columnString(2),
+                    it.columnInt(2),
+                    it.columnString(3),
+                    it.columnString(4),
                     UserMetadata(
-                        it.columnKey(3),
-                        it.columnCipherId(4),
-                        it.columnString(5),
-                        it.columnString(6),
+                        it.columnKey(5),
+                        it.columnCipherId(6),
+                        it.columnString(7),
+                        it.columnString(8),
                         SharedFrom(
-                            it.columnUserId(7),
-                            it.columnNullableGroupId(8)
+                            it.columnUserId(9),
+                            it.columnNullableGroupId(10)
                         )
                     ),
-                    it.columnBool(9),
-                    it.columnString(10),
+                    it.columnBool(11),
+                    it.columnString(12),
                     null
                 )
             }
