@@ -6,44 +6,26 @@ import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.Key
 import org.junit.BeforeClass
 import org.junit.Test
-import org.spongycastle.crypto.engines.AESFastEngine
-import org.spongycastle.crypto.modes.GCMBlockCipher
-import org.spongycastle.crypto.params.AEADParameters
-import org.spongycastle.crypto.params.KeyParameter
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.security.SecureRandom
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class EncryptInputStreamTest {
     companion object {
+        private val cipher = CipherList.defaultDataEncryptionCipher
         private lateinit var key: Key
 
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
-            val b = ByteArray(256 / 8)
-            SecureRandom().nextBytes(b)
-            key = Key(b)
+            key = Key(getRandomBits(cipher.keySizeBits))
         }
     }
 
-    private val cipher = CipherList.defaultDataEncryptionCipher
-
-    fun getSingleBlockSize(blockSize: Int): Int {
-        val key = ByteArray(256 / 8)
-
-        val authTagLength = 128
-
-        val cipher = GCMBlockCipher(AESFastEngine())
-
-        val iv = ByteArray(96 / 8)
-
-        cipher.init(true, AEADParameters(KeyParameter(key), authTagLength, iv))
-
-        return cipher.getOutputSize(blockSize) + iv.size
+    private fun getSingleBlockSize(blockSize: Int): Int {
+        return cipher.getEncryptedSize(blockSize)
     }
 
     private fun assertByteArraysEqual(expected: ByteArray, actual: ByteArray) {

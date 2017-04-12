@@ -8,7 +8,7 @@ class EncryptInputStream(
     private val cipher: Cipher,
     private val key: Key,
     private val inputStream: InputStream,
-    val chunkSize: Int
+    private val chunkSize: Int
 ) : InputStream() {
     private var currentChunk: ByteArray? = null
     private var currentChunkOffset = 0

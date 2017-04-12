@@ -27,7 +27,7 @@ class AES256GCMCipherTest {
         val key = generateKey(cipher.keySizeBits)
 
         val expected = "test"
-        val plaintext = expected + "1"
+        val plaintext = expected + "1".repeat(40)
 
         val ciphertext = cipher.encrypt(key, plaintext.toByteArray(Charsets.US_ASCII), expected.length)
 

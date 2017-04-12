@@ -28,9 +28,25 @@ class AES256CBCHMACCipher : Cipher {
     override val keySizeBits: Int
         get() = 512
 
+    private val encKeySizeBits = 256
+    private val encKeySizeBytes = encKeySizeBits / 8
+    private val macKeySizeBits = 256
+    private val macKeySizeBytes = macKeySizeBits / 8
+
     //AES block size is fixed at 128bits
     private val ivSizeBits = 128
     private val ivSizeBytes = ivSizeBits / 8
+
+    override fun getEncryptedSize(size: Int): Int {
+        val key = ByteArray(encKeySizeBytes)
+
+        val iv = ByteArray(ivSizeBytes)
+
+        val cipher = newCipher(true, ParametersWithIV(KeyParameter(key), iv))
+        val mac = newMac(ByteArray(macKeySizeBytes))
+
+        return ivSizeBytes + mac.macSize + cipher.getOutputSize(size)
+    }
 
     private fun newCipher(forEncryption: Boolean, params: CipherParameters): PaddedBufferedBlockCipher {
         val cipher = CBCBlockCipher(AESFastEngine())
@@ -51,19 +67,19 @@ class AES256CBCHMACCipher : Cipher {
 
     /** Returns (encKey, macKey) */
     private fun splitKey(key: Key): Pair<ByteArray, ByteArray> {
-        val encKey = ByteArray(256 / 8)
+        val encKey = ByteArray(encKeySizeBytes)
         System.arraycopy(key.raw, 0, encKey, 0, encKey.size)
 
-        val macKey = ByteArray(256 / 8)
+        val macKey = ByteArray(macKeySizeBytes)
         System.arraycopy(key.raw, encKey.size, macKey, 0, macKey.size)
 
         return encKey to macKey
     }
 
-    private fun encrypt(paddedCipher: PaddedBufferedBlockCipher, input: ByteArray, output: ByteArray, outputOffset: Int) {
+    private fun encrypt(paddedCipher: PaddedBufferedBlockCipher, input: ByteArray, inputSize: Int, output: ByteArray, outputOffset: Int) {
         require(outputOffset >= 0) { "outputOffset must be >= 0, got $outputOffset" }
 
-        val outputLength = paddedCipher.processBytes(input, 0, input.size, output, outputOffset)
+        val outputLength = paddedCipher.processBytes(input, 0, inputSize, output, outputOffset)
         paddedCipher.doFinal(output, outputOffset + outputLength)
     }
 
@@ -86,6 +102,10 @@ class AES256CBCHMACCipher : Cipher {
     }
 
     override fun encrypt(key: Key, plaintext: ByteArray): ByteArray {
+        return encrypt(key, plaintext, plaintext.size)
+    }
+
+    override fun encrypt(key: Key, plaintext: ByteArray, plaintextSize: Int): ByteArray {
         //encrypted format is: MAC | IV | Ciphertext
         //where MAC covers the IV and Ciphertext
         val (encKey, macKey) = splitKey(key)
@@ -96,7 +116,7 @@ class AES256CBCHMACCipher : Cipher {
 
         val ivOffset = hmac.macSize
         val ciphertextOffset = hmac.macSize + iv.size
-        val cipherTextSize = cipher.getOutputSize(plaintext.size)
+        val cipherTextSize = cipher.getOutputSize(plaintextSize)
         val outputSize = ciphertextOffset + cipherTextSize
         val authSize = ivSizeBytes + cipherTextSize
 
@@ -111,7 +131,7 @@ class AES256CBCHMACCipher : Cipher {
             iv.size
         )
 
-        encrypt(cipher, plaintext, output, ciphertextOffset)
+        encrypt(cipher, plaintext, plaintextSize, output, ciphertextOffset)
 
         hmac.update(output, ivOffset, authSize)
 
@@ -121,18 +141,22 @@ class AES256CBCHMACCipher : Cipher {
     }
 
     override fun decrypt(key: Key, ciphertext: ByteArray): ByteArray {
+        return decrypt(key, ciphertext, ciphertext.size)
+    }
+
+    override fun decrypt(key: Key, ciphertext: ByteArray, ciphertextSize: Int): ByteArray {
         val (encKey, macKey) = splitKey(key)
         val hmac = newMac(macKey)
 
         val minSize = hmac.macSize + ivSizeBytes
 
-        if (ciphertext.size < minSize)
-            throw IllegalArgumentException("Malformed encrypted data")
+        if (ciphertextSize < minSize)
+            throw MalformedEncryptedDataException("Malformed encrypted data")
 
         val ivOffset = hmac.macSize
         val ciphertextOffset = hmac.macSize + ivSizeBytes
-        val authSize = ciphertext.size - hmac.macSize
-        val ciphertextSize = ciphertext.size - (hmac.macSize + ivSizeBytes)
+        val authSize = ciphertextSize - hmac.macSize
+        val actualCiphertextSize = ciphertextSize - (hmac.macSize + ivSizeBytes)
 
         val expectedMac = ciphertext.copyOfRange(0, hmac.macSize)
         //authenticate
@@ -148,6 +172,6 @@ class AES256CBCHMACCipher : Cipher {
 
         val cipher = newCipher(false, ParametersWithIV(KeyParameter(encKey), iv))
 
-        return decrypt(cipher, ciphertext, ciphertextOffset, ciphertextSize)
+        return decrypt(cipher, ciphertext, ciphertextOffset, actualCiphertextSize)
     }
 }

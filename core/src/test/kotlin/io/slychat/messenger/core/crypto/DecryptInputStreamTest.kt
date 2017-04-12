@@ -9,7 +9,6 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.security.SecureRandom
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -17,18 +16,15 @@ import kotlin.test.assertTrue
 
 class DecryptInputStreamTest {
     companion object {
+        private val cipher = CipherList.defaultDataEncryptionCipher
         private lateinit var key: Key
 
         @JvmStatic
         @BeforeClass
         fun beforeClass() {
-            val b = ByteArray(256 / 8)
-            SecureRandom().nextBytes(b)
-            key = Key(b)
+            key = Key(getRandomBits(cipher.keySizeBits))
         }
     }
-
-    private val cipher = CipherList.defaultDataEncryptionCipher
 
     private fun assertByteArraysEqual(expected: ByteArray, actual: ByteArray) {
         assertTrue(Arrays.equals(expected, actual), "Expected ${Arrays.toString(expected)} but got ${Arrays.toString(actual)}")

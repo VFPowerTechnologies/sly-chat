@@ -4,10 +4,12 @@ import io.slychat.messenger.core.crypto.generateKey
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.spongycastle.crypto.InvalidCipherTextException
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class AES256CBCHMACCipherTest {
     private val plaintext = "test"
+    private val plaintextBytes = plaintext.toByteArray(Charsets.US_ASCII)
 
     @Test
     fun `it should be able to encrypt and decrypt`() {
@@ -15,11 +17,43 @@ class AES256CBCHMACCipherTest {
 
         val key = generateKey(cipher.keySizeBits)
 
-        val ciphertext = cipher.encrypt(key, plaintext.toByteArray(Charsets.UTF_8))
+        val ciphertext = cipher.encrypt(key, plaintextBytes)
 
         val decrypted = cipher.decrypt(key, ciphertext)
 
-        assertEquals(plaintext, decrypted.toString(Charsets.UTF_8))
+        assertEquals(plaintext, decrypted.toString(Charsets.US_ASCII))
+    }
+
+    @Test
+    fun `it should be able to encrypt when given an explicit size`() {
+        val cipher = AES256CBCHMACCipher()
+
+        val key = generateKey(cipher.keySizeBits)
+
+        val expected = "test"
+        //we want to have extra so that it would result in more blocks if not ignored
+        val plaintext = expected + "1".repeat(40)
+
+        val ciphertext = cipher.encrypt(key, plaintext.toByteArray(Charsets.US_ASCII), expected.length)
+
+        val decrypted = cipher.decrypt(key, ciphertext)
+
+        assertEquals(expected, decrypted.toString(Charsets.US_ASCII))
+    }
+
+    @Test
+    fun `it should be able to decrypt when given an explicit size`() {
+        val cipher = AES256CBCHMACCipher()
+
+        val key = generateKey(cipher.keySizeBits)
+
+        val ciphertext = cipher.encrypt(key, plaintextBytes)
+
+        val extended = ciphertext + byteArrayOf(0x22)
+
+        val decrypted = cipher.decrypt(key, extended, ciphertext.size)
+
+        assertEquals(plaintext, decrypted.toString(Charsets.US_ASCII))
     }
 
     private fun testModificationFailure(body: (ByteArray) -> Unit) {
@@ -27,7 +61,7 @@ class AES256CBCHMACCipherTest {
 
         val key = generateKey(cipher.keySizeBits)
 
-        val ciphertext = cipher.encrypt(key, plaintext.toByteArray(Charsets.UTF_8))
+        val ciphertext = cipher.encrypt(key, plaintextBytes)
 
         body(ciphertext)
 
@@ -42,7 +76,7 @@ class AES256CBCHMACCipherTest {
 
         val key = generateKey(cipher.keySizeBits)
 
-        val ciphertext = cipher.encrypt(key, plaintext.toByteArray(Charsets.UTF_8))
+        val ciphertext = cipher.encrypt(key, plaintextBytes)
 
         val modified = ciphertext + byteArrayOf(0x55)
 
@@ -57,7 +91,7 @@ class AES256CBCHMACCipherTest {
 
         val key = generateKey(cipher.keySizeBits)
 
-        val ciphertext = cipher.encrypt(key, plaintext.toByteArray(Charsets.UTF_8))
+        val ciphertext = cipher.encrypt(key, plaintextBytes)
 
         val modified = ciphertext.copyOfRange(0, ciphertext.size - 1)
 
@@ -89,5 +123,14 @@ class AES256CBCHMACCipherTest {
             it[0] = -1
             it[1] = -1
         }
+    }
+
+    @Test
+    fun `getEncryptedSize should return the proper size`() {
+        val cipher = AES256CBCHMACCipher()
+
+        val size = 100
+        //+ ivSize + authTagSize
+        assertEquals((7 * 16) + 16 + 32, cipher.getEncryptedSize(size), "Invalid size")
     }
 }
