@@ -8,6 +8,7 @@ object CipherList {
 
     init {
         registerCipher(AES256GCMCipher())
+        registerCipher(AES256CBCHMACCipher())
     }
 
     private fun registerCipher(cipher: Cipher) {
