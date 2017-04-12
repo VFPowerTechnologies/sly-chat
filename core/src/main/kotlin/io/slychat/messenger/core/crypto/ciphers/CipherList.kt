@@ -20,7 +20,8 @@ object CipherList {
         ciphers[cipher.id] = cipher
     }
 
-    val defaultDataEncryptionCipher: Cipher = getCipher(AES256GCMCipher.id)
+    val defaultDataEncryptionCipher: Cipher
+        get() = getCipher(AES256CBCHMACCipher.id)
 
     fun getCipher(cipherId: CipherId): Cipher {
         return ciphers[cipherId] ?: throw UnknownCipherException(cipherId)

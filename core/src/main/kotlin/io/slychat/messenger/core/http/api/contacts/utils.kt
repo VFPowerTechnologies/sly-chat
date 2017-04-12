@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.KeyVault
+import io.slychat.messenger.core.crypto.ciphers.AES256GCMCipher
 import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
@@ -49,7 +50,9 @@ private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): ByteArray {
 //first we create RemoteContactEntryData, then serialize them to json, and then encrypt them
 //afterwards we then store the encrypted value along with the address book id hash in a RemoteContactEntry
 fun encryptRemoteAddressBookEntries(keyVault: KeyVault, updates: List<AddressBookUpdate>): List<RemoteAddressBookEntry> {
-    val cipher = CipherList.defaultDataEncryptionCipher
+    //this needs to be changed to properly use AES-256-CBC+HMAC, but since older clients had no support we need to wait
+    //a bit until people upgrade to swap it
+    val cipher = CipherList.getCipher(AES256GCMCipher.id)
     val derivedKey = keyVault.deriveKeyFor(DerivedKeyType.REMOTE_ADDRESS_BOOK_ENTRIES, cipher)
 
     val objectMapper = ObjectMapper()
