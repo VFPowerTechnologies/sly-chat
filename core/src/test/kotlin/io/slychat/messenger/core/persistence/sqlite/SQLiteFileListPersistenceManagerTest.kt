@@ -28,9 +28,9 @@ class SQLiteFileListPersistenceManagerTest {
     private lateinit var persistenceManager: SQLitePersistenceManager
     private lateinit var fileListPersistenceManager: SQLiteFileListPersistenceManager
 
-    private fun insertFile(lastUpdateVersion: Long = 1, directory: String? = null): RemoteFile {
+    private fun insertFile(lastUpdateVersion: Long = 1, directory: String? = null, isDeleted: Boolean = false): RemoteFile {
         val userMetadata = randomUserMetadata(directory = directory)
-        val file = randomRemoteFile(userMetadata = userMetadata).copy(lastUpdateVersion = lastUpdateVersion)
+        val file = randomRemoteFile(userMetadata = userMetadata, isDeleted = isDeleted).copy(lastUpdateVersion = lastUpdateVersion)
 
         fileListPersistenceManager.addFile(file).get()
 
@@ -302,6 +302,21 @@ class SQLiteFileListPersistenceManagerTest {
         assertThat(result.added).desc("Should be empty") { isEmpty() }
 
         assertThat(result.deleted).desc("Should include the deleted file") { containsOnly(updated) }
+
+        assertThat(result.updated).desc("Should be empty") { isEmpty() }
+    }
+
+    @Test
+    fun `mergeUpdates should remove deleted files but not list in results if already deleted locally`() {
+        val file = insertFile(isDeleted = true)
+
+        val result = fileListPersistenceManager.mergeUpdates(listOf(file), 2).get()
+
+        assertNull(fileListPersistenceManager.getFile(file.id).get(), "File not deleted from table")
+
+        assertThat(result.added).desc("Should be empty") { isEmpty() }
+
+        assertThat(result.deleted).desc("Should be empty") { isEmpty() }
 
         assertThat(result.updated).desc("Should be empty") { isEmpty() }
     }

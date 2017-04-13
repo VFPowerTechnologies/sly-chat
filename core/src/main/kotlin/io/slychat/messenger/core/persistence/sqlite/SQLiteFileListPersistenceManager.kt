@@ -239,7 +239,8 @@ WHERE
                     if (remote.isDeleted) {
                         isIndexModified = true
                         fileUtils.deleteFile(connection, remote)
-                        deleted.add(remote)
+                        if (!local.isDeleted)
+                            deleted.add(remote)
                     }
                     else {
                         if (local.userMetadata.directory != remote.userMetadata.directory) {
