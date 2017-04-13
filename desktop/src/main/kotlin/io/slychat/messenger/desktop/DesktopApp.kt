@@ -29,6 +29,7 @@ import io.slychat.messenger.services.config.AppConfig
 import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.PlatformModule
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import io.slychat.messenger.services.ui.createAppDirectories
 import io.slychat.messenger.services.ui.js.NavigationService
 import io.slychat.messenger.services.ui.js.getNavigationPageConversation
@@ -349,6 +350,7 @@ class DesktopApp : Application() {
     }
 
     private fun onWindowClosed() {
+        clearAllListenersOnDispatcher(app.appComponent)
         stage = null
         dispatcher = null
         navigationService = null
