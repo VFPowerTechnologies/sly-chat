@@ -612,6 +612,11 @@ class SlyApplication {
     }
 
     private fun startRelayKeepAlive() {
+        val relayClientManager = userComponent?.relayClientManager ?: return
+
+        if (relayClientManager.state == RelayClientState.DISCONNECTED)
+            return
+
         log.debug("Starting relay keep alive")
         keepAliveTimerSub = keepAliveObservable.subscribe {
             userComponent?.relayClientManager?.sendPing()

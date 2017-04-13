@@ -19,7 +19,7 @@ apply plugin: 'application'
 apply plugin: 'javafx-gradle-plugin'
 
 mainClassName = 'io.slychat.messenger.desktop.Main'
-applicationName = "sly-chat"
+applicationName = 'Sly'
 
 sourceSets.main.resources.srcDirs += "$rootProject.projectDir/ui"
 sourceSets.main.resources.srcDirs += "$rootProject.projectDir/desktop-libraries"
@@ -79,6 +79,7 @@ distributions {
 //so we disable distTar unless it's explicitly being run
 distTar {
     compression = Compression.BZIP2
+    baseName = applicationName
     extension = 'tar.bz2'
 
     enabled = gradle.startParameter.taskNames.contains(project.name + ':distLinux')
@@ -121,7 +122,7 @@ jfx {
 
     jfxMainAppJarName = 'sly-chat.jar'
 
-    appName = 'Sly'
+    appName = applicationName
 
     nativeReleaseVersion = rootProject.version
 
