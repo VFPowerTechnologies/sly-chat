@@ -67,10 +67,10 @@ distributions {
     main {
         contents {
             from(copyJRE) {
-                into "jre"
+                into 'jre'
             }
 
-            from "sly-chat"
+            from 'Sly'
         }
     }
 }
