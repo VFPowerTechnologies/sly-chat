@@ -42,8 +42,8 @@ WHERE
         }
     }
 
-    private fun getFileSelectQuery(startingAt: Int, count: Int, path: String?, includePending: Boolean): String {
-        val whereClause = if (!includePending || path != null) {
+    private fun getFileSelectQuery(startingAt: Int, count: Int, path: String?, includePending: Boolean, includeDeleted: Boolean): String {
+        val whereClause = if (!includeDeleted || !includePending || path != null) {
             val clauses = ArrayList<String>()
 
             if (path != null)
@@ -51,6 +51,9 @@ WHERE
 
             if (!includePending)
                 clauses.add("is_pending = 0")
+
+            if (!includeDeleted)
+                clauses.add("is_deleted = 0")
 
             "WHERE " + clauses.joinToString(" AND ")
         }
@@ -78,16 +81,16 @@ OFFSET
 
     }
 
-    override fun getFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
-        val sql = getFileSelectQuery(startingAt, count, null, includePending)
+    override fun getFiles(startingAt: Int, count: Int, includePending: Boolean, includeDeleted: Boolean): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+        val sql = getFileSelectQuery(startingAt, count, null, includePending, includeDeleted)
 
         it.withPrepared(sql) {
             it.map { fileUtils.rowToRemoteFile(it) }
         }
     }
 
-    private fun selectFiles(connection: SQLiteConnection, path: String, startingAt: Int, count: Int, includePending: Boolean): List<RemoteFile> {
-        val sql = getFileSelectQuery(startingAt, count, path, includePending)
+    private fun selectFiles(connection: SQLiteConnection, path: String, startingAt: Int, count: Int, includePending: Boolean, includeDeleted: Boolean): List<RemoteFile> {
+        val sql = getFileSelectQuery(startingAt, count, path, includePending, includeDeleted)
 
         return connection.withPrepared(sql) {
             it.bind(1, path)
@@ -95,8 +98,8 @@ OFFSET
         }
     }
 
-    override fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, path: String): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
-        selectFiles(it, path, startingAt, count, includePending)
+    override fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, includeDeleted: Boolean, path: String): Promise<List<RemoteFile>, Exception> = sqlitePersistenceManager.runQuery {
+        selectFiles(it, path, startingAt, count, includePending, includeDeleted)
     }
 
     private fun updateFile(connection: SQLiteConnection, file: RemoteFile) {
@@ -431,7 +434,7 @@ WHERE
                 startingAt - getSubDirCount(it, path)
 
             entries.addAll(
-                selectFiles(it, path, s, remainingCount, includePending).map { DirEntry.F(it) }
+                selectFiles(it, path, s, remainingCount, includePending, false).map { DirEntry.F(it) }
             )
         }
 

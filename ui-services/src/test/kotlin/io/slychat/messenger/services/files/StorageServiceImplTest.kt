@@ -113,7 +113,7 @@ class StorageServiceImplTest {
 
         val fileList = listOf(randomRemoteFile(), randomRemoteFile())
 
-        whenever(fileListPersistenceManager.getFiles(0, 1000, false)).thenResolve(fileList)
+        whenever(fileListPersistenceManager.getFiles(0, 1000, false, false)).thenResolve(fileList)
 
         assertThat(service.getFiles(0, 1000).get()).apply {
             describedAs("Should return the cached file list")
@@ -222,7 +222,7 @@ class StorageServiceImplTest {
         val count = 100
         val path = "/"
 
-        whenever(fileListPersistenceManager.getFilesAt(startingAt, count, false, path)).thenResolve(files)
+        whenever(fileListPersistenceManager.getFilesAt(startingAt, count, false, false, path)).thenResolve(files)
 
         assertEquals(files, service.getFilesAt(startingAt, count, path).get(), "Returned invalid files")
     }
@@ -236,7 +236,7 @@ class StorageServiceImplTest {
         val startingAt = 0
         val count = 100
 
-        whenever(fileListPersistenceManager.getFiles(startingAt, count, false)).thenResolve(files)
+        whenever(fileListPersistenceManager.getFiles(startingAt, count, false, false)).thenResolve(files)
 
         assertEquals(files, service.getFiles(startingAt, count).get(), "Returned invalid files")
     }

@@ -51,7 +51,7 @@ class SQLiteFileListPersistenceManagerTest {
     private fun testGetFilesAt(path: String, includePending: Boolean): List<RemoteFile> {
         (0..1).forEach { insertFile() }
 
-        return fileListPersistenceManager.getFilesAt(0, 100, includePending, path).get()
+        return fileListPersistenceManager.getFilesAt(0, 100, includePending, true, path).get()
     }
 
     private fun assertDirIndexContains(paths: List<Pair<String, String>>, message: String? = null) {
@@ -145,7 +145,7 @@ class SQLiteFileListPersistenceManagerTest {
 
         insertFile(0)
 
-        assertThat(fileListPersistenceManager.getFiles(0, 1000, false).get()).apply {
+        assertThat(fileListPersistenceManager.getFiles(0, 1000, false, true).get()).apply {
             describedAs("Should not contain pending files")
             containsOnly(existingFile)
         }
@@ -157,9 +157,20 @@ class SQLiteFileListPersistenceManagerTest {
 
         val pendingFile = insertFile(0)
 
-        assertThat(fileListPersistenceManager.getFiles(0, 1000, true).get()).apply {
+        assertThat(fileListPersistenceManager.getFiles(0, 1000, true, true).get()).apply {
             describedAs("Should contain added files")
             containsOnly(existingFile, pendingFile)
+        }
+    }
+
+    @Test
+    fun `getAllFiles should exclude deleted files when told to`() {
+        val existingFile = insertFile()
+        insertFile(isDeleted = true)
+
+        assertThat(fileListPersistenceManager.getFiles(0, 1000, true, false).get()).apply {
+            describedAs("Should contain added files")
+            containsOnly(existingFile)
         }
     }
 
@@ -171,7 +182,7 @@ class SQLiteFileListPersistenceManagerTest {
         ).sortedBy { it.id }
 
         for (i in 0..1) {
-            assertThat(fileListPersistenceManager.getFiles(i, 1, false).get()).apply {
+            assertThat(fileListPersistenceManager.getFiles(i, 1, false, true).get()).apply {
                 describedAs("Should contain only the range [$i, ${i + 1})")
                 containsOnly(files[i])
             }
@@ -204,7 +215,7 @@ class SQLiteFileListPersistenceManagerTest {
         (0..1).forEach { insertFile() }
 
         for (i in 0..1) {
-            assertThat(fileListPersistenceManager.getFilesAt(i, 1, false, d).get()).apply {
+            assertThat(fileListPersistenceManager.getFilesAt(i, 1, false, true, d).get()).apply {
                 describedAs("Should contain only the range [$i, ${i + 1})")
                 containsOnly(files[i])
             }
@@ -234,6 +245,20 @@ class SQLiteFileListPersistenceManagerTest {
         assertThat(testGetFilesAt(d.toUpperCase(), false)).apply {
             describedAs("Should return only files at the given path")
             containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `getFilesAt should exclude deleted files when told to`() {
+        val d = "/path"
+
+        fileListPersistenceManager.addFile(randomRemoteFile(isDeleted = true, userMetadata = randomUserMetadata(directory = d))).get()
+        val existingFile = randomRemoteFile(userMetadata = randomUserMetadata(directory = d))
+        fileListPersistenceManager.addFile(existingFile).get()
+
+        assertThat(fileListPersistenceManager.getFilesAt(0, 1000, false, false, d).get()).apply {
+            describedAs("Should contain added files")
+            containsOnly(existingFile)
         }
     }
 

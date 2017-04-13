@@ -7,9 +7,9 @@ import nl.komponents.kovenant.Promise
 interface FileListPersistenceManager {
     fun addFile(file: RemoteFile): Promise<Unit, Exception>
 
-    fun getFiles(startingAt: Int, count: Int, includePending: Boolean): Promise<List<RemoteFile>, Exception>
+    fun getFiles(startingAt: Int, count: Int, includePending: Boolean, includeDeleted: Boolean): Promise<List<RemoteFile>, Exception>
 
-    fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, path: String): Promise<List<RemoteFile>, Exception>
+    fun getFilesAt(startingAt: Int, count: Int, includePending: Boolean, includeDeleted: Boolean, path: String): Promise<List<RemoteFile>, Exception>
 
     fun getFileCount(): Promise<Int, Exception>
 
