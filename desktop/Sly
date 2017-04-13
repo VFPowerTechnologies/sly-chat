@@ -16,4 +16,4 @@ done
 ROOT=$(dirname $PRG)
 export JAVA_HOME="$ROOT/jre"
 
-exec "$ROOT/bin/sly-chat"
+exec "$ROOT/bin/Sly"
