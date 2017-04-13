@@ -6,9 +6,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import com.google.android.gms.common.GoogleApiAvailability
-import io.slychat.messenger.android.activites.*
+import io.slychat.messenger.android.activites.BaseActivity
+import io.slychat.messenger.android.activites.LoginActivity
+import io.slychat.messenger.android.activites.RecentChatActivity
 import io.slychat.messenger.services.LoginEvent
-import io.slychat.messenger.services.ui.clearAllListenersOnDispatcher
 import org.slf4j.LoggerFactory
 import rx.Subscription
 
@@ -162,7 +163,6 @@ class MainActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        clearAllListenersOnDispatcher(AndroidApp.get(this).appComponent)
     }
 
     override fun onResume() {
