@@ -9,9 +9,10 @@ interface HttpClientFactory {
 
 class JavaHttpClientFactory(
     private val config: HttpClientConfig,
-    private val sslConfigurator: SSLConfigurator?
+    private val sslConfigurator: SSLConfigurator?,
+    private val clientInfo: ClientInfo?
 ) : HttpClientFactory {
     override fun create(): HttpClient {
-        return JavaHttpClient(config, sslConfigurator)
+        return JavaHttpClient(config, sslConfigurator, clientInfo)
     }
 }

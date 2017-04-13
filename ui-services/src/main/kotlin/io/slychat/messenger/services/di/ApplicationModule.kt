@@ -7,7 +7,9 @@ import io.slychat.messenger.core.SlyBuildConfig
 import io.slychat.messenger.core.crypto.tls.CachingCRLFetcher
 import io.slychat.messenger.core.crypto.tls.JavaHttpCRLFetcher
 import io.slychat.messenger.core.crypto.tls.SSLConfigurator
+import io.slychat.messenger.core.currentOs
 import io.slychat.messenger.core.div
+import io.slychat.messenger.core.http.ClientInfo
 import io.slychat.messenger.core.http.HttpClientConfig
 import io.slychat.messenger.core.http.HttpClientFactory
 import io.slychat.messenger.core.http.JavaHttpClientFactory
@@ -99,13 +101,14 @@ class ApplicationModule(
         config: HttpClientConfig,
         sslConfigurator: SSLConfigurator
     ): HttpClientFactory {
-        return JavaHttpClientFactory(config, sslConfigurator)
+        val clientInfo = ClientInfo(SlyBuildConfig.VERSION, currentOs.name, currentOs.version)
+        return JavaHttpClientFactory(config, sslConfigurator, clientInfo)
     }
 
     @Provides
     @ExternalHttp
     fun providesExternalHttpClientFactory(config: HttpClientConfig): HttpClientFactory {
-        return JavaHttpClientFactory(config, null)
+        return JavaHttpClientFactory(config, null, null)
     }
 
     @Singleton

@@ -25,20 +25,20 @@ fun slurpInputStreamReader(reader: Reader, suggestedBufferSize: Int = 0): String
     return builder.toString()
 }
 
-fun lowercaseHeaders(headers: Map<String, List<String>>): Map<String, List<String>> =
+private fun lowercaseHeaders(headers: Map<String, List<String>>): Map<String, List<String>> =
     //headers actually have a null key containing the http response line
     headers.mapKeys { e ->
         @Suppress("UNNECESSARY_SAFE_CALL")
         e.key?.toLowerCase()
     }
 
-fun slurpStreamAndClose(inputStream: InputStream, suggestedBufferSize: Int): String =
+private fun slurpStreamAndClose(inputStream: InputStream, suggestedBufferSize: Int): String =
     inputStream.use {
         val reader = BufferedReader(InputStreamReader(it, "utf-8"))
         slurpInputStreamReader(reader, suggestedBufferSize)
     }
 
-fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<String>>): String {
+private fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<String>>): String {
     val contentLength = headers["content-length"]?.first()?.toInt() ?: 1024
 
     val data = try {
@@ -54,9 +54,13 @@ fun readStreamResponse(connection: HttpURLConnection, headers: Map<String, List<
     return data
 }
 
+//platform is Os.Type.displayName
+data class ClientInfo(val slyVersion: String, val platform: String, val platformVersion: String)
+
 class JavaHttpClient(
     private val config: HttpClientConfig = HttpClientConfig(3000, 3000),
-    private val sslConfigurator: SSLConfigurator? = null
+    private val sslConfigurator: SSLConfigurator? = null,
+    private val clientInfo: ClientInfo? = null
 ) : HttpClient {
     private fun getHttpConnection(url: String): HttpURLConnection = getHttpConnection(URL(url))
 
@@ -65,7 +69,18 @@ class JavaHttpClient(
         if (connection is HttpsURLConnection)
             sslConfigurator?.configure(connection)
 
+        addInfoHeaders(connection)
+
         return connection
+    }
+
+    private fun addInfoHeaders(connection: HttpURLConnection) {
+        val info = clientInfo ?: return
+
+        connection.apply {
+            setRequestProperty("X-Sly-Version", info.slyVersion)
+            setRequestProperty("X-Sly-Platform", "${info.platform}/${info.platformVersion}")
+        }
     }
 
     override fun get(url: String, headers: List<Pair<String, String>>): HttpResponse {
