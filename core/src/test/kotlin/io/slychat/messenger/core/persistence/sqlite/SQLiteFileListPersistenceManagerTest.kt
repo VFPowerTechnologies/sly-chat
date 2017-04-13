@@ -610,9 +610,15 @@ class SQLiteFileListPersistenceManagerTest {
 
     @Test
     fun `getEntriesAt should not return files when directories max out the count`() {
-        val file = insertFile(directory = "/")
+        val files = listOf(
+            insertFile(directory = "/"),
+            insertFile(directory = "/")
+        ).sortedBy { it.id }
+
+        val file = files[0]
+        val file2 = files[1]
+
         insertFile(directory = "/a")
-        val file2 = insertFile(directory = "/")
 
         val dir = DirEntry.D("/a", "a")
 
