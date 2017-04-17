@@ -11,7 +11,6 @@ object Sentry {
     private var reportSubmitter: ReportSubmitter<ByteArray>? = null
 
     //tags
-    private var webViewVersion: String? = null
     private var userAddress: SlyAddress? = null
     private var androidDeviceName: String? = null
     private var iosDeviceName: String? = null
@@ -23,10 +22,6 @@ object Sentry {
 
     fun setReportSubmitter(reportSubmitter: ReportSubmitter<ByteArray>) = synchronized(this) {
         this.reportSubmitter = reportSubmitter
-    }
-
-    fun setWebViewInfo(version: String) = synchronized(this) {
-        webViewVersion = version
     }
 
     fun setUserAddress(userAddress: SlyAddress?) = synchronized(this) {
@@ -64,10 +59,6 @@ object Sentry {
     }
 
     private fun generateEvent(builder: SentryEventBuilder): SentryEvent {
-        webViewVersion?.apply {
-            builder.withTag("webViewVersion", this)
-        }
-
         androidDeviceName?.apply {
             builder.withTag("androidDeviceName", this)
         }
