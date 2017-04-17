@@ -538,12 +538,20 @@ AND
             return Promise.ofSuccess(emptyList())
 
         return sqlitePersistenceManager.runQuery { connection ->
-            connection.withTransaction {
-                val unreadMessageIds = markConversationMessagesAsRead(connection, conversationId, messageIds)
+            try {
+                connection.withTransaction {
+                    val unreadMessageIds = markConversationMessagesAsRead(connection, conversationId, messageIds)
 
-                updateConversationInfo(connection, conversationId)
+                    updateConversationInfo(connection, conversationId)
 
-                unreadMessageIds
+                    unreadMessageIds
+                }
+            }
+            catch (e: SQLiteException) {
+                if (isMissingConvTableError(e))
+                    throw InvalidConversationException(conversationId)
+
+                throw e
             }
         }
     }

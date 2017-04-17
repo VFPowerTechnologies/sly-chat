@@ -37,9 +37,13 @@ private fun readStreamResponse(connection: HttpURLConnection, headers: Map<Strin
     return data
 }
 
+//platform is Os.Type.displayName
+data class ClientInfo(val slyVersion: String, val platform: String, val platformVersion: String)
+
 class JavaHttpClient(
     private val config: HttpClientConfig = HttpClientConfig(3000, 3000),
-    private val sslConfigurator: SSLConfigurator? = null
+    private val sslConfigurator: SSLConfigurator? = null,
+    private val clientInfo: ClientInfo? = null
 ) : HttpClient {
     private fun getHttpConnection(url: String): HttpURLConnection = getHttpConnection(URL(url))
 
@@ -52,7 +56,18 @@ class JavaHttpClient(
         if (connection is HttpsURLConnection)
             sslConfigurator?.configure(connection)
 
+        addInfoHeaders(connection)
+
         return connection
+    }
+
+    private fun addInfoHeaders(connection: HttpURLConnection) {
+        val info = clientInfo ?: return
+
+        connection.apply {
+            setRequestProperty("X-Sly-Version", info.slyVersion)
+            setRequestProperty("X-Sly-Platform", "${info.platform}/${info.platformVersion}")
+        }
     }
 
     private fun readResponse(connection: HttpURLConnection): HttpResponse {

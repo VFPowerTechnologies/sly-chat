@@ -18,6 +18,7 @@ import io.slychat.messenger.services.auth.AuthApiResponseException
 import io.slychat.messenger.services.auth.AuthResult
 import io.slychat.messenger.services.config.AppConfig
 import io.slychat.messenger.testutils.*
+import nl.komponents.kovenant.deferred
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -112,14 +113,14 @@ class SlyApplicationTest {
             throw AssertionError("No LoggedIn event found, and no LoginFailed event found")
     }
 
-    fun doLogin(app: SlyApplication, rememberMe: Boolean = false) {
+    fun doLogin(app: SlyApplication, rememberMe: Boolean = false, verifyLogin: Boolean = true) {
         val loginEventSubscriber = TestSubscriber<LoginEvent>()
 
         app.loginEvents.subscribe(loginEventSubscriber)
         try {
-
             app.login("email", "password", rememberMe)
-            assertSuccessfulLogin(loginEventSubscriber)
+            if (verifyLogin)
+                assertSuccessfulLogin(loginEventSubscriber)
         }
         finally {
             loginEventSubscriber.unsubscribe()
@@ -227,13 +228,13 @@ class SlyApplicationTest {
     @Test
     fun `it should attempt to login automatically after basic initialization`() { TODO() }
 
-    fun auth(authResult: AuthResult): SlyApplication {
+    fun auth(authResult: AuthResult, verifyLogin: Boolean = true): SlyApplication {
         whenever(appComponent.authenticationService.auth(any(), any(), any())).thenResolve(authResult)
         val app = createApp()
 
         app.init(appComponent)
 
-        doLogin(app)
+        doLogin(app, verifyLogin = verifyLogin)
 
         return app
     }
@@ -250,10 +251,10 @@ class SlyApplicationTest {
         return auth(authResult)
     }
 
-    fun auth(): SlyApplication {
+    fun auth(verifyLogin: Boolean = true): SlyApplication {
         val authResult = AuthResult(SessionData(), MockUserComponent.keyVault, remotePasswordHash, accountInfo, accountLocalInfo, null)
 
-        return auth(authResult)
+        return auth(authResult, verifyLogin)
     }
 
     @Test
@@ -455,5 +456,17 @@ class SlyApplicationTest {
     @Test
     fun `it should notify the bug submitter of the initial network status`() {
         TODO()
+    }
+
+    @Test
+    fun `it should not trigger an address book sync during initialization if network becomes available`() {
+        val d = deferred<Unit, Exception>()
+        whenever(userComponent.sessionDataManager.update(any())).thenReturn(d.promise)
+
+        val app = auth(verifyLogin = false)
+
+        networkIsAvailable(true)
+
+        verify(userComponent.addressBookOperationManager, never()).withCurrentSyncJobNoScheduler(any())
     }
 }

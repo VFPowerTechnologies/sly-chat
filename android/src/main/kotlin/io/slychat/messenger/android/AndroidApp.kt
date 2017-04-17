@@ -196,15 +196,6 @@ class AndroidApp : Application() {
 
         pushNotificationsClient = PushNotificationsAsyncClientImpl(appComponent.serverUrls.API_SERVER, appComponent.slyHttpClientFactory)
 
-        val packageManager = packageManager
-        try {
-            val info = packageManager.getPackageInfo("com.google.android.webview", 0)
-            Sentry.setWebViewInfo(info.versionName)
-        }
-        catch (e: PackageManager.NameNotFoundException) {
-            //do nothing
-        }
-
         try {
             Sentry.setAndroidDeviceName(DeviceName.getDeviceName())
         }

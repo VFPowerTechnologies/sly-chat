@@ -244,8 +244,12 @@ RegistrationController.prototype = {
     },
 
     handleFourthStep : function () {
-        if (!slychat.validateForm($("#stepFourForm")))
+	    slychat.showPreloader();
+
+        if (!slychat.validateForm($("#stepFourForm"))) {
+	        slychat.hidePreloader();
             return;
+	    }
 
         var phoneNumber = getFormatedPhoneNumber($("#phone").val(), $(RegistrationController.ids.countryInput).val());
 
@@ -254,7 +258,6 @@ RegistrationController.prototype = {
                 this.phoneNumber = phoneNumber;
                 this.setRegistrationInfo(this.name, this.email, this.phoneNumber, this.password);
 
-                slychat.showPreloader();
                 registrationService.doRegistration(this.registrationInfo).then(function (result) {
                     slychat.hidePreloader();
                     if (result.successful == true) {
@@ -276,9 +279,11 @@ RegistrationController.prototype = {
             }
             else {
                 this.displayError($("#phone"), "The phone number is taken");
+		        slychat.hidePreloader();
             }
         }.bind(this)).catch(function (e) {
             exceptionController.handleError(e);
+	        slychat.hidePreloader();
         });
     },
 
