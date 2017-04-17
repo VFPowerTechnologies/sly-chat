@@ -1372,6 +1372,14 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `markConversationMessagesAsRead should throw InvalidConversationException if convo doesn't exist`() {
+        val messageIds = listOf(randomMessageId())
+        listOf(randomUserConversationId(), randomGroupConversationId()).forEach {
+            assertFailsWithInvalidConversation { messagePersistenceManager.markConversationMessagesAsRead(it, messageIds).get() }
+        }
+    }
+
+    @Test
     fun `getUserConversation should return a conversation for an ALL user`() {
         forUserConvType(AllowedMessageLevel.ALL) {
             assertNotNull(messagePersistenceManager.getUserConversation(it.id).get(), "Expected conversation info")
