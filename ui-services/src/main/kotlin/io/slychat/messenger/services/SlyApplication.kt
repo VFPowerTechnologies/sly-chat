@@ -50,6 +50,8 @@ class SlyApplication {
     internal var isInitialized = false
     private val onInitListeners = ArrayList<(SlyApplication) -> Unit>()
 
+    private var isUserSessionInitialized = false
+
     private var isAutoLoginComplete = false
     private val onAutoLoginListeners = ArrayList<(SlyApplication) -> Unit>()
 
@@ -404,6 +406,11 @@ class SlyApplication {
 
         bugReportSubmitter?.updateNetworkStatus(isAvailable)
 
+        //we want to make sure initialization has completed; userSession is non-null during the session initialization
+        //process, but we shouldn't call any of its components until initialization has completed
+        if (!isUserSessionInitialized)
+            return
+
         if (!isAvailable) {
             //airplane mode tells us the network is unavailable but doesn't actually disconnect us; we still receive
             //data but can't send it (at least on the emu)
@@ -603,6 +610,8 @@ class SlyApplication {
 
         userComponent.relayClientManager.events.subscribe { handleRelayClientEvent(it) }
 
+        isUserSessionInitialized = true
+
         if (!isNetworkAvailable) {
             log.info("Network unavailable, not connecting to relay")
             return
@@ -789,6 +798,8 @@ class SlyApplication {
         }
 
         this.userComponent = null
+
+        isUserSessionInitialized = false
 
         //notify listeners before tearing down session
         userSessionAvailableSubject.onNext(null)
