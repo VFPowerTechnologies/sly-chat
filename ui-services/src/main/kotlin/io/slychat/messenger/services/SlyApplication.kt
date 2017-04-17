@@ -705,9 +705,10 @@ class SlyApplication {
             return
         }
 
+        //this can occur normally
         val userComponent = this.userComponent
         if (userComponent == null) {
-            log.error("Attempt to queue reconnect when not logged in")
+            log.warn("Attempt to queue reconnect when not logged in")
             return
         }
 
