@@ -10,13 +10,5 @@ data class ReceivedAttachment(
     val fileId: String,
     val theirShareKey: String,
     val userMetadata: UserMetadata,
-    val isInline: Boolean,
-    val downloadId: String?,
     val error: AttachmentError?
-) {
-    init {
-        if (downloadId != null && !isInline)
-            error("downloadId set for non-inline attachment")
-
-    }
-}
+)

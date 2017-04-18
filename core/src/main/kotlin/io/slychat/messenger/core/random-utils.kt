@@ -192,8 +192,6 @@ fun randomSharedFrom(): SharedFrom = SharedFrom(randomUserId(), randomGroupId())
 fun randomReceivedAttachment(
     n: Int,
     fileId: String? = null,
-    isInline: Boolean = false,
-    downloadId: String? = null,
     error: AttachmentError? = null,
     conversationId: ConversationId? = null,
     messageId: String? = null
@@ -205,8 +203,6 @@ fun randomReceivedAttachment(
         fileId ?: generateFileId(),
         generateShareKey(),
         randomUserMetadata(sharedFrom = randomSharedFrom()),
-        isInline,
-        downloadId,
         error
     )
 }

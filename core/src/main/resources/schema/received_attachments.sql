@@ -15,7 +15,6 @@ CREATE TABLE received_attachments (
     shared_from_user_id INTEGER NOT NULL,
     shared_from_group_id TEXT,
 
-    is_inline BOOLEAN NOT NULL,
     download_id TEXT,
 
     FOREIGN KEY (conversation_id, message_id, n) REFERENCES attachments (conversation_id, message_id, n) ON DELETE CASCADE

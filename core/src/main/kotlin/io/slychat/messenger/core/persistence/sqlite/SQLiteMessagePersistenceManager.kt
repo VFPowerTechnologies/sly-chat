@@ -119,9 +119,9 @@ class SQLiteMessagePersistenceManager(
         val sql = """
 INSERT INTO
     received_attachments
-    (conversation_id, message_id, n, file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id, is_inline, download_id)
+    (conversation_id, message_id, n, file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id)
 VALUES
-    (:conversationId, :messageId, :n, :fileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId, :isInline, :downloadId)
+    (:conversationId, :messageId, :n, :fileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId)
 """
 
         connection.withPrepared(sql) { stmt ->
@@ -139,8 +139,6 @@ VALUES
                 val sharedFrom = it.userMetadata.sharedFrom ?: throw IllegalArgumentException("ReceivedAttachment.sharedFrom should not be null")
                 stmt.bind(":sharedFromUserId", sharedFrom.userId)
                 stmt.bind(":sharedFromGroupId", sharedFrom.groupId)
-                stmt.bind(":isInline", it.isInline)
-                stmt.bind(":downloadId", it.downloadId)
 
                 try {
                     stmt.step()
@@ -174,8 +172,6 @@ VALUES
                     stmt.columnNullableGroupId(10)
                 )
             ),
-            stmt.columnBool(11),
-            stmt.columnString(12),
             null
         )
 
@@ -195,9 +191,7 @@ SELECT
     directory,
     file_name,
     shared_from_user_id,
-    shared_from_group_id,
-    is_inline,
-    download_id
+    shared_from_group_id
 FROM
     received_attachments
 """
@@ -222,9 +216,7 @@ SELECT
     directory,
     file_name,
     shared_from_user_id,
-    shared_from_group_id,
-    is_inline,
-    download_id
+    shared_from_group_id
 FROM
     received_attachments
 WHERE
