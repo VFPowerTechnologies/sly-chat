@@ -15,7 +15,8 @@ CREATE TABLE received_attachments (
     shared_from_user_id INTEGER NOT NULL,
     shared_from_group_id TEXT,
 
-    download_id TEXT,
+    -- ReceivedAttachmentState
+    state TEXT NOT NULL,
 
     FOREIGN KEY (conversation_id, message_id, n) REFERENCES attachments (conversation_id, message_id, n) ON DELETE CASCADE
 );

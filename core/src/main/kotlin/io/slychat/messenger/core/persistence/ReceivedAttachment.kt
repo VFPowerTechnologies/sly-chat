@@ -10,5 +10,6 @@ data class ReceivedAttachment(
     val fileId: String,
     val theirShareKey: String,
     val userMetadata: UserMetadata,
+    val state: ReceivedAttachmentState,
     val error: AttachmentError?
 )

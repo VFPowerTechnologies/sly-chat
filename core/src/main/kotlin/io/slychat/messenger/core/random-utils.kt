@@ -194,7 +194,8 @@ fun randomReceivedAttachment(
     fileId: String? = null,
     error: AttachmentError? = null,
     conversationId: ConversationId? = null,
-    messageId: String? = null
+    messageId: String? = null,
+    state: ReceivedAttachmentState = ReceivedAttachmentState.PENDING
 ): ReceivedAttachment {
     return ReceivedAttachment(
         conversationId ?: randomUserConversationId(),
@@ -203,6 +204,7 @@ fun randomReceivedAttachment(
         fileId ?: generateFileId(),
         generateShareKey(),
         randomUserMetadata(sharedFrom = randomSharedFrom()),
+        state,
         error
     )
 }
@@ -259,27 +261,24 @@ fun randomUserMetadata(directory: String? = null, fileName: String? = null, shar
     )
 }
 
-fun randomFileMetadata(): FileMetadata {
+fun randomFileMetadata(fileSize: Long? = null, mimeType: String? = null): FileMetadata {
     return FileMetadata(
-        randomInt().toLong(),
+        fileSize ?: randomInt().toLong(),
         randomInt(),
-        "*/*"
+        mimeType ?: "*/*"
     )
 }
 
-fun randomRemoteFile(isDeleted: Boolean = false, userMetadata: UserMetadata? = null): RemoteFile {
-    val fileMetadata = if (!isDeleted)
-        randomFileMetadata()
-    else
-        null
+fun randomRemoteFile(fileId: String? = null, isDeleted: Boolean = false, userMetadata: UserMetadata? = null, fileMetadata: FileMetadata? = null): RemoteFile {
+    val fm = fileMetadata ?: if (!isDeleted) randomFileMetadata() else null
 
     return RemoteFile(
-        generateFileId(),
+        fileId ?: generateFileId(),
         generateShareKey(),
         1,
         isDeleted,
         userMetadata ?: randomUserMetadata(),
-        fileMetadata,
+        fm,
         1,
         2,
         randomLong()

@@ -575,9 +575,59 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
 
-            messagePersistenceManager.deleteReceivedAttachments(conversationId, messageInfo.id, listOf(0)).get()
+            messagePersistenceManager.deleteReceivedAttachments(listOf(AttachmentId(conversationId, messageInfo.id, 0)), emptyList()).get()
 
             assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, messageInfo.id).get()).isEmpty()
+        }
+    }
+
+    @Test
+    fun `deleteReceivedAttachments should mark inline attachments`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val attachmentInfo = randomMessageAttachmentInfo(0)
+
+            val receivedAttachment = randomReceivedAttachment(0)
+
+            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
+
+            val attachmentId = AttachmentId(conversationId, messageInfo.id, 0)
+            messagePersistenceManager.deleteReceivedAttachments(emptyList(), listOf(attachmentId)).get()
+
+            val updated = getMessage(conversationId, messageInfo.id)
+
+            assertThat(updated.info.attachments).desc("Should update inline on attachments") {
+                containsOnly(attachmentInfo.copy(isInline = true))
+            }
+        }
+    }
+
+    @Test
+    fun `updateReceivedAttachmentState should update attachment state`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val attachmentInfo = randomMessageAttachmentInfo(0)
+
+            val info = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
+            val receivedAttachment = randomReceivedAttachment(0, conversationId = conversationId, messageId = info.id)
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, info)
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
+
+            val attachmentId = AttachmentId(conversationId, receivedAttachment.messageId, receivedAttachment.n)
+            val newState = ReceivedAttachmentState.WAITING_ON_SYNC
+            messagePersistenceManager.updateReceivedAttachmentState(listOf(attachmentId), newState).get()
+
+            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, receivedAttachment.messageId).get()).desc("Should update state") {
+                containsOnly(receivedAttachment.copy(state = newState))
+            }
         }
     }
 

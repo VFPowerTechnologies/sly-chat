@@ -19,6 +19,14 @@ internal fun deleteExpiringMessagesForConversation(connection: SQLiteConnection,
     }
 }
 
+private fun SQLiteStatement.bind(name: String, state: ReceivedAttachmentState) {
+    bind(name, state.toString())
+}
+
+private fun SQLiteStatement.columnReceivedAttachmentState(index: Int): ReceivedAttachmentState {
+    return ReceivedAttachmentState.valueOf(columnString(index))
+}
+
 /** Depends on SQLiteContactsPersistenceManager for creating and deleting conversation tables. */
 class SQLiteMessagePersistenceManager(
     private val sqlitePersistenceManager: SQLitePersistenceManager
@@ -119,9 +127,9 @@ class SQLiteMessagePersistenceManager(
         val sql = """
 INSERT INTO
     received_attachments
-    (conversation_id, message_id, n, file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id)
+    (conversation_id, message_id, n, file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id, state)
 VALUES
-    (:conversationId, :messageId, :n, :fileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId)
+    (:conversationId, :messageId, :n, :fileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId, :state)
 """
 
         connection.withPrepared(sql) { stmt ->
@@ -139,6 +147,7 @@ VALUES
                 val sharedFrom = it.userMetadata.sharedFrom ?: throw IllegalArgumentException("ReceivedAttachment.sharedFrom should not be null")
                 stmt.bind(":sharedFromUserId", sharedFrom.userId)
                 stmt.bind(":sharedFromGroupId", sharedFrom.groupId)
+                stmt.bind(":state", it.state)
 
                 try {
                     stmt.step()
@@ -172,6 +181,7 @@ VALUES
                     stmt.columnNullableGroupId(10)
                 )
             ),
+            stmt.columnReceivedAttachmentState(11),
             null
         )
 
@@ -191,7 +201,8 @@ SELECT
     directory,
     file_name,
     shared_from_user_id,
-    shared_from_group_id
+    shared_from_group_id,
+    state
 FROM
     received_attachments
 """
@@ -216,7 +227,8 @@ SELECT
     directory,
     file_name,
     shared_from_user_id,
-    shared_from_group_id
+    shared_from_group_id,
+    state
 FROM
     received_attachments
 WHERE
@@ -233,13 +245,9 @@ AND
         }
     }
 
-    override fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception> {
-        return if (ns.isEmpty())
-            Promise.ofSuccess(Unit)
-        else
-            sqlitePersistenceManager.runQuery {
-            //language=SQLite
-            val sql = """
+    private fun deleteReceivedAttachments(connection: SQLiteConnection, ids: List<AttachmentId>) {
+        //language=SQLite
+        val sql = """
 DELETE FROM
     received_attachments
 WHERE
@@ -247,16 +255,87 @@ WHERE
 AND
     message_id = :messageId
 AND
-    n IN (${ns.joinToString(", ")})
+    n = :n
 """
 
-            it.withPrepared(sql) {
-                it.bind(":conversationId", conversationId)
-                it.bind(":messageId", messageId)
-                it.step()
+        connection.withPrepared(sql) { stmt ->
+            ids.forEach { id ->
+                stmt.bind(":conversationId", id.conversationId)
+                stmt.bind(":messageId", id.messageId)
+                stmt.bind(":n", id.n)
+                stmt.step()
+                stmt.reset(false)
             }
+        }
+    }
 
-            Unit
+    private fun markAttachmentsInline(connection: SQLiteConnection, ids: List<AttachmentId>) {
+        ids.forEach { id ->
+            //language=SQLite
+            val sql = """
+UPDATE
+    attachments
+SET
+    is_inline=1
+WHERE
+    conversation_id = :conversationId
+AND
+    message_id = :messageId
+AND
+    n = :n
+"""
+            connection.withPrepared(sql) { stmt ->
+                ids.forEach { id ->
+                    stmt.bind(":conversationId", id.conversationId)
+                    stmt.bind(":messageId", id.messageId)
+                    stmt.bind(":n", id.n)
+                    stmt.step()
+                    stmt.reset(false)
+                }
+            }
+        }
+    }
+
+    override fun deleteReceivedAttachments(completed: List<AttachmentId>, markInline: List<AttachmentId>): Promise<Unit, Exception> {
+        return if (completed.isEmpty() && markInline.isEmpty())
+            Promise.ofSuccess(Unit)
+        else
+            sqlitePersistenceManager.runQuery { connection ->
+                connection.withTransaction {
+                    deleteReceivedAttachments(connection, completed)
+                    markAttachmentsInline(connection, markInline)
+                }
+            }
+    }
+
+    override fun updateReceivedAttachmentState(ids: List<AttachmentId>, newState: ReceivedAttachmentState): Promise<Unit, Exception> {
+        return if (ids.isEmpty()) {
+            Promise.ofSuccess(Unit)
+        }
+        else sqlitePersistenceManager.runQuery { connection ->
+            //language=SQLite
+            val sql = """
+UPDATE
+    received_attachments
+SET
+    state = :state
+WHERE
+    conversation_id = :conversationId
+AND
+    message_id = :messageId
+AND
+    n = :n
+"""
+            connection.withPrepared(sql) { stmt ->
+                stmt.bind(":state", newState)
+                ids.forEach { id ->
+                    stmt.bind(":conversationId", id.conversationId)
+                    stmt.bind(":messageId", id.messageId)
+                    stmt.bind(":n", id.n)
+                    stmt.step()
+                    stmt.reset(false)
+                }
+            }
         }
     }
 

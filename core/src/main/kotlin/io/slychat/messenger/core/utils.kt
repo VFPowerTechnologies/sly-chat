@@ -89,6 +89,18 @@ inline fun <T, K, V> Iterable<T>.mapToMap(transform: (T) -> Pair<K, V>): Map<K, 
     return m
 }
 
+inline fun <T, R> Iterable<T>.filterMap(transform: (T) -> R?): List<R> {
+    val r = ArrayList<R>()
+
+    for (e in this) {
+        val v = transform(e)
+        if (v != null)
+            r.add(v)
+    }
+
+    return r
+}
+
 operator fun <K, V> Map<K, V>.plus(entry: Pair<K, V>): Map<K, V> {
     val m = HashMap(this)
 
