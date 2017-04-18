@@ -9,6 +9,8 @@ interface MessagePersistenceManager {
      */
     fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception>
 
+    fun getAllReceivedAttachments(): Promise<List<ReceivedAttachment>, Exception>
+
     fun getReceivedAttachments(conversationId: ConversationId, messageId: String): Promise<List<ReceivedAttachment>, Exception>
 
     fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception>

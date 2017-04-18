@@ -157,6 +157,57 @@ VALUES
         }
     }
 
+    private fun rowToReceivedAttachment(stmt: SQLiteStatement): ReceivedAttachment {
+        return ReceivedAttachment(
+            stmt.columnConversationId(0),
+            stmt.columnString(1),
+            stmt.columnInt(2),
+            stmt.columnString(3),
+            stmt.columnString(4),
+            UserMetadata(
+                stmt.columnKey(5),
+                stmt.columnCipherId(6),
+                stmt.columnString(7),
+                stmt.columnString(8),
+                SharedFrom(
+                    stmt.columnUserId(9),
+                    stmt.columnNullableGroupId(10)
+                )
+            ),
+            stmt.columnBool(11),
+            stmt.columnString(12),
+            null
+        )
+
+    }
+
+    override fun getAllReceivedAttachments(): Promise<List<ReceivedAttachment>, Exception> = sqlitePersistenceManager.runQuery {
+        //language=SQLite
+        val sql = """
+SELECT
+    conversation_id,
+    message_id,
+    n,
+    file_id,
+    their_share_key,
+    file_key,
+    cipher_id,
+    directory,
+    file_name,
+    shared_from_user_id,
+    shared_from_group_id,
+    is_inline,
+    download_id
+FROM
+    received_attachments
+"""
+        it.withPrepared(sql) {
+            it.map {
+                rowToReceivedAttachment(it)
+            }
+        }
+    }
+
     override fun getReceivedAttachments(conversationId: ConversationId, messageId: String): Promise<List<ReceivedAttachment>, Exception> = sqlitePersistenceManager.runQuery {
         //language=SQLite
         val sql = """
@@ -185,26 +236,7 @@ AND
             it.bind(":conversationId", conversationId)
             it.bind(":messageId", messageId)
             it.map {
-                ReceivedAttachment(
-                    it.columnConversationId(0),
-                    it.columnString(1),
-                    it.columnInt(2),
-                    it.columnString(3),
-                    it.columnString(4),
-                    UserMetadata(
-                        it.columnKey(5),
-                        it.columnCipherId(6),
-                        it.columnString(7),
-                        it.columnString(8),
-                        SharedFrom(
-                            it.columnUserId(9),
-                            it.columnNullableGroupId(10)
-                        )
-                    ),
-                    it.columnBool(11),
-                    it.columnString(12),
-                    null
-                )
+                rowToReceivedAttachment(it)
             }
         }
     }

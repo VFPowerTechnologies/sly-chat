@@ -496,7 +496,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
-    fun `getReceivedAttachments should return an empty list if no received attachments are available for the given message`() {
+    fun `getAllReceivedAttachments should return an empty list if no received attachments are available for the given message`() {
         foreachConvType { conversationId, participants ->
             val speaker = participants.first()
 
@@ -505,6 +505,31 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             addMessage(conversationId, speaker, info)
 
             assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, info.id).get()).isEmpty()
+        }
+    }
+
+    @Test
+    fun `getAllReceivedAttachments should return all received attachments`() {
+        MessageTestFixture().run {
+            val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
+            val userConversationId = contactInfo.id.toConversationId()
+
+            contactsPersistenceManager.add(contactInfo).get()
+
+            val userMessageInfo = randomReceivedMessageInfo(attachments = listOf(randomMessageAttachmentInfo(0)))
+            val userAttachment = randomReceivedAttachment(0, conversationId = userConversationId, messageId = userMessageInfo.id)
+
+            messagePersistenceManager.addMessage(userConversationId, ConversationMessageInfo(contactInfo.id, userMessageInfo), listOf(userAttachment)).get()
+
+            withJoinedGroup { groupId, members ->
+                val groupMessageInfo = randomReceivedMessageInfo(attachments = listOf(randomMessageAttachmentInfo(0)))
+                val groupAttachment = randomReceivedAttachment(0, conversationId = groupId.toConversationId(), messageId = groupMessageInfo.id)
+                messagePersistenceManager.addMessage(groupId.toConversationId(), ConversationMessageInfo(contactInfo.id, groupMessageInfo), listOf(groupAttachment)).get()
+
+                assertThat(messagePersistenceManager.getAllReceivedAttachments().get()).desc("Should contain both user and group attachments") {
+                    containsOnly(userAttachment, groupAttachment)
+                }
+            }
         }
     }
 
@@ -523,6 +548,15 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     fun `getReceivedAttachments should throw InvalidConversationException if the conversation doesn't exist`() {
         assertFailsWithInvalidConversation {
             messagePersistenceManager.getReceivedAttachments(randomUserConversationId(), randomMessageId()).get()
+        }
+    }
+
+    @Test
+    fun `getAllReceivedAttachments should return the empty list if no received attachments are present`() {
+        foreachConvType { conversationId, participants ->
+            assertThat(messagePersistenceManager.getAllReceivedAttachments().get()).desc("Should be empty") {
+                isEmpty()
+            }
         }
     }
 
