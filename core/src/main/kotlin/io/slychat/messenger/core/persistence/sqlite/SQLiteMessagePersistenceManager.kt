@@ -137,7 +137,7 @@ VALUES
             stmt.bind(":messageId", messageId)
 
             receivedAttachments.forEach {
-                stmt.bind(":n", it.n)
+                stmt.bind(":n", it.id.n)
                 stmt.bind(":fileId", it.fileId)
                 stmt.bind(":theirShareKey", it.theirShareKey)
                 stmt.bind(":fileKey", it.userMetadata.fileKey)
@@ -154,7 +154,7 @@ VALUES
                 }
                 catch (e: SQLiteException) {
                     if (e.errorCode == SQLiteConstants.SQLITE_CONSTRAINT_FOREIGNKEY)
-                        throw InvalidAttachmentException(conversationId, messageId, it.n)
+                        throw InvalidAttachmentException(AttachmentId(conversationId, messageId, it.id.n))
                     else
                         throw e
                 }
@@ -166,9 +166,11 @@ VALUES
 
     private fun rowToReceivedAttachment(stmt: SQLiteStatement): ReceivedAttachment {
         return ReceivedAttachment(
-            stmt.columnConversationId(0),
-            stmt.columnString(1),
-            stmt.columnInt(2),
+            AttachmentId(
+                stmt.columnConversationId(0),
+                stmt.columnString(1),
+                stmt.columnInt(2)
+            ),
             stmt.columnString(3),
             stmt.columnString(4),
             UserMetadata(

@@ -621,11 +621,10 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
 
-            val attachmentId = AttachmentId(conversationId, receivedAttachment.messageId, receivedAttachment.n)
             val newState = ReceivedAttachmentState.WAITING_ON_SYNC
-            messagePersistenceManager.updateReceivedAttachmentState(listOf(attachmentId), newState).get()
+            messagePersistenceManager.updateReceivedAttachmentState(listOf(receivedAttachment.id), newState).get()
 
-            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, receivedAttachment.messageId).get()).desc("Should update state") {
+            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, receivedAttachment.id.messageId).get()).desc("Should update state") {
                 containsOnly(receivedAttachment.copy(state = newState))
             }
         }

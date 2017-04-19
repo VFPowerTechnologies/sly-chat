@@ -198,9 +198,11 @@ fun randomReceivedAttachment(
     state: ReceivedAttachmentState = ReceivedAttachmentState.PENDING
 ): ReceivedAttachment {
     return ReceivedAttachment(
-        conversationId ?: randomUserConversationId(),
-        messageId ?: randomMessageId(),
-        n,
+        AttachmentId(
+            conversationId ?: randomUserConversationId(),
+            messageId ?: randomMessageId(),
+            n
+        ),
         fileId ?: generateFileId(),
         generateShareKey(),
         randomUserMetadata(sharedFrom = randomSharedFrom()),

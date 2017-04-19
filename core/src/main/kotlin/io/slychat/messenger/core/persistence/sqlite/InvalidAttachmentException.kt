@@ -1,5 +1,5 @@
 package io.slychat.messenger.core.persistence.sqlite
 
-import io.slychat.messenger.core.persistence.ConversationId
+import io.slychat.messenger.core.persistence.AttachmentId
 
-class InvalidAttachmentException(val conversationId: ConversationId, val messageId: String, val n: Int) : RuntimeException("No attachment $n for $conversationId/$messageId")
+class InvalidAttachmentException(val id: AttachmentId) : RuntimeException("No attachment ${id.n} for ${id.conversationId}/${id.messageId}")
