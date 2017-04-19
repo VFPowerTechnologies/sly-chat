@@ -68,10 +68,12 @@ class SQLiteUploadPersistenceManagerTest {
             fileId,
             UploadState.PENDING,
             randomName(),
+            randomName(),
             randomFilePath(),
             null,
             false,
-            error, parts
+            error,
+            parts
         )
     }
 

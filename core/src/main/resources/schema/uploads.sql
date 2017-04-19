@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS uploads (
     file_id TEXT,
     state TEXT NOT NULL,
     -- file name as displayed in the upload dialog (needed mostly due to android content URIs)
-    display_name TEXT NOT NULL,
+    display_name TEXT NOT NULL COLLATE NOCASE,
+    remote_file_path TEXT NOT NULL COLLATE NOCASE,
     -- path of file on disk
     file_path TEXT NOT NULL,
     cache_path TEXT,

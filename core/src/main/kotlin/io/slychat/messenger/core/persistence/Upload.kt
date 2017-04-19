@@ -6,13 +6,15 @@ data class Upload(
     val state: UploadState,
     //must be a string to handle differences in paths on diff platforms (eg: android URIs)
     val displayName: String,
-    //if file at filePath is already encrypted (used when uploading cached inline attachments)
+    val remoteFilePath: String,
     val filePath: String,
-    //if non-null, is to be used as the file source instead of filePath
+    //if file at filePath is already encrypted (used when uploading cached inline attachments)
     val cachePath: String?,
+    //if non-null, is to be used as the file source instead of filePath
     val isEncrypted: Boolean,
+    val error: UploadError?,
     //are in order
-    val error: UploadError?, val parts: List<UploadPart>
+    val parts: List<UploadPart>
 ) {
     companion object {
         fun verifyParts(parts: List<UploadPart>) {

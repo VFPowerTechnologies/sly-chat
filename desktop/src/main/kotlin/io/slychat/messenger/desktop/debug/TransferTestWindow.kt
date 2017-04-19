@@ -56,6 +56,12 @@ class TransferItem(var transfer: Transfer, var realState: TransferState) {
     val untilRetryProperty = SimpleLongProperty(-1)
     var untilRetry by untilRetryProperty
 
+    val remoteDisplayNameProperty = SimpleStringProperty(transfer.remoteDisplayName)
+    val remoteDisplayName by remoteDisplayNameProperty
+
+    val localDisplayNameProperty = SimpleStringProperty(transfer.localDisplayName)
+    val localDisplayName by localDisplayNameProperty
+
     init {
         updateTransferValues()
         updateStateValues()
@@ -366,7 +372,17 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
             }, it.value.untilRetryProperty)
         }
 
-        transferTableView.columns.addAll(typeCol, idCol, progressCol, stateCol, errorCol, retryCol)
+        val localDisplayNameCol = TableColumn<TransferItem, String>("Local")
+        localDisplayNameCol.setCellValueFactory {
+            it.value.localDisplayNameProperty
+        }
+
+        val remoteDisplayNameCol = TableColumn<TransferItem, String>("Remote")
+        remoteDisplayNameCol.setCellValueFactory {
+            it.value.remoteDisplayNameProperty
+        }
+
+        transferTableView.columns.addAll(typeCol, idCol, progressCol, stateCol, errorCol, retryCol, localDisplayNameCol, remoteDisplayNameCol)
 
         val tableContextMenu = ContextMenu()
         val clearComplete = MenuItem("Clear complete")

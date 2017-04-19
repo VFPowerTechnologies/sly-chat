@@ -265,7 +265,8 @@ fun randomUpload(fileId: String? = null, fileSize: Long = 0, state: UploadState 
         fileId ?: generateFileId(),
         state,
         fileName,
-        "/tmp/" + fileName,
+        "/remote/" + fileName,
+        "/local/" + fileName,
         null,
         false,
         error,
@@ -278,7 +279,8 @@ fun randomDownload(fileId: String? = null, state: DownloadState = DownloadState.
         generateDownloadId(),
         fileId ?: generateFileId(),
         state,
-        "/tmp" + randomName(),
+        "/local/" + randomName(),
+        "/remote/" + randomName(),
         false,
         error
     )

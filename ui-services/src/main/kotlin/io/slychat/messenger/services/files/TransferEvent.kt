@@ -8,6 +8,8 @@ sealed class Transfer {
     abstract val isUpload: Boolean
     abstract val id: String
     abstract val error: TransferError?
+    abstract val localDisplayName: String
+    abstract val remoteDisplayName: String
 
     class U(val upload: Upload) : Transfer() {
         override val isUpload: Boolean = true
@@ -17,6 +19,12 @@ sealed class Transfer {
 
         override val error: TransferError?
             get() = upload.error
+
+        override val localDisplayName: String
+            get() = upload.displayName
+
+        override val remoteDisplayName: String
+            get() = upload.remoteFilePath
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -46,6 +54,12 @@ sealed class Transfer {
 
         override val error: TransferError?
             get() = download.error
+
+        override val localDisplayName: String
+            get() = download.filePath
+
+        override val remoteDisplayName: String
+            get() = download.remoteFilePath
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

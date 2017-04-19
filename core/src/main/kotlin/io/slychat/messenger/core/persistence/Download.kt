@@ -5,6 +5,7 @@ data class Download(
     val fileId: String,
     val state: DownloadState,
     val filePath: String,
+    val remoteFilePath: String,
     val doDecrypt: Boolean,
     val error: DownloadError?
 ) {

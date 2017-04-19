@@ -15,9 +15,9 @@ class SQLiteDownloadPersistenceManager(
         val sql = """
 INSERT INTO
     downloads
-    (id, file_id, state, file_path, do_decrypt, error)
+    (id, file_id, state, file_path, remote_file_path, do_decrypt, error)
 VALUES
-    (?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?)
 """
 
         connection.withPrepared(sql) {
@@ -25,8 +25,9 @@ VALUES
             it.bind(2, download.fileId)
             it.bind(3, download.state)
             it.bind(4, download.filePath)
-            it.bind(5, download.doDecrypt)
-            it.bind(6, download.error)
+            it.bind(5, download.remoteFilePath)
+            it.bind(6, download.doDecrypt)
+            it.bind(7, download.error)
             it.step()
         }
     }
@@ -109,7 +110,8 @@ WHERE
         val sql = """
 SELECT
     d.id, d.file_id, d.state,
-    d.file_path, d.do_decrypt, d.error,
+    d.file_path, d.remote_file_path, d.do_decrypt,
+    d.error,
 
     f.id, f.share_key, f.last_update_version,
     f.is_deleted, f.creation_date, f.modification_date,
@@ -127,8 +129,8 @@ ON
         it.withPrepared(sql) {
             it.map {
                 DownloadInfo(
-                    rowToDownload(it) ,
-                    fileUtils.rowToRemoteFile(it, 6)
+                    rowToDownload(it),
+                    fileUtils.rowToRemoteFile(it, 7)
                 )
             }
         }
@@ -138,7 +140,7 @@ ON
         //language=SQLite
         val sql = """
 SELECT
-    id, file_id, state, file_path, do_decrypt, error
+    id, file_id, state, file_path, remote_file_path, do_decrypt, error
 FROM
     downloads
 WHERE
@@ -160,8 +162,9 @@ WHERE
             stmt.columnString(1),
             DownloadState.valueOf(stmt.columnString(2)),
             stmt.columnString(3),
-            stmt.columnBool(4),
-            stmt.columnString(5)?.let { DownloadError.valueOf(it) }
+            stmt.columnString(4),
+            stmt.columnBool(5),
+            stmt.columnString(6)?.let { DownloadError.valueOf(it) }
         )
     }
 }

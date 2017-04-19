@@ -249,6 +249,7 @@ class StorageServiceImpl(
                 file.id,
                 UploadState.PENDING,
                 fileInfo.displayName,
+                "$remoteFileDirectory/$remoteFileName",
                 localFilePath,
                 cachePath,
                 cache == true,
@@ -275,6 +276,7 @@ class StorageServiceImpl(
                 file.id,
                 DownloadState.CREATED,
                 localFilePath,
+                "${file.userMetadata.directory}/${file.userMetadata.fileName}",
                 true,
                 null
             )

@@ -4,6 +4,7 @@ CREATE TABLE downloads (
     state TEXT NOT NULL,
     -- path of file on disk
     file_path TEXT NOT NULL,
+    remote_file_path TEXT NOT NULL,
     -- if true, store as decrypted; set to false when downloading image attachments
     do_decrypt BOOLEAN NOT NULL,
 
