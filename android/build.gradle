@@ -40,7 +40,6 @@ android {
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
         debug.java.srcDirs += 'src/debug/kotlin'
-//        main.assets.srcDirs += "$rootProject.projectDir/ui"
     }
 
     packagingOptions {
@@ -49,8 +48,7 @@ android {
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/NOTICE.txt'
         //no support for wildcards; so just ignore this one since it clashes
-        exclude 'META-INF/core-compileKotlin.kotlin_module'
-        exclude 'META-INF/io.netty.versions.properties'
+        exclude 'META-INF/core_main.kotlin_module'
         exclude 'META-INF/INDEX.LIST'
     }
 }
