@@ -51,12 +51,13 @@ class UIAccountModificationServiceImpl(
 
         return userComponent.authTokenManager.bind { userCredentials ->
             accountUpdateClient.updateName(userCredentials, UpdateNameRequest(name)) bind { response ->
-                if (response.isSuccess === true && response.accountInfo !== null) {
+                val accountInfo = response.accountInfo
+                if (response.isSuccess == true && accountInfo !== null) {
                     val newAccountInfo = AccountInfo(
-                        UserId(response.accountInfo.id),
-                        response.accountInfo.name,
-                        response.accountInfo.email,
-                        response.accountInfo.phoneNumber,
+                        UserId(accountInfo.id),
+                        accountInfo.name,
+                        accountInfo.email,
+                        accountInfo.phoneNumber,
                         oldAccountInfo.deviceId
                     )
 
@@ -87,12 +88,13 @@ class UIAccountModificationServiceImpl(
 
         return userComponent.authTokenManager.bind { userCredentials ->
             accountUpdateClient.confirmPhoneNumber(userCredentials, ConfirmPhoneNumberRequest(smsCode)) bind { response ->
-                if (response.isSuccess === true && response.accountInfo !== null) {
+                val accountInfo = response.accountInfo
+                if (response.isSuccess == true && accountInfo !== null) {
                     val newAccountInfo = AccountInfo(
-                        UserId(response.accountInfo.id),
-                        response.accountInfo.name,
-                        response.accountInfo.email,
-                        response.accountInfo.phoneNumber,
+                        UserId(accountInfo.id),
+                        accountInfo.name,
+                        accountInfo.email,
+                        accountInfo.phoneNumber,
                         oldAccountInfo.deviceId
                     )
 
@@ -113,12 +115,13 @@ class UIAccountModificationServiceImpl(
 
         return userComponent.authTokenManager.bind { userCredentials ->
             accountUpdateClient.updateEmail(userCredentials, UpdateEmailRequest(email)) bind { response ->
-                if (response.isSuccess === true && response.accountInfo !== null) {
+                val accountInfo = response.accountInfo
+                if (response.isSuccess == true && accountInfo !== null) {
                     val newAccountInfo = AccountInfo(
-                        UserId(response.accountInfo.id),
-                        response.accountInfo.name,
-                        response.accountInfo.email,
-                        response.accountInfo.phoneNumber,
+                        UserId(accountInfo.id),
+                        accountInfo.name,
+                        accountInfo.email,
+                        accountInfo.phoneNumber,
                         oldAccountInfo.deviceId
                     )
 

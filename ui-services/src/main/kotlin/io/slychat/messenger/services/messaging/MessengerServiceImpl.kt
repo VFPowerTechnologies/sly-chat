@@ -10,7 +10,10 @@ import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.ReceivedMessage
 import io.slychat.messenger.core.relay.RelayClientEvent
-import io.slychat.messenger.services.*
+import io.slychat.messenger.services.GroupService
+import io.slychat.messenger.services.RelayClientManager
+import io.slychat.messenger.services.RelayClock
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.contacts.ContactsService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -386,8 +389,9 @@ class MessengerServiceImpl(
         if (conversationMessageInfo == null)
             return Promise.ofSuccess(null)
 
-        val recipient = if (metadata.groupId != null)
-            ConversationId.Group(metadata.groupId)
+        val groupId = metadata.groupId
+        val recipient = if (groupId != null)
+            ConversationId.Group(groupId)
         else
             ConversationId.User(metadata.userId)
 

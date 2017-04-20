@@ -30,8 +30,9 @@ class TokenRefresherImpl(
         val remotePasswordHash = userData.remotePasswordHash
 
         return loginClient.getParams(email) map { resp ->
-            if (resp.errorMessage != null)
-                throw AuthApiResponseException(resp.errorMessage)
+            val errorMessage = resp.errorMessage
+            if (errorMessage != null)
+                throw AuthApiResponseException(errorMessage)
 
             //TODO make sure hash params still match
             resp.params!!.csrfToken
@@ -39,8 +40,9 @@ class TokenRefresherImpl(
             val request = AuthenticationRequest(email, remotePasswordHash.hexify(), csrfToken, registrationId, deviceId)
             loginClient.auth(request)
         } map { resp ->
-            if (resp.errorMessage != null)
-                throw AuthApiResponseException(resp.errorMessage)
+            val errorMessage = resp.errorMessage
+            if (errorMessage != null)
+                throw AuthApiResponseException(errorMessage)
 
             AuthTokenRefreshResult(resp.authData!!.authToken)
         }

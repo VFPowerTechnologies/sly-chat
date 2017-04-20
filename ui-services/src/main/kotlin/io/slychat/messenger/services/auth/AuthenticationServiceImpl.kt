@@ -36,8 +36,9 @@ class AuthenticationServiceImpl(
     /** Attempts to authenticate to the remote server. */
     private fun remoteAuth(emailOrPhoneNumber: String, password: String, registrationId: Int, deviceId: Int): Promise<AuthResult, Exception> {
         return authenticationClient.getParams(emailOrPhoneNumber) bind { paramsResponse ->
-            if (paramsResponse.errorMessage != null)
-                throw AuthApiResponseException(paramsResponse.errorMessage)
+            val errorMessage = paramsResponse.errorMessage
+            if (errorMessage != null)
+                throw AuthApiResponseException(errorMessage)
 
             val authParams = paramsResponse.params!!
 
@@ -47,8 +48,9 @@ class AuthenticationServiceImpl(
             val request = AuthenticationRequest(emailOrPhoneNumber, remotePasswordHash.hexify(), authParams.csrfToken, registrationId, deviceId)
 
             authenticationClient.auth(request) map { response ->
-                if (response.errorMessage != null)
-                    throw AuthApiResponseException(response.errorMessage)
+                val errorMessage1 = response.errorMessage
+                if (errorMessage1 != null)
+                    throw AuthApiResponseException(errorMessage1)
 
                 val accountParams = AccountLocalInfo.generate(hashParams)
 

@@ -92,8 +92,9 @@ class RegistrationServiceImpl(
 
     override fun updatePhone(info: UIUpdatePhoneInfo): Promise<UIUpdatePhoneResult, Exception> {
         return loginClient.getParams(info.email) bind { response ->
-            if (response.errorMessage != null)
-                throw AuthApiResponseException(response.errorMessage)
+            val errorMessage = response.errorMessage
+            if (errorMessage != null)
+                throw AuthApiResponseException(errorMessage)
 
             val authParams = response.params!!
 

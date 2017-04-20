@@ -321,8 +321,9 @@ class SlyApplication {
             val userComponent = createUserSession(userLoginData, keyVault, accountInfo, accountParams)
 
             val authTokenManager = userComponent.authTokenManager
-            if (sessionData.authToken != null)
-                authTokenManager.setToken(sessionData.authToken)
+            val authToken = sessionData.authToken
+            if (authToken != null)
+                authTokenManager.setToken(authToken)
             else
                 authTokenManager.invalidateToken()
 
