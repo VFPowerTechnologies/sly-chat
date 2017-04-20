@@ -244,12 +244,17 @@ class StorageServiceImpl(
             else
                 null
 
+            val remoteFilePath = if (remoteFileDirectory != "/")
+                "$remoteFileDirectory/$remoteFileName"
+            else
+                "$remoteFileDirectory$remoteFileName"
+
             val upload = Upload(
                 generateUploadId(),
                 file.id,
                 UploadState.PENDING,
                 fileInfo.displayName,
-                "$remoteFileDirectory/$remoteFileName",
+                remoteFilePath,
                 localFilePath,
                 cachePath,
                 cache == true,
