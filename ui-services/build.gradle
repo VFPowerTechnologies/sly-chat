@@ -9,14 +9,20 @@ buildscript {
 }
 
 apply plugin: 'kotlin'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'idea'
 
 sourceCompatibility = JavaVersion.VERSION_1_7
 
 def jsOutputDir = "$rootProject.projectDir/ui/ui/js/jvm-service"
 
-kapt {
-    generateStubs = true
+idea {
+    module {
+        sourceDirs += file('build/generated/source/kapt/main')
+    }
+}
 
+kapt {
     arguments {
         arg('jsOutputDir', jsOutputDir)
         arg('jsCallbackPackage', 'io.slychat.messenger.core.services.jscallback')

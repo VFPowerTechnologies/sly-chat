@@ -29,7 +29,7 @@ buildscript {
             androidGradle: '2.2.3',
             androidBuildTools: '23.0.3',
             androidCompileSdk: 23,
-            jsbridge: '0.3.1',
+            jsbridge: '0.4.0',
             controlsFx: '8.40.11',
             nsMenuFx: '2.1.4',
             jna: '4.2.2',
@@ -117,28 +117,6 @@ project(':core') {
     afterEvaluate { p ->
         p.sourceSets.main.java.srcDirs += generateBuildConfig.srcRoot
         p.compileJava.dependsOn generateBuildConfig
-    }
-}
-
-import java.nio.file.*
-
-project(':ui-services') {
-    apply plugin: 'idea'
-
-    //hack to give IDE access to generated files
-    if (!System.getProperty('os.name').toLowerCase(Locale.ROOT).startsWith('windows')) {
-        Path linkLocation = new File("$projectDir/generated").toPath()
-        Path linkTarget = new File("$buildDir/generated/source/kapt/main").toPath()
-        if (!Files.exists(linkLocation, LinkOption.NOFOLLOW_LINKS)) {
-            Files.createSymbolicLink(linkLocation, linkTarget)
-        }
-
-        idea {
-            module {
-                sourceDirs += file('generated')
-                generatedSourceDirs += file('generated')
-            }
-        }
     }
 }
 
