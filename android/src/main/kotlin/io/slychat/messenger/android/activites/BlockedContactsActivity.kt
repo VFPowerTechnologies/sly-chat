@@ -29,7 +29,8 @@ class BlockedContactsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        log.debug("onCreate")
+        if (!successfullyLoaded)
+            return
 
         app = AndroidApp.get(this)
 

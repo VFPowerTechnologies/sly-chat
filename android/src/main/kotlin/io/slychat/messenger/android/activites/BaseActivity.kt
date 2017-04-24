@@ -25,17 +25,23 @@ open class BaseActivity : AppCompatActivity() {
     private val permRequestCodeToDeferred = SparseArray<Deferred<Boolean, Exception>>()
 
     private val log = LoggerFactory.getLogger(javaClass)
+    var successfullyLoaded = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        log.debug("onCreate")
         val app = getAndroidApp()
         if (app !== null) {
-            val currentTheme = app.appComponent.appConfigService.appearanceTheme
+            if (app.isSuccessfullyInitiated()) {
+                val currentTheme = app.appComponent.appConfigService.appearanceTheme
 
-            if (currentTheme == AndroidConfigServiceImpl.lightTheme) {
-                setTheme(R.style.SlyThemeLight)
+                if (currentTheme == AndroidConfigServiceImpl.lightTheme)
+                    setTheme(R.style.SlyThemeLight)
+            }
+            else {
+                successfullyLoaded = false
+                startLoadingActivity()
             }
         }
+
         super.onCreate(savedInstanceState)
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -46,6 +52,12 @@ open class BaseActivity : AppCompatActivity() {
             AndroidApp.get(this)
         else
             null
+    }
+
+    private fun startLoadingActivity() {
+        val intent = Intent(baseContext, MainActivity::class.java)
+        finishAffinity()
+        startActivity(intent)
     }
 
     fun requestPermission(permission: String): Promise<Boolean, Exception> {

@@ -14,7 +14,6 @@ import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
-import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.R
 import io.slychat.messenger.android.activites.services.impl.AndroidConfigServiceImpl
 import nl.komponents.kovenant.functional.map
@@ -27,7 +26,6 @@ class SettingsActivity : BaseActivity() {
         private val RINGTONE_PICKER_REQUEST_CODE = 1
     }
 
-    private lateinit var app: AndroidApp
     private lateinit var configService: AndroidConfigServiceImpl
 
     private lateinit var notificationSwitch: Switch
@@ -38,7 +36,8 @@ class SettingsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        log.debug("onCreate")
+        if (!successfullyLoaded)
+            return
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_settings)
@@ -67,8 +66,6 @@ class SettingsActivity : BaseActivity() {
 
         createEventListeners()
         setConfigListeners()
-
-        app = AndroidApp.get(this)
     }
 
     private fun setConfigListeners() {
