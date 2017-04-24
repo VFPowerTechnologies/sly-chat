@@ -1,8 +1,6 @@
 package io.slychat.messenger.services.files
 
-import io.slychat.messenger.core.persistence.UploadError
-import io.slychat.messenger.core.persistence.UploadInfo
-import io.slychat.messenger.core.persistence.UploadState
+import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomDownload
 import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
@@ -59,4 +57,12 @@ fun randomUploadInfo(state: UploadState = UploadState.PENDING, error: UploadErro
     val upload = randomUpload(file.id, file.remoteFileSize, state, error)
 
     return UploadInfo(upload, file)
+}
+
+fun randomDownloadInfo(error: DownloadError? = null, state: DownloadState = DownloadState.CREATED, fileId: String? = null): DownloadInfo {
+    val file = randomRemoteFile(fileId = fileId)
+    return DownloadInfo(
+        randomDownload(file.id, state = state, error = error),
+        file
+    )
 }

@@ -1,21 +1,23 @@
 package io.slychat.messenger.services.files.cache
 
-import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.condError
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.generateShareKey
+import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.encryptUserMetadata
 import io.slychat.messenger.core.files.getFilePathHash
 import io.slychat.messenger.core.http.api.share.AcceptShareRequest
 import io.slychat.messenger.core.http.api.share.AcceptShareResponse
 import io.slychat.messenger.core.http.api.share.ShareAsyncClient
 import io.slychat.messenger.core.http.api.share.ShareInfo
-import io.slychat.messenger.core.isNotNetworkError
+import io.slychat.messenger.core.persistence.AttachmentId
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ReceivedAttachment
+import io.slychat.messenger.core.persistence.ReceivedAttachmentState
 import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.auth.AuthTokenManager
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.files.FileListSyncEvent
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.messaging.MessageService
@@ -28,20 +30,7 @@ import java.util.*
 
 //the ui doesn't care if the attachment is received or just sent; for sent, we just need to generate thumbnails
 sealed class AttachmentEvent {
-    class StateChanged(val state: ReceivedAttachmentState) : AttachmentEvent()
-
-    //UntilRetry?
-}
-
-enum class ReceivedAttachmentState {
-    PENDING,
-    ACCEPTED,
-    WAITING_ON_SYNC,
-    COMPLETE,
-    //associated transfer was cancelled
-    CANCELLED,
-    //file was deleted by sender; this is terminal
-    MISSING
+    class StateChanged(val id: AttachmentId, val receivedAttachment: ReceivedAttachment, val state: ReceivedAttachmentState) : AttachmentEvent()
 }
 
 //TODO update quota somehow; maybe quota should be moved to a separate component since it's updated in a few spots?
@@ -55,25 +44,25 @@ class AttachmentServiceImpl(
     private val shareClient: ShareAsyncClient,
     private val messageService: MessageService,
     private val storageService: StorageService,
+    private val attachmentCacheManager: AttachmentCacheManager,
     messageUpdateEvents: Observable<MessageUpdateEvent>,
     networkStatus: Observable<Boolean>,
     syncEvents: Observable<FileListSyncEvent>
 ) : AttachmentService {
-    private class AttachmentInfo(val conversationId: ConversationId, val messageId: String, val attachment: ReceivedAttachment)
-    private class AcceptJob(val conversationId: ConversationId, val sender: UserId, val messageId: String, val attachments: List<ReceivedAttachment>)
+    companion object {
+        internal val INLINE_FILE_SIZE_LIMIT: Long = 6L.mb
+    }
+
+    private class AcceptJob(val sender: UserId, val attachments: List<ReceivedAttachment>)
+
+    private val attachments = ReceivedAttachments()
 
     private val log = LoggerFactory.getLogger(javaClass)
-
-    //updateReceivedAttachmentState(conversationId, messageId,
 
     private var current: AcceptJob? = null
 
     //waiting to be restored
     private val transientErrorQueue = ArrayList<Unit>()
-
-    //waiting for file sync
-    //TODO we should check if we already have
-    private val waitingForSync = HashMap<String, AttachmentInfo>()
 
     //XXX we should just have a queue for accepting, and let the other components handle their own queue?
     //we need a list of attachments waiting to show up in sync; then these need to be sent to the downloader (which has its own queue) (XXX we need to track the downloadId here if inline)
@@ -92,35 +81,37 @@ class AttachmentServiceImpl(
     }
 
     private fun onFileListSyncResult(ev: FileListSyncEvent.Result) {
-        val present = ev.result.mergeResults.added.filter { it.id in waitingForSync }
-        if (present.isEmpty())
-            return
+        val completed = ArrayList<AttachmentId>()
+        val markInline = ArrayList<AttachmentId>()
 
-        val completed = HashMap<Pair<ConversationId, String>, MutableList<Int>>()
+        for (file in ev.result.mergeResults.added) {
+            val attachment = attachments.getWaitingForSync(file.id) ?: continue
 
-        present.map { waitingForSync[it.id]!! }.forEach {
-            if (it.attachment.isInline) {
-                //TODO we need get downloadFile to return the associated Download
-                //TODO this should be deferred to the AttachmentCacheManager? we need the path
-                //TODO we also need to update the received attachment with the downloadid
-                //storageService.downloadFile(it.attachment.fileId, "") successUi {} failUi {}
-                TODO()
-            }
-            else {
-                //complete
-                val l = completed.getOrPut(it.conversationId to it.messageId) { ArrayList() }
-                l.add(it.attachment.n)
-            }
+            if (shouldInline(file))
+                markInline.add(attachment.id)
+
+            completed.add(attachment.id)
         }
 
         completed.forEach {
-            val (conversationId, messageId) = it.key
-            messageService.deleteReceivedAttachments(conversationId, messageId, it.value) fail {
+            val toCache = markInline.map { attachments.get(it)!! }
+            attachments.toComplete(completed)
+
+            messageService.deleteReceivedAttachments(completed, markInline) bindUi {
+                attachmentCacheManager.requestCache(toCache)
+            } fail {
                 log.error("Failed to remove received attachments: {}", it.message, it)
             }
         }
     }
 
+    private fun shouldInline(file: RemoteFile): Boolean {
+        val fileMetadata = file.fileMetadata ?: return false
+
+        return fileMetadata.mimeType.startsWith("image/") && fileMetadata.size <= INLINE_FILE_SIZE_LIMIT
+    }
+
+    //TODO cancel+remove any queued transfers; also delete cache entries
     private fun onMessageUpdateEvent(ev: MessageUpdateEvent) {
         when (ev) {
             is MessageUpdateEvent.Deleted -> TODO()
@@ -187,15 +178,33 @@ class AttachmentServiceImpl(
         //TODO an issue here is that if a sync happens before we process the result here (eg: triggered by something else), we could miss some attachments
         val successful = all - errors
 
-        acceptJob.attachments.filter { it.fileId in successful }.forEach {
-            waitingForSync[it.fileId] = AttachmentInfo(acceptJob.conversationId, acceptJob.messageId, it)
-        }
+        val successfulIds = acceptJob.attachments
+            .filterMap {
+                if (it.fileId in successful)
+                    it.id
+                else
+                    null
+            }
+
+        attachments.toWaitingOnSync(successfulIds)
 
         storageService.sync()
     }
 
     override fun init() {
-        //TODO need to fetch all pending attachments and queue them for download?
+        messageService.getAllReceivedAttachments() successUi {
+            attachments.add(it)
+
+            attachments.getPending().forEach {
+                val sender = it.userMetadata.sharedFrom!!.userId
+                //TODO grouping
+                queue.add(AcceptJob(sender, listOf(it)))
+            }
+
+            nextJob()
+        } fail {
+            log.error("Failed to fetch received attachments: {}", it.message, it)
+        }
     }
 
     override fun shutdown() {
@@ -203,7 +212,8 @@ class AttachmentServiceImpl(
     }
 
     override fun addNewReceived(conversationId: ConversationId, sender: UserId, messageId: String, receivedAttachments: List<ReceivedAttachment>) {
-        queue.add(AcceptJob(conversationId, sender, messageId, receivedAttachments))
+        attachments.add(receivedAttachments)
+        queue.add(AcceptJob(sender, receivedAttachments))
 
         processNext()
     }

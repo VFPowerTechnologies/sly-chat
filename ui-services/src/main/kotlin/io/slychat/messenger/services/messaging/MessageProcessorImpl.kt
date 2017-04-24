@@ -167,7 +167,9 @@ class MessageProcessorImpl(
             log.debug("User doesn't have appropriate message level, upgrading")
 
             contactsService.allowAll(userId) bindUi {
-                messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments)
+                messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments) mapUi {
+                    //TODO AttachmentService.addReceived
+                }
             }
         }
     }
@@ -181,9 +183,7 @@ class MessageProcessorImpl(
         textAttachments.forEachIndexed { i, a ->
             val fileId = generateFileId()
 
-            val isInline = false
-
-            attachments.add(MessageAttachmentInfo(i, a.fileName, fileId, isInline))
+            attachments.add(MessageAttachmentInfo(i, a.fileName, fileId, false))
 
             val userMetadata = UserMetadata(
                 a.fileKey,
@@ -193,7 +193,7 @@ class MessageProcessorImpl(
                 SharedFrom(sender, null)
             )
 
-            receivedAttachments.add(ReceivedAttachment(conversationId, messageId, i, a.fileId.string, a.shareKey, userMetadata, isInline, null, null))
+            receivedAttachments.add(ReceivedAttachment(AttachmentId(conversationId, messageId, i), a.fileId.string, a.shareKey, userMetadata, ReceivedAttachmentState.PENDING, null))
         }
 
         return attachments to receivedAttachments

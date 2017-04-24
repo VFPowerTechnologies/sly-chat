@@ -3,8 +3,6 @@ package io.slychat.messenger.services.files
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.crypto.generateDownloadId
 import io.slychat.messenger.core.persistence.*
-import io.slychat.messenger.core.randomDownload
-import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.testutils.*
@@ -70,14 +68,6 @@ class DownloaderImplTest {
         }
 
         return r
-    }
-
-    private fun randomDownloadInfo(error: DownloadError? = null, state: DownloadState = DownloadState.CREATED): DownloadInfo {
-        val file = randomRemoteFile()
-        return DownloadInfo(
-            randomDownload(file.id, state = state, error = error),
-            file
-        )
     }
 
     private fun advanceDownloadProgressBuffer() {

@@ -190,7 +190,7 @@ fun randomMessageAttachmentInfo(n: Int): MessageAttachmentInfo {
 fun randomSharedFrom(): SharedFrom = SharedFrom(randomUserId(), randomGroupId())
 
 fun randomReceivedAttachment(
-    n: Int,
+    n: Int = 0,
     fileId: String? = null,
     error: AttachmentError? = null,
     conversationId: ConversationId? = null,

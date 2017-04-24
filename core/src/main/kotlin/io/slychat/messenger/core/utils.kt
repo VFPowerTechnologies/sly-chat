@@ -101,6 +101,10 @@ inline fun <T, R> Iterable<T>.filterMap(transform: (T) -> R?): List<R> {
     return r
 }
 
+operator fun <K, V> MutableMap<K, V>.minusAssign(key: K) {
+    remove(key)
+}
+
 operator fun <K, V> Map<K, V>.plus(entry: Pair<K, V>): Map<K, V> {
     val m = HashMap(this)
 
@@ -116,7 +120,6 @@ operator fun <K, V> Map<K, V>.minus(key: K): Map<K, V> {
 
     return m
 }
-
 
 /**
  * Used to determine OS info from Java's os.name and os.version system properties. Currently only tested on the following JREs: Oracle, OpenJDK, Android

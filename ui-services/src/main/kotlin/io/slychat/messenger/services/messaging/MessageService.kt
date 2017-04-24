@@ -46,5 +46,7 @@ interface MessageService {
 
     fun getUserConversation(userId: UserId): Promise<UserConversation?, Exception>
 
-    fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception>
+    fun getAllReceivedAttachments(): Promise<List<ReceivedAttachment>, Exception>
+
+    fun deleteReceivedAttachments(completed: List<AttachmentId>, markInline: List<AttachmentId>): Promise<Unit, Exception>
 }

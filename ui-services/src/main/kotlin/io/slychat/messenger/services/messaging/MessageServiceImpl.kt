@@ -136,8 +136,12 @@ class MessageServiceImpl(
         return messagePersistenceManager.getLastMessages(conversationId, startingAt, count)
     }
 
-    override fun deleteReceivedAttachments(conversationId: ConversationId, messageId: String, ns: List<Int>): Promise<Unit, Exception> {
-        return messagePersistenceManager.deleteReceivedAttachments(conversationId, messageId, ns)
+    override fun getAllReceivedAttachments(): Promise<List<ReceivedAttachment>, Exception> {
+        return messagePersistenceManager.getAllReceivedAttachments()
+    }
+
+    override fun deleteReceivedAttachments(completed: List<AttachmentId>, markInline: List<AttachmentId>): Promise<Unit, Exception> {
+        return messagePersistenceManager.deleteReceivedAttachments(completed, markInline)
     }
 
     private fun startMessageExpiration(conversationId: ConversationId, messageId: String, conversationMessageInfo: ConversationMessageInfo?): Promise<Unit, Exception> {

@@ -14,6 +14,7 @@ import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
+import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -274,7 +275,7 @@ class StorageServiceImpl(
         }
     }
 
-    override fun downloadFiles(requests: List<DownloadRequest>): Promise<Unit, Exception> {
+    override fun downloadFiles(requests: List<DownloadRequest>): Promise<List<DownloadInfo>, Exception> {
         return getFilesById(requests.map { it.fileId }) bindUi { files ->
             val downloads = requests.map {
                 val file = files[it.fileId]!!
@@ -295,7 +296,7 @@ class StorageServiceImpl(
                 )
             }
 
-            transferManager.download(downloads)
+            transferManager.download(downloads) map { downloads }
         }
     }
 

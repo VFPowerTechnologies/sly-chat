@@ -3,6 +3,7 @@ package io.slychat.messenger.services.files
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.DirEntry
+import io.slychat.messenger.core.persistence.DownloadInfo
 import nl.komponents.kovenant.Promise
 import rx.Observable
 
@@ -36,7 +37,7 @@ interface StorageService {
 
     fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String, cache: Boolean): Promise<Unit, Exception>
 
-    fun downloadFiles(requests: List<DownloadRequest>): Promise<Unit, Exception>
+    fun downloadFiles(requests: List<DownloadRequest>): Promise<List<DownloadInfo>, Exception>
 
     fun remove(transferIds: List<String>): Promise<Unit, Exception>
 
