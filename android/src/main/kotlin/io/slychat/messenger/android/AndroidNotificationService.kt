@@ -45,8 +45,15 @@ class AndroidNotificationService(private val context: Context) : PlatformNotific
     }
 
     override fun getNotificationSoundDisplayName(soundUri: String): String {
-        val ringtone = RingtoneManager.getRingtone(context, Uri.parse(soundUri))
-        return ringtone.getTitle(context)
+        return try {
+            val ringtone = RingtoneManager.getRingtone(context, Uri.parse(soundUri))
+            ringtone.getTitle(context)
+        }
+        //unable to replicate this even with messing with app permissions, but has shown up in bug reports, so just
+        //return a placeholder to prevent crashes
+        catch (e: SecurityException) {
+            return "<No Permission>"
+        }
     }
 
     /* Other */

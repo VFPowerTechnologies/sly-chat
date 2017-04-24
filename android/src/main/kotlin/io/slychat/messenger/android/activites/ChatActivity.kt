@@ -81,7 +81,8 @@ class ChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        log.debug("onCreate")
+        if (!successfullyLoaded)
+            return
 
         val isGroup = intent.getBooleanExtra(EXTRA_ISGROUP, false)
         if (isGroup) {
