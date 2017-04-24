@@ -1,6 +1,5 @@
 package io.slychat.messenger.android.activites
 
-import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
@@ -29,7 +28,8 @@ class AddContactActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        log.debug("onCreate")
+        if (!successfullyLoaded)
+            return
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_add_contact)

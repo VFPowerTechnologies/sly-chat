@@ -32,6 +32,8 @@ class GroupInfoActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!successfullyLoaded)
+            return
 
         app = AndroidApp.get(this)
 

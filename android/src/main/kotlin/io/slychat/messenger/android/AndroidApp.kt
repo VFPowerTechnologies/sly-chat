@@ -375,4 +375,8 @@ class AndroidApp : Application() {
 
         this.appComponent.uiEventService.dispatchEvent(event)
     }
+
+    fun isSuccessfullyInitiated(): Boolean {
+        return isInitialized && wasSuccessfullyInitialized
+    }
 }
