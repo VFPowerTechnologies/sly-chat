@@ -65,13 +65,16 @@ class AttachmentCacheManagerImplTest {
             })
         }
 
+        whenever(attachmentCachePersistenceManager.getAllRequests()).thenResolve(emptyList())
         whenever(attachmentCachePersistenceManager.getZeroRefCountFiles()).thenResolve(emptyList())
         whenever(attachmentCachePersistenceManager.addRequests(any(), any())).thenResolveUnit()
         whenever(attachmentCachePersistenceManager.updateRequests(any())).thenResolveUnit()
+        whenever(attachmentCachePersistenceManager.deleteRequests(any())).thenResolveUnit()
 
         whenever(attachmentCache.getDownloadPathForFile(any())).thenReturn(dummyCachePath)
         whenever(attachmentCache.delete(any())).thenResolveUnit()
         whenever(attachmentCache.filterPresent(any())).thenResolve(emptySet())
+        whenever(attachmentCache.isOriginalPresent(any())).thenReturn(true)
 
         whenever(thumbnailGenerator.generateThumbnail(any(), any(), any())).thenResolveUnit()
     }
@@ -340,11 +343,46 @@ class AttachmentCacheManagerImplTest {
 
     @Test
     fun `requesting a thumbnail when the original is not in the cache should trigger a download if the file isn't deleted`() {
-        TODO()
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+
+        whenever(attachmentCache.isOriginalPresent(fileId)).thenReturn(false)
+        whenever(attachmentCache.getThumbnailInputStream(any(), any(), any(), any(), any())).thenReturn(null)
+
+        val resolution = 200
+        val result = manager.getThumbnailStream(fileId, resolution).get()
+        assertNull(result.inputStream)
+        assertFalse(result.isDeleted)
+        assertFalse(result.isOriginalPresent)
+
+        verify(storageService).downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path)))
     }
 
     @Test
     fun `a requested thumbnail should be generated after a download completes successfully`() {
-        TODO()
+        val manager = newManager()
+
+        val resolution = 200
+        val file = randomRemoteFile()
+        val fileId = file.id
+        val info = randomDownloadInfo(fileId = fileId)
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+
+        whenever(attachmentCache.isOriginalPresent(fileId)).thenReturn(false)
+        whenever(attachmentCache.getThumbnailInputStream(any(), any(), any(), any(), any())).thenReturn(null)
+        whenever(attachmentCache.getThumbnailGenerationStreams(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(dummyThumbnailStreams())
+
+        whenever(storageService.downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path)))).thenResolve(listOf(info))
+
+        manager.getThumbnailStream(fileId, resolution).get()
+
+        transferEvents.onNext(TransferEvent.StateChanged(info.download, TransferState.COMPLETE))
+
+        verify(thumbnailGenerator).generateThumbnail(any(), any(), eq(resolution))
     }
 }

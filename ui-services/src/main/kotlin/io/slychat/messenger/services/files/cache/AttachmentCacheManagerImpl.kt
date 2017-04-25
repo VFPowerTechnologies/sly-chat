@@ -40,6 +40,9 @@ class AttachmentCacheManagerImpl(
 
     private var currentThumbnailJob: ThumbnailJob? = null
 
+    //thumbnail jobs for pending downloads
+    private val pendingThumbnailQueue = ArrayDeque<ThumbnailJob>()
+
     private val thumbnailingQueue = ArrayDeque<ThumbnailJob>()
 
     private val fileIdToDownloadId = HashMap<String, String>()
@@ -94,15 +97,15 @@ class AttachmentCacheManagerImpl(
     }
 
     private fun addRequests(requests: List<AttachmentCacheRequest>, incCountFor: List<String>): Promise<Unit, Exception> {
-        return attachmentCachePersistenceManager.addRequests(requests, incCountFor) successUi {
-            trackNewRequests(requests)
-        }
+        //insert before saving, to insure the same request can't be made twice
+        trackNewRequests(requests)
+
+        return attachmentCachePersistenceManager.addRequests(requests, incCountFor)
     }
 
     override fun requestCache(receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
         val fileIds = receivedAttachments.mapToSet { it.fileId }
 
-        //TODO maybe just check downloads here, instead of having filterPresent do it?
         return attachmentCache.filterPresent(fileIds) bindUi { cachedFileIds ->
             val (alreadyCached, toCache) = receivedAttachments.partition { it.fileId in cachedFileIds }
 
@@ -110,7 +113,6 @@ class AttachmentCacheManagerImpl(
                 AttachmentCacheRequest(it.fileId, null, AttachmentCacheRequest.State.PENDING)
             }
 
-            //TODO alreadyCached event
             addRequests(requests, alreadyCached.map { it.fileId })
         }
     }
@@ -176,6 +178,8 @@ class AttachmentCacheManagerImpl(
                 untrackRequest(fileId) fail {
                     log.error("Unable to untrack request: {}", it.message, it)
                 }
+
+                processPendingThumbnailQueue(fileId)
             }
 
             //I guess do nothing? we should probably raise some kinda event though
@@ -194,12 +198,31 @@ class AttachmentCacheManagerImpl(
         }
     }
 
-    private fun addToThumbnailingQueue(job: ThumbnailJob) {
-        if (job == currentThumbnailJob || thumbnailingQueue.contains(job))
+    private fun processPendingThumbnailQueue(fileId: String) {
+        val wasRemoved = pendingThumbnailQueue.removeIf {
+            val matches = it.fileId == fileId
+
+            if (matches) {
+                thumbnailingQueue.add(it)
+            }
+
+            matches
+        }
+
+        if (wasRemoved)
+            nextThumbnailingJob()
+    }
+
+    private fun addToThumbnailingQueue(job: ThumbnailJob, isPending: Boolean) {
+        if (job == currentThumbnailJob || thumbnailingQueue.contains(job) || pendingThumbnailQueue.contains(job))
             return
 
-        thumbnailingQueue.add(job)
-        nextThumbnailingJob()
+        if (!isPending) {
+            thumbnailingQueue.add(job)
+            nextThumbnailingJob()
+        }
+        else
+            pendingThumbnailQueue.add(job)
     }
 
     private fun nextThumbnailingJob() {
@@ -259,7 +282,10 @@ class AttachmentCacheManagerImpl(
         } successUi {
             if (it.inputStream == null && !it.isDeleted) {
                 if (fileId !in allRequests) {
-                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)), emptyList())
+                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)), emptyList()) fail {
+                        log.error("Failed to add download request for original image to queue: {}", it.message, it)
+                    }
+
                     log.info("{} requested, creating download request", fileId)
                 }
             }
@@ -267,9 +293,6 @@ class AttachmentCacheManagerImpl(
     }
 
     override fun getThumbnailStream(fileId: String, resolution: Int): Promise<ImageLookUpResult, Exception> {
-        //TODO need to check if original is present; if not we need to fetch it, then thumbnail
-        //maybe we can have a separate thumbnail queue; just create the job to fetch it
-        //if the app closes, then the thumbnail job is lost until it's looked at again, which is what we do now anyways
         return fileListPersistenceManager.getFile(fileId) map {
             if (it == null || it.isDeleted)
                 ImageLookUpResult(null, true, false)
@@ -284,12 +307,18 @@ class AttachmentCacheManagerImpl(
                     fileMetadata.chunkSize
                 )
 
-                ImageLookUpResult(stream, false, true)
+                ImageLookUpResult(stream, false, attachmentCache.isOriginalPresent(fileId))
             }
         } successUi {
-            //TODO queue download
-            if (it.inputStream == null && !it.isDeleted)
-                addToThumbnailingQueue(ThumbnailJob(fileId, resolution))
+            if (it.inputStream == null && !it.isDeleted) {
+                if (!it.isOriginalPresent && fileId !in allRequests) {
+                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)), emptyList()) fail {
+                        log.error("Failed to add download request for original image to queue: {}", it.message, it)
+                    }
+                }
+
+                addToThumbnailingQueue(ThumbnailJob(fileId, resolution), !it.isOriginalPresent)
+            }
         }
     }
 
