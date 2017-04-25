@@ -15,7 +15,6 @@ import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subscriptions.CompositeSubscription
-import java.io.InputStream
 import java.util.*
 
 //TODO track message deletion
@@ -30,6 +29,8 @@ class AttachmentCacheManagerImpl(
     private val thumbnailGenerator: ThumbnailGenerator,
     fileEvents: Observable<RemoteFileEvent>
 ) : AttachmentCacheManager {
+    private data class ThumbnailJob(val fileId: String, val resolution: Int)
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private var subscriptions = CompositeSubscription()
@@ -37,8 +38,9 @@ class AttachmentCacheManagerImpl(
     //fileId
     private val allRequests = HashMap<String, AttachmentCacheRequest>()
 
-    //fileId
-    private val thumbnailingQueue = ArrayDeque<String>()
+    private var currentThumbnailJob: ThumbnailJob? = null
+
+    private val thumbnailingQueue = ArrayDeque<ThumbnailJob>()
 
     private val fileIdToDownloadId = HashMap<String, String>()
 
@@ -130,10 +132,6 @@ class AttachmentCacheManagerImpl(
                 AttachmentCacheRequest.State.DOWNLOADING -> {
                     trackDownload(it.downloadId!!, it.fileId)
                 }
-
-                AttachmentCacheRequest.State.THUMBNAILING -> {
-                    addToThumbnailingQueue(it.fileId)
-                }
             }
         }
 
@@ -150,12 +148,10 @@ class AttachmentCacheManagerImpl(
         fileIdToDownloadId -= download.fileId
     }
 
-    private fun untrackRequest(fileId: String, downloadId: String) {
+    private fun untrackRequest(fileId: String): Promise<Unit, Exception> {
         allRequests -= fileId
 
-        attachmentCachePersistenceManager.deleteRequests(listOf(fileId)) fail {
-            log.error("Failed to delete requests: {}", it.message, it)
-        }
+        return attachmentCachePersistenceManager.deleteRequests(listOf(fileId))
     }
 
     //TODO we actually need to check transfers on startup as well, incase we don't process a transfer event and the app closes
@@ -177,13 +173,8 @@ class AttachmentCacheManagerImpl(
                 log.info("Download for {} complete", fileId)
 
                 untrackDownload(download)
-
-                val updated = allRequests[fileId]!!.copy(state = AttachmentCacheRequest.State.THUMBNAILING)
-
-                attachmentCachePersistenceManager.updateRequests(listOf(updated)) successUi {
-                    addToThumbnailingQueue(fileId)
-                } fail {
-                    log.error("Failed to update request to thumbnailing state: {}", it.message, it)
+                untrackRequest(fileId) fail {
+                    log.error("Unable to untrack request: {}", it.message, it)
                 }
             }
 
@@ -203,51 +194,102 @@ class AttachmentCacheManagerImpl(
         }
     }
 
-    private fun addToThumbnailingQueue(fileId: String) {
-        thumbnailingQueue.add(fileId)
+    private fun addToThumbnailingQueue(job: ThumbnailJob) {
+        if (job == currentThumbnailJob || thumbnailingQueue.contains(job))
+            return
+
+        thumbnailingQueue.add(job)
         nextThumbnailingJob()
     }
 
     private fun nextThumbnailingJob() {
-        if (thumbnailingQueue.isEmpty())
+        if (currentThumbnailJob != null || thumbnailingQueue.isEmpty())
             return
 
-        val fileId = thumbnailingQueue.pop()
+        val job = thumbnailingQueue.pop()
+        currentThumbnailJob = job
 
-        thumbnailGenerator.generateThumbnails(fileId) bindUi {
-            log.info("Thumbnails generated for {}", fileId)
+        fileListPersistenceManager.getFile(job.fileId) bindUi {
+            if (it == null || it.isDeleted)
+                throw InvalidFileException(job.fileId)
 
-            allRequests -= fileId
-
-            attachmentCachePersistenceManager.deleteRequests(listOf(fileId)) successUi {
-                nextThumbnailingJob()
+            attachmentCache.getThumbnailGenerationStreams(
+                job.fileId,
+                job.resolution,
+                it.userMetadata.fileKey,
+                CipherList.getCipher(it.userMetadata.cipherId),
+                it.fileMetadata!!.chunkSize
+            ).use {
+                thumbnailGenerator.generateThumbnail(it.inputStream, it.outputStream, job.resolution)
             }
+        } successUi {
+            log.info("Thumbnail generated for {}@{}", job.fileId, job.resolution)
+            currentThumbnailJob = null
+            nextThumbnailingJob()
         } failUi {
-            log.error("Failed to generate thumbnails for {}: {}", fileId, it.message, it)
+            if (it is InvalidFileException) {
+                log.warn("Failed to generate thumbnail for {}, file has disappeared", job.fileId)
+            }
+            else
+                log.error("Failed to generate thumbnail for {}: {}", job, it.message, it)
+
+            currentThumbnailJob = null
             nextThumbnailingJob()
         }
     }
 
     //this will be called off the main thread
-    override fun getImageStream(fileId: String): Promise<InputStream?, Exception> {
+    override fun getImageStream(fileId: String): Promise<ImageLookUpResult, Exception> {
         return fileListPersistenceManager.getFile(fileId) map {
             //null if deleted via sync, isDeleted if just deleted locally
             if (it == null || it.isDeleted)
-                null
+                ImageLookUpResult(null, true, false)
             else {
                 val fileMetadata = it.fileMetadata!!
 
-                attachmentCache.getImageStream(
+                val stream = attachmentCache.getOriginalImageInputStream(
                     fileId,
                     it.userMetadata.fileKey,
                     CipherList.getCipher(it.userMetadata.cipherId),
                     fileMetadata.chunkSize
                 )
+
+                ImageLookUpResult(stream, false, true)
             }
         } successUi {
-            if (it == null && fileId !in allRequests) {
-                addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)), emptyList())
+            if (it.inputStream == null && !it.isDeleted) {
+                if (fileId !in allRequests) {
+                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)), emptyList())
+                    log.info("{} requested, creating download request", fileId)
+                }
             }
+        }
+    }
+
+    override fun getThumbnailStream(fileId: String, resolution: Int): Promise<ImageLookUpResult, Exception> {
+        //TODO need to check if original is present; if not we need to fetch it, then thumbnail
+        //maybe we can have a separate thumbnail queue; just create the job to fetch it
+        //if the app closes, then the thumbnail job is lost until it's looked at again, which is what we do now anyways
+        return fileListPersistenceManager.getFile(fileId) map {
+            if (it == null || it.isDeleted)
+                ImageLookUpResult(null, true, false)
+            else {
+                val fileMetadata = it.fileMetadata!!
+
+                val stream = attachmentCache.getThumbnailInputStream(
+                    fileId,
+                    resolution,
+                    it.userMetadata.fileKey,
+                    CipherList.getCipher(it.userMetadata.cipherId),
+                    fileMetadata.chunkSize
+                )
+
+                ImageLookUpResult(stream, false, true)
+            }
+        } successUi {
+            //TODO queue download
+            if (it.inputStream == null && !it.isDeleted)
+                addToThumbnailingQueue(ThumbnailJob(fileId, resolution))
         }
     }
 

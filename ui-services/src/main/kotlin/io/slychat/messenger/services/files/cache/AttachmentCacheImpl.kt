@@ -27,7 +27,6 @@ import java.util.*
 //XXX this is also bad because if someone requests an ongoing upload/download, it'll "succeed" because the file exists
 //we can't dl to a separate file than move it on completion cause the android api doesn't allow it for content URIs
 //we also need to be conscious that a user/os may delete some/all of these cache files
-//TODO thumbnailgenerator
 class AttachmentCacheImpl(
     private val cacheRoot: File
 ) : AttachmentCache {
@@ -48,7 +47,7 @@ class AttachmentCacheImpl(
     }
 
     override fun getDownloadPathForFile(fileId: String): File {
-        return cacheRoot / fileId
+        return pendingDir / fileId
     }
 
     override fun filterPresent(fileIds: Set<String>): Promise<Set<String>, Exception> {
@@ -57,7 +56,19 @@ class AttachmentCacheImpl(
         }
     }
 
-    override fun getImageStream(fileId: String, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream? {
+    override fun getThumbnailInputStream(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream {
+        TODO()
+    }
+
+    override fun isOriginalPresent(fileId: String): Boolean {
+        TODO()
+    }
+
+    override fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams {
+        TODO()
+    }
+
+    override fun getOriginalImageInputStream(fileId: String, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream? {
         return try {
             DecryptInputStream(
                 cipher,

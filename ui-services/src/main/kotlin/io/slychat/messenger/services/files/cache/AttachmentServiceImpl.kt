@@ -13,7 +13,6 @@ import io.slychat.messenger.core.http.api.share.ShareInfo
 import io.slychat.messenger.core.persistence.AttachmentId
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ReceivedAttachment
-import io.slychat.messenger.core.persistence.ReceivedAttachmentState
 import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.auth.AuthTokenManager
@@ -27,11 +26,6 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subscriptions.CompositeSubscription
 import java.util.*
-
-//the ui doesn't care if the attachment is received or just sent; for sent, we just need to generate thumbnails
-sealed class AttachmentEvent {
-    class StateChanged(val id: AttachmentId, val receivedAttachment: ReceivedAttachment, val state: ReceivedAttachmentState) : AttachmentEvent()
-}
 
 //TODO update quota somehow; maybe quota should be moved to a separate component since it's updated in a few spots?
 //TODO need something to fetch and retry attachments that failed

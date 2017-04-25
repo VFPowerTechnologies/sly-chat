@@ -2,21 +2,31 @@ package io.slychat.messenger.services.files.cache
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.crypto.generateFileId
+import io.slychat.messenger.core.emptyByteArray
+import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.AttachmentCachePersistenceManager
 import io.slychat.messenger.core.persistence.AttachmentCacheRequest
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.core.randomDownload
 import io.slychat.messenger.core.randomReceivedAttachment
+import io.slychat.messenger.core.randomRemoteFile
 import io.slychat.messenger.services.files.*
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
 import io.slychat.messenger.testutils.thenResolveUnit
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.deferred
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
 import rx.subjects.PublishSubject
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class AttachmentCacheManagerImplTest {
     companion object {
@@ -41,6 +51,10 @@ class AttachmentCacheManagerImplTest {
 
     private val dummyCachePath = File("/dummy-file")
 
+    private fun dummyThumbnailStreams(): ThumbnailWriteStreams {
+        return ThumbnailWriteStreams(ByteArrayInputStream(emptyByteArray()), ByteArrayOutputStream())
+    }
+
     @Before
     fun before() {
         whenever(storageService.transferEvents).thenReturn(transferEvents)
@@ -59,7 +73,7 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCache.delete(any())).thenResolveUnit()
         whenever(attachmentCache.filterPresent(any())).thenResolve(emptySet())
 
-        whenever(thumbnailGenerator.generateThumbnails(any())).thenResolveUnit()
+        whenever(thumbnailGenerator.generateThumbnail(any(), any(), any())).thenResolveUnit()
     }
 
     private fun newManager(): AttachmentCacheManager {
@@ -101,14 +115,6 @@ class AttachmentCacheManagerImplTest {
         manager.init()
 
         verify(attachmentCache).delete(fileIds)
-    }
-
-    @Test
-    fun `it should start thumbnailing thumbnailing state requests on init`() {
-        val fileId = generateFileId()
-        val manager = newManagerWithRequest(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.THUMBNAILING))
-
-        verify(thumbnailGenerator).generateThumbnails(fileId)
     }
 
     @Test
@@ -172,24 +178,173 @@ class AttachmentCacheManagerImplTest {
     }
 
     @Test
-    fun `it should update a request to thumbnailing state when download completes successfully`() {
+    fun `it should delete a request when download completes successfully`() {
         val download = randomDownload()
         val request = AttachmentCacheRequest(download.fileId, download.id, AttachmentCacheRequest.State.DOWNLOADING)
         val manager = newManagerWithRequest(request)
 
         transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
 
-        verify(attachmentCachePersistenceManager).updateRequests(listOf(request.copy(state = AttachmentCacheRequest.State.THUMBNAILING)))
+        verify(attachmentCachePersistenceManager).deleteRequests(listOf(download.fileId))
     }
 
     @Test
-    fun `it should move a request to the thumbnailing queue when download completes successfully`() {
-        val download = randomDownload()
-        val request = AttachmentCacheRequest(download.fileId, download.id, AttachmentCacheRequest.State.DOWNLOADING)
-        val manager = newManagerWithRequest(request)
+    fun `requesting an original image not in the cache should trigger a download if the file isn't marked as deleted`() {
+        val manager = newManager()
 
-        transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
+        val file = randomRemoteFile()
+        val fileId = file.id
 
-        verify(thumbnailGenerator).generateThumbnails(download.fileId)
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getOriginalImageInputStream(any(), any(), any(), any())).thenReturn(null)
+
+        val result = manager.getImageStream(fileId).get()
+        assertNull(result.inputStream)
+        assertFalse(result.isDeleted)
+
+        val request = AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)
+        verify(attachmentCachePersistenceManager).addRequests(listOf(request), emptyList())
+    }
+
+    @Test
+    fun `requesting an original image should return a stream if the file is cached`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+
+        val stream = ByteArrayInputStream(emptyByteArray())
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getOriginalImageInputStream(any(), any(), any(), any())).thenReturn(stream)
+
+        val result = manager.getImageStream(fileId).get()
+        assertNotNull(result.inputStream, "Should return an InputStream")
+        assertTrue(result.inputStream === stream, "Invalid InputStream")
+        assertFalse(result.isDeleted, "Shouldn't be marked as deleted")
+    }
+
+    @Test
+    fun `requesting an original image not in the cache should not trigger a download if the file is deleted`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile(isDeleted = true)
+        val fileId = file.id
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getOriginalImageInputStream(any(), any(), any(), any())).thenReturn(null)
+
+        val result = manager.getImageStream(fileId).get()
+        assertNull(result.inputStream)
+        assertTrue(result.isDeleted, "File should be listed as deleted")
+
+        verify(attachmentCachePersistenceManager, never()).addRequests(any(), any())
+    }
+
+    @Test
+    fun `it should not queue duplicate downloading jobs when getImageStream is called`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getOriginalImageInputStream(any(), any(), any(), any())).thenReturn(null)
+
+        manager.getImageStream(fileId).get()
+        manager.getImageStream(fileId).get()
+
+        verify(attachmentCachePersistenceManager, times(1)).addRequests(any(), any())
+    }
+
+    @Test
+    fun `requesting a thumbnail not in the cache should trigger a thumbnailing operation if the file isn't deleted`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+        val resolution = 200
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getThumbnailInputStream(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(null)
+        whenever(attachmentCache.getThumbnailGenerationStreams(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(dummyThumbnailStreams())
+
+        val result = manager.getThumbnailStream(fileId, resolution).get()
+        assertNull(result.inputStream)
+        assertFalse(result.isDeleted, "File not should be listed as deleted")
+
+        verify(thumbnailGenerator).generateThumbnail(any(), any(), eq(resolution))
+    }
+
+    @Test
+    fun `requesting a thumbnail image should return a stream if the thumbnail is cached`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+
+        val stream = ByteArrayInputStream(emptyByteArray())
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getThumbnailInputStream(any(), any(), any(), any(), any())).thenReturn(stream)
+
+        val result = manager.getThumbnailStream(fileId, 200).get()
+        assertNotNull(result.inputStream, "Should return an InputStream")
+        assertTrue(result.inputStream === stream, "Invalid InputStream")
+        assertFalse(result.isDeleted, "Shouldn't be marked as deleted")
+    }
+
+    @Test
+    fun `it should not queue duplicate thumbnailing jobs`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+        val resolution = 200
+
+        whenever(attachmentCache.getThumbnailInputStream(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(null)
+        whenever(attachmentCache.getThumbnailGenerationStreams(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(dummyThumbnailStreams())
+
+        val d = deferred<RemoteFile?, Exception>()
+        val d2 = deferred<RemoteFile?, Exception>()
+        whenever(fileListPersistenceManager.getFile(fileId))
+            //first two are for the first job; second is for the second
+            .thenResolve(file)
+            .thenReturn(d.promise)
+            .thenReturn(d2.promise)
+
+        manager.getThumbnailStream(fileId, resolution)
+
+        val p2 = manager.getThumbnailStream(fileId, resolution)
+
+        d2.resolve(file)
+
+        p2.get()
+
+        verify(thumbnailGenerator, never()).generateThumbnail(any(), any(), eq(resolution))
+    }
+
+    @Test
+    fun `requesting a thumbnail not in the cache should not trigger a thumbnailing operation if the file is deleted`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile(isDeleted = true)
+        val fileId = file.id
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+
+        val result = manager.getThumbnailStream(fileId, 200).get()
+        assertNull(result.inputStream)
+        assertTrue(result.isDeleted, "File should be listed as deleted")
+    }
+
+    @Test
+    fun `requesting a thumbnail when the original is not in the cache should trigger a download if the file isn't deleted`() {
+        TODO()
+    }
+
+    @Test
+    fun `a requested thumbnail should be generated after a download completes successfully`() {
+        TODO()
     }
 }

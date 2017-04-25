@@ -16,8 +16,17 @@ import java.io.InputStream
 interface AttachmentCache {
     val events: Observable<AttachmentCacheEvent>
 
-    //this handles transparently decrypting data on read
-    fun getImageStream(fileId: String, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream?
+    /** Whether or not the original file is present in the cache. */
+    fun isOriginalPresent(fileId: String): Boolean
+
+    /** Return an InputStream for the original image, or null if it doesn't exist. */
+    fun getOriginalImageInputStream(fileId: String, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream?
+
+    /** Return an InputStream for the image at the given resolution, or null if it doesn't exist. */
+    fun getThumbnailInputStream(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream
+
+    /** Return streams for generating a thumbnail for at the given resolution for a file. */
+    fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams
 
     fun getDownloadPathForFile(fileId: String): File
 

@@ -7,8 +7,7 @@ data class AttachmentCacheRequest(
 ) {
     enum class State {
         PENDING,
-        DOWNLOADING,
-        THUMBNAILING
+        DOWNLOADING
     }
 
     init {
