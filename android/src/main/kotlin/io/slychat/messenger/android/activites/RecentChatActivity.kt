@@ -52,7 +52,6 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        log.debug("onCreate")
 
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_recent_chat)
@@ -330,6 +329,7 @@ class RecentChatActivity : BaseActivity(), NavigationView.OnNavigationItemSelect
             R.id.menu_settings -> { startActivity(Intent(baseContext, SettingsActivity::class.java)) }
             R.id.menu_share -> { startActivity(Intent(baseContext, InviteFriendsActivity::class.java)) }
             R.id.menu_feedback -> { startActivity(Intent(baseContext, FeedbackActivity::class.java)) }
+            R.id.menu_browse_files -> { startActivity(Intent(baseContext, BrowseFileActivity::class.java)) }
             R.id.menu_logout -> { app.app.logout() }
         }
 

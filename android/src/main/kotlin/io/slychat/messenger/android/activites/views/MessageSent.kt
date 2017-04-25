@@ -18,7 +18,7 @@ class MessageSent(
         context: Context,
         attrs: AttributeSet? = null) : LinearLayout(context, attrs) {
 
-    constructor(context: Context, attrs: AttributeSet?): this(null, context, attrs) {}
+    constructor(context: Context, attrs: AttributeSet?): this(null, context, attrs)
 
     private val mMessageId: TextView
     private val mMessageLayout: LinearLayout

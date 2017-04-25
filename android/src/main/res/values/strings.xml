@@ -208,11 +208,48 @@
     <string name="drawer_delete_group">Leave Group</string>
     <string name="drawer_group_info">Group Info</string>
     <string name="drawer_block_group">Block Group</string>
+    <string name="drawer_browse_files">Browse Files</string>
+    <string name="drawer_manage_transfers">Manage Transfers</string>
+    <string name="drawer_upload_file">Upload File</string>
+    <string name="drawer_clear_completed">Clear Completed</string>
+
+    <string name="context_menu_download_file">Download File</string>
+    <string name="context_menu_delete_file">Delete File</string>
+    <string name="context_menu_share_file">Share File</string>
+    <string name="context_menu_transfer_details">Details</string>
+    <string name="context_menu_cancel_transfer">Cancel Transfer</string>
+    <string name="context_menu_delete_transfer">Delete Transfer</string>
+    <string name="context_menu_retry_transfer">Retry</string>
 
     <string name="permission_request_title">Permission Required</string>
     <string name="permission_request_title_phone_access">Phone access is required to retrieved your phone number</string>
 
     <string name="global_success">Success</string>
+
+    <string name="browse_file_title">Browse Files</string>
+    <string name="upload_file_title">Choose a file to upload</string>
+    <string name="upload_file_name_hint">File Name</string>
+    <string name="upload_file_directory_hint">Directory</string>
+    <string name="upload_file_name_exist_error">File name already exist</string>
+    <string name="upload_file_name_required_error">File name is required</string>
+    <string name="upload_file_path_required_error">File path is required</string>
+
+    <string name="manage_transfer_title">Transfers</string>
+    <string name="transfer_cancelled">Cancelled</string>
+    <string name="transfer_cancelling">Cancelling</string>
+    <string name="transfer_complete">Done</string>
+    <string name="transfer_queued">Starting</string>
+    <string name="transfer_retry_delay"> seconds until retry</string>
+
+    <string name="transfer_details_download_title">Download Details</string>
+    <string name="transfer_details_upload_title">Upload Details</string>
+    <string name="transfer_details_file_name">File Name:</string>
+    <string name="transfer_details_file_size">File Size:</string>
+    <string name="transfer_details_remote_path">Remote Path:</string>
+
+    <string name="file_transfer_pending">Transfer pending</string>
+
+    <string name="generic_error">An error occurred</string>
 
     <string name="ok_button">OK</string>
     <string name="positive_button">YES</string>
@@ -223,5 +260,7 @@
     <string name="create_button">Create</string>
     <string name="update_button">Update</string>
     <string name="unblock_button">Unblock</string>
+    <string name="upload_button">Upload</string>
+    <string name="browse_button">Browse</string>
 
 </resources>

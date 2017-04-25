@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+        xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/download_file"
+        android:title="@string/context_menu_download_file"
+        android:icon="@drawable/ic_launcher"/>
+    <item
+        android:id="@+id/delete_file"
+        android:title="@string/context_menu_delete_file"
+        android:icon="@drawable/ic_launcher"/>
+    <item
+        android:id="@+id/share_file"
+        android:title="@string/context_menu_share_file"
+        android:icon="@drawable/ic_launcher"/>
+
+</menu>

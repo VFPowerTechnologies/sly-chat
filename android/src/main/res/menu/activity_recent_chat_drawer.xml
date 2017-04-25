@@ -30,6 +30,10 @@
                 android:id="@+id/menu_feedback"
                 android:icon="@android:drawable/ic_menu_send"
                 android:title="@string/drawer_feedback"/>
+        <item
+                android:id="@+id/menu_browse_files"
+                android:icon="@drawable/ic_storage_white"
+                android:title="@string/drawer_browse_files"/>
     </group>
 
     <item android:title="">

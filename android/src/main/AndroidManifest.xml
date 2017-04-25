@@ -7,6 +7,7 @@
     <android:uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <android:uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <android:uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
     <android:uses-permission android:name="android.permission.INTERNET"/>
     <android:uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <android:uses-permission android:name="android.permission.READ_CONTACTS"/>
@@ -112,7 +113,8 @@
         <activity android:name=".activites.SettingsActivity"/>
         <activity android:name=".activites.ContactInfoActivity"/>
         <activity android:name=".activites.BlockedContactsActivity"/>
-
+        <activity android:name=".activites.BrowseFileActivity"/>
+        <activity android:name=".activites.ManageTransferActivity"/>
     </application>
 
 </manifest>
