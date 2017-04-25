@@ -75,6 +75,7 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCache.delete(any())).thenResolveUnit()
         whenever(attachmentCache.filterPresent(any())).thenResolve(emptySet())
         whenever(attachmentCache.isOriginalPresent(any())).thenReturn(true)
+        whenever(attachmentCache.markComplete(any())).thenResolveUnit()
 
         whenever(thumbnailGenerator.generateThumbnail(any(), any(), any())).thenResolveUnit()
     }
@@ -189,6 +190,17 @@ class AttachmentCacheManagerImplTest {
         transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
 
         verify(attachmentCachePersistenceManager).deleteRequests(listOf(download.fileId))
+    }
+
+    @Test
+    fun `it should mark a cache file as complete when download completes successfully`() {
+        val download = randomDownload()
+        val request = AttachmentCacheRequest(download.fileId, download.id, AttachmentCacheRequest.State.DOWNLOADING)
+        val manager = newManagerWithRequest(request)
+
+        transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
+
+        verify(attachmentCache).markComplete(listOf(download.fileId))
     }
 
     @Test

@@ -36,5 +36,6 @@ interface AttachmentCache {
 
     fun delete(fileIds: List<String>): Promise<Unit, Exception>
 
+    //ignore if already moved; may be called twice incase the app closes/etc before request is updated
     fun markComplete(fileIds: List<String>): Promise<Unit, Exception>
 }

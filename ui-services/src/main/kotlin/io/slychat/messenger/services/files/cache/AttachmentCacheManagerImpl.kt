@@ -160,14 +160,14 @@ class AttachmentCacheManagerImpl(
     private fun onTransferEvent(ev: TransferEvent.StateChanged) {
         when (ev.transfer) {
             is Transfer.D -> {
-                onDownload(ev.transfer.download, ev)
+                onDownloadStateChanged(ev.transfer.download, ev)
             }
 
             is Transfer.U -> {}
         }
     }
 
-    private fun onDownload(download: Download, ev: TransferEvent.StateChanged) {
+    private fun onDownloadStateChanged(download: Download, ev: TransferEvent.StateChanged) {
         val fileId = downloadIdToFileId[download.id] ?: return
 
         when (ev.state) {
@@ -175,7 +175,9 @@ class AttachmentCacheManagerImpl(
                 log.info("Download for {} complete", fileId)
 
                 untrackDownload(download)
-                untrackRequest(fileId) fail {
+                attachmentCache.markComplete(listOf(fileId)) bindUi {
+                    untrackRequest(fileId)
+                } fail {
                     log.error("Unable to untrack request: {}", it.message, it)
                 }
 
