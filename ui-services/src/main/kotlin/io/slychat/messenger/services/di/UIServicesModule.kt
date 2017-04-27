@@ -11,6 +11,7 @@ import io.slychat.messenger.services.*
 import io.slychat.messenger.services.config.AppConfigService
 import io.slychat.messenger.services.di.annotations.ExternalHttp
 import io.slychat.messenger.services.di.annotations.SlyHttp
+import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.ui.*
 import io.slychat.messenger.services.ui.UIResetAccountService
 import io.slychat.messenger.services.ui.impl.*
@@ -150,5 +151,13 @@ class UIServicesModule {
         slyApplication: SlyApplication
     ): UIEventLogService {
         return UIEventLogServiceImpl(slyApplication.userSessionAvailable)
+    }
+
+    @Singleton
+    @Provides
+    fun providesUIStorageService(
+        slyApplication: SlyApplication
+    ): UIStorageService {
+        return UIStorageServiceImpl(slyApplication.userSessionAvailable)
     }
 }

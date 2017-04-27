@@ -21,6 +21,7 @@ var UIController = function () {
     window.feedbackService = new FeedbackService();
     window.eventLogService = new EventLogService();
     window.shareService = new ShareService();
+    window.storageService = new StorageService()
 
     window.navigationController = new NavigationController();
     window.userSessionController = new UserSessionController();

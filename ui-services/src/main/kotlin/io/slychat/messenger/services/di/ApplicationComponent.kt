@@ -66,6 +66,8 @@ interface ApplicationComponent {
 
     val uiEventLogService: UIEventLogService
 
+    val uiStorageService: UIStorageService
+
     val platformContacts: PlatformContacts
 
     val resetAccountService: ResetAccountService

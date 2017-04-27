@@ -57,17 +57,22 @@ fun registerCoreServicesOnDispatcher(dispatcher: Dispatcher, applicationComponen
         dispatcher.registerService(UIEventLogServiceToJavaProxy(uiEventLogService, dispatcher))
 
         dispatcher.registerService(UIShareServiceToJavaProxy(uiShareService, dispatcher))
+
+        dispatcher.registerService(UIStorageServiceToJavaProxy(uiStorageService, dispatcher))
     }
 }
 
 fun clearAllListenersOnDispatcher(applicationComponent: ApplicationComponent) {
-    applicationComponent.uiClientInfoService.clearListeners()
-    applicationComponent.uiConfigService.clearListeners()
-    applicationComponent.uiContactsService.clearListeners()
-    applicationComponent.uiGroupService.clearListeners()
-    applicationComponent.uiLoginService.clearListeners()
-    applicationComponent.uiMessengerService.clearListeners()
-    applicationComponent.uiNetworkStatusService.clearListeners()
-    applicationComponent.uiRegistrationService.clearListeners()
-    applicationComponent.uiWindowService.clearListeners()
+    applicationComponent.apply {
+        uiClientInfoService.clearListeners()
+        uiConfigService.clearListeners()
+        uiContactsService.clearListeners()
+        uiGroupService.clearListeners()
+        uiLoginService.clearListeners()
+        uiMessengerService.clearListeners()
+        uiNetworkStatusService.clearListeners()
+        uiRegistrationService.clearListeners()
+        uiWindowService.clearListeners()
+        uiStorageService.clearListeners()
+    }
 }
