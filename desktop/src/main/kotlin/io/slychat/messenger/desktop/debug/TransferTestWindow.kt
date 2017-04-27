@@ -5,6 +5,7 @@ import io.slychat.messenger.core.div
 import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.rx.plusAssign
+import io.slychat.messenger.desktop.getUserHome
 import io.slychat.messenger.services.SlyApplication
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.files.*
@@ -570,7 +571,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
         val file = FileChooser().apply {
             title = "Select file to upload"
             extensionFilters.add(FileChooser.ExtensionFilter("All Files", "*.*"))
-            initialDirectory = File(System.getProperty("user.home"))
+            initialDirectory = getUserHome()
         }.showOpenDialog(this) ?: return
 
         uc.storageService.uploadFile(

@@ -3,7 +3,7 @@ package io.slychat.messenger.desktop
 import io.slychat.messenger.core.*
 import java.io.File
 
-private fun getUserHome(): File =
+fun getUserHome(): File =
     File(System.getProperty("user.home"))
 
 private fun getUserAppDataDir(appName: String): File {

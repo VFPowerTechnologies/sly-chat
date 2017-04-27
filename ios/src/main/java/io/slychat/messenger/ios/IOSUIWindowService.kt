@@ -40,6 +40,14 @@ class IOSUIWindowService : UIWindowService {
         TODO()
     }
 
+    override fun selectFileForUpload(): Promise<UISelectionDialogResult<String?>, Exception> {
+        TODO()
+    }
+
+    override fun selectSaveLocation(defaultFileName: String): Promise<UISelectionDialogResult<String?>, Exception> {
+        TODO()
+    }
+
     override fun setSoftKeyboardInfoListener(listener: (SoftKeyboardInfo) -> Unit) {
     }
 }

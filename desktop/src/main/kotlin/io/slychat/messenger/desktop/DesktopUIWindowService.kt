@@ -32,6 +32,15 @@ class DesktopUIWindowService(var stage: Stage?) : UIWindowService {
 
     override fun closeSoftKeyboard() {}
 
+    private fun handleFileChooserResult(selectedFile: File?): Promise<UISelectionDialogResult<String?>, Exception> {
+        val (ok, value) = if (selectedFile == null)
+            false to null
+        else
+            true to selectedFile.toURI().toString()
+
+        return Promise.of(UISelectionDialogResult(ok, value))
+    }
+
     //this returns a URI (as a string); this is so we can use jar paths for default notifications (and testing)
     override fun selectNotificationSound(previousUri: String?): Promise<UISelectionDialogResult<String?>, Exception> {
         val fileChooser = FileChooser()
@@ -48,15 +57,24 @@ class DesktopUIWindowService(var stage: Stage?) : UIWindowService {
             fileChooser.initialFileName = file.name
         }
 
-        val selectedFile = fileChooser.showOpenDialog(stage)
-
         //TODO allow silence somehow
-        val (ok, value) = if (selectedFile == null)
-            false to null
-        else
-            true to selectedFile.toURI().toString()
+        return handleFileChooserResult(fileChooser.showOpenDialog(stage))
+    }
 
-        return Promise.of(UISelectionDialogResult(ok, value))
+    override fun selectFileForUpload(): Promise<UISelectionDialogResult<String?>, Exception> {
+        return handleFileChooserResult(FileChooser().apply {
+            title = "Select file to upload"
+            extensionFilters.add(FileChooser.ExtensionFilter("All Files", "*.*"))
+            initialDirectory = getUserHome()
+        }.showOpenDialog(stage))
+    }
+
+    override fun selectSaveLocation(defaultFileName: String): Promise<UISelectionDialogResult<String?>, Exception> {
+        return handleFileChooserResult(FileChooser().apply {
+            title = "Select save location"
+            initialDirectory = getUserHome()
+            initialFileName = defaultFileName
+        }.showSaveDialog(stage))
     }
 
     override fun setSoftKeyboardInfoListener(listener: (SoftKeyboardInfo) -> Unit) {}

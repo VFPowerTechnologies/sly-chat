@@ -24,4 +24,12 @@ class AndroidUIWindowService : UIWindowService {
     override fun setSoftKeyboardInfoListener(listener: (SoftKeyboardInfo) -> Unit) {}
 
     override fun clearListeners() {}
+
+    override fun selectFileForUpload(): Promise<UISelectionDialogResult<String?>, Exception> {
+        TODO()
+    }
+
+    override fun selectSaveLocation(defaultFileName: String): Promise<UISelectionDialogResult<String?>, Exception> {
+        TODO()
+    }
 }
