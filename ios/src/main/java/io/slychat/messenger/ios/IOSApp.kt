@@ -4,9 +4,7 @@ import apple.NSObject
 import apple.c.Globals
 import apple.corefoundation.c.CoreFoundation
 import apple.corefoundation.opaque.CFStringRef
-import apple.coregraphics.struct.CGPoint
 import apple.coregraphics.struct.CGRect
-import apple.coregraphics.struct.CGSize
 import apple.foundation.*
 import apple.foundation.c.Foundation
 import apple.uikit.*
@@ -276,7 +274,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             }
         }
 
-        val windowService = IOSUIWindowService()
+        val windowService = IOSUIWindowService(null)
 
         val platformModule = PlatformModule(
             IOSUIPlatformInfoService(),
@@ -313,6 +311,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         val appComponent = app.appComponent
 
         buildUI(appComponent)
+        windowService.webViewController = webViewController
 
         initScreenProtection()
 
@@ -699,13 +698,6 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         webViewController.hideLaunchScreenView()
     }
 
-    private fun calcSharePopoverRect(): CGRect {
-        val frame = webViewController.view().frame()
-        val x = frame.size().width() / 2
-
-        return CGRect(CGPoint(x, 0.0), CGSize(0.0, 20.0))
-    }
-
     fun inviteToSly(subject: String, text: String, htmlText: String?) {
         //here we provide something that describes itself as NSURL so facebook messenger shows up in the list (else it
         //won't list itself as a choice)
@@ -734,7 +726,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         val popoverController = activityController.popoverPresentationController()
         if (popoverController != null) {
             popoverController.setSourceView(webViewController.view())
-            popoverController.setSourceRect(calcSharePopoverRect())
+            popoverController.setSourceRect(webViewController.calcPopoverRect())
             popoverController.setDelegate(this)
         }
     }
@@ -745,7 +737,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         rect: CGRect,
         @ReferenceInfo(depth = 1, type = UIView::class) view: Ptr<UIView>
     ) {
-        val newRect = calcSharePopoverRect()
+        val newRect = webViewController.calcPopoverRect()
         rect.setOrigin(newRect.origin())
         rect.setSize(newRect.size())
     }

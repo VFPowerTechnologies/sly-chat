@@ -91,13 +91,9 @@ private fun PHAsset.getFileInfo(): FileInfo {
  */
 class IOSFileAccess : PlatformFileAccess {
     companion object {
-        private val BOOKMARK_SCHEMA = "bookmark://"
+        const val BOOKMARK_SCHEMA = "bookmark://"
 
-        private val ASSET_SCHEMA = "assets-library://"
-
-        //we just append this to be safe, incase the assets-library schema suddenly disappears on newer versions or something
-        //these aren't actual value URLs, as don't bother encoding anything
-        private val FILE_SCHEMA = "file://"
+        const val ASSET_SCHEMA = "assets-library://"
     }
 
     private sealed class PathType {
@@ -107,7 +103,7 @@ class IOSFileAccess : PlatformFileAccess {
     }
 
     private fun resolveFilePath(path: String): PathType {
-        return PathType.File(File(path.substring(FILE_SCHEMA.length)))
+        return PathType.File(File(path))
     }
 
     private fun resolveBookmarkPath(path: String): PathType {
@@ -151,12 +147,9 @@ class IOSFileAccess : PlatformFileAccess {
         else if (path.startsWith(ASSET_SCHEMA)) {
             resolveAssetPath(path)
         }
-        else if (path.startsWith(FILE_SCHEMA)) {
+        else  {
             resolveFilePath(path)
         }
-        else
-            throw IllegalArgumentException("Invalid path: $path")
-
     }
 
     private fun getFilePathInfo(file: File): FileInfo {

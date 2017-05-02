@@ -102,3 +102,17 @@ fun <R> NSURL.openForReadWithCoordinator(body: (NSFileHandle) -> R) {
         checkNSError(errPtr, "coordinateReadingItemAtURL")
     }
 }
+
+fun NSURL.bookmark(): NSData {
+    val errPtr = newNSErrorPtr()
+    val data = bookmarkDataWithOptionsIncludingResourceValuesForKeysRelativeToURLError(
+        0,
+        null,
+        null,
+        errPtr
+    )
+
+    checkNSError(errPtr, "NSURL.bookmarkData")
+
+    return data
+}
