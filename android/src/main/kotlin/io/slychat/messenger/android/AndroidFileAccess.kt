@@ -73,13 +73,15 @@ class AndroidFileAccess(private val context: Context) : PlatformFileAccess {
         return queryFileInfo(path)
     }
 
-    override fun openFileForRead(path: String): InputStream {
+    override fun <R> openFileForRead(path: String, body: (InputStream) -> R): R {
         val p = parsePath(path)
 
-        return when (p) {
+        val inputStream = when (p) {
             is PathType.F -> FileInputStream(p.file)
             is PathType.U -> context.contentResolver.openInputStream(p.uri)
         }
+
+        return inputStream.use(body)
     }
 
     override fun openFileForWrite(path: String): OutputStream {

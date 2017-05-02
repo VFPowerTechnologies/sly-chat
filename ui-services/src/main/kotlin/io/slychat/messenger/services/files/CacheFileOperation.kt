@@ -23,7 +23,7 @@ class CacheFileOperation(
     fun run() {
         val cipher = CipherList.getCipher(file.userMetadata.cipherId)
 
-        fileAccess.openFileForRead(upload.filePath).use {
+        fileAccess.openFileForRead(upload.filePath) {
             val dataInputStream = EncryptInputStream(cipher, file.userMetadata.fileKey, it, file.fileMetadata!!.chunkSize)
 
             var wasCancelled = false

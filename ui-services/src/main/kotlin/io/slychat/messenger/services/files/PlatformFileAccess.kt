@@ -10,7 +10,12 @@ interface PlatformFileAccess {
 
     fun getFileInfo(path: String): FileInfo
 
-    fun openFileForRead(path: String): InputStream
+    /**
+     * The given InputStream is valid only for the duration of the given body.
+     *
+     * This design is required to support usage of NSFileCoordinator on iOS.
+     */
+    fun <R> openFileForRead(path: String, body: (InputStream) -> R): R
 
     //TODO append
     fun openFileForWrite(path: String): OutputStream

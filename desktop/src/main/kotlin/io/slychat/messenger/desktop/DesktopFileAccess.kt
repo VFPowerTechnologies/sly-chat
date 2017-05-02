@@ -21,8 +21,8 @@ class DesktopFileAccess : PlatformFileAccess {
             )
     }
 
-    override fun openFileForRead(path: String): InputStream {
-        return FileInputStream(path)
+    override fun <R> openFileForRead(path: String, body: (InputStream) -> R): R {
+        return FileInputStream(path).use(body)
     }
 
     override fun openFileForWrite(path: String): OutputStream {
