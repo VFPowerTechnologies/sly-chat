@@ -276,12 +276,14 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             }
         }
 
+        val windowService = IOSUIWindowService()
+
         val platformModule = PlatformModule(
             IOSUIPlatformInfoService(),
             SlyBuildConfig.DESKTOP_SERVER_URLS,
             platformInfo,
             IOSTelephonyService(),
-            IOSUIWindowService(),
+            windowService,
             IOSPlatformContacts(),
             notificationService,
             IOSUIShareService(),
@@ -292,7 +294,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             networkStatus,
             IOSMainScheduler.instance,
             UserConfig(),
-            PushNotificationService.APN
+            PushNotificationService.APN,
+            IOSFileAccess()
         )
 
         Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
@@ -310,6 +313,7 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
         val appComponent = app.appComponent
 
         buildUI(appComponent)
+
         initScreenProtection()
 
         app.isInBackground = false

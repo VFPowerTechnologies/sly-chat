@@ -65,15 +65,11 @@ class AndroidFileAccess(private val context: Context) : PlatformFileAccess {
         }
     }
 
-    override fun getFileSize(path: String): Long {
-        return queryFileInfo(path).size
-    }
-
     override fun getFileInfo(path: String): FileInfo {
         return queryFileInfo(path)
     }
 
-    override fun <R> openFileForRead(path: String, body: (InputStream) -> R): R {
+    override fun openFileForRead(path: String, body: (InputStream) -> Unit) {
         val p = parsePath(path)
 
         val inputStream = when (p) {

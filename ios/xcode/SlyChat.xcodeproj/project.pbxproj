@@ -12,6 +12,8 @@
 		0A1A009D1DE4D2F700C9EC7E /* libsqlcipher.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */; };
 		0A3FA06C1DE5DC800019BF8D /* sly-logger.properties in Resources */ = {isa = PBXBuildFile; fileRef = 0A3FA06B1DE5DC800019BF8D /* sly-logger.properties */; };
 		0A4799021DE5FC5C00FA76B2 /* ui in Resources */ = {isa = PBXBuildFile; fileRef = 0A4799011DE5FC5C00FA76B2 /* ui */; };
+		0A47CEE41EB8DCDC00CC4006 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A47CEE31EB8DCDC00CC4006 /* MobileCoreServices.framework */; };
+		0A47CEE61EB8DCE400CC4006 /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A47CEE51EB8DCE400CC4006 /* Photos.framework */; };
 		0A98D92A1E380024003C0783 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 613849CC91EFBD5B42BC1E78 /* utils.c */; };
 		0AFD69391DF8871900CEA55E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0AFD69381DF8871900CEA55E /* LaunchScreen.storyboard */; };
 		0AFD693B1DF8872C00CEA55E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0AFD693A1DF8872C00CEA55E /* Assets.xcassets */; };
@@ -59,6 +61,8 @@
 		0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libsqlcipher.a; sourceTree = SOURCE_ROOT; };
 		0A3FA06B1DE5DC800019BF8D /* sly-logger.properties */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "sly-logger.properties"; sourceTree = "<group>"; };
 		0A4799011DE5FC5C00FA76B2 /* ui */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ui; path = ../../ui/ui; sourceTree = "<group>"; };
+		0A47CEE31EB8DCDC00CC4006 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		0A47CEE51EB8DCE400CC4006 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
 		0A5F144D1E0814010054FE33 /* Sly.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Sly.entitlements; sourceTree = "<group>"; };
 		0AFD69381DF8871900CEA55E /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		0AFD693A1DF8872C00CEA55E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -92,6 +96,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A47CEE61EB8DCE400CC4006 /* Photos.framework in Frameworks */,
+				0A47CEE41EB8DCDC00CC4006 /* MobileCoreServices.framework in Frameworks */,
 				C7597D541DD0B719829078CB /* MOE.framework in Frameworks */,
 				0A1A009D1DE4D2F700C9EC7E /* libsqlcipher.a in Frameworks */,
 				0A1A009C1DE4D2F700C9EC7E /* libcrypto.a in Frameworks */,
@@ -158,6 +164,8 @@
 		EF2278C6E0C963C221534D41 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0A47CEE51EB8DCE400CC4006 /* Photos.framework */,
+				0A47CEE31EB8DCDC00CC4006 /* MobileCoreServices.framework */,
 				0A1C9B7F1DE4CD6B008332C8 /* libcrypto.a */,
 				0A1C9B801DE4CD6B008332C8 /* libsqlcipher.a */,
 				18B7135DA03A86786EE0B00A /* MOE.framework */,
@@ -239,6 +247,9 @@
 								enabled = 1;
 							};
 							com.apple.Push = {
+								enabled = 1;
+							};
+							com.apple.iCloud = {
 								enabled = 1;
 							};
 						};

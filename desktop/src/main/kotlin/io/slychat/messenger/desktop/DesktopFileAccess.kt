@@ -8,10 +8,6 @@ import java.io.*
 class DesktopFileAccess : PlatformFileAccess {
     private val tika = Tika()
 
-    override fun getFileSize(path: String): Long {
-        return File(path).length()
-    }
-
     override fun getFileInfo(path: String): FileInfo {
         val file = File(path)
         return FileInfo(
@@ -21,7 +17,7 @@ class DesktopFileAccess : PlatformFileAccess {
             )
     }
 
-    override fun <R> openFileForRead(path: String, body: (InputStream) -> R): R {
+    override fun openFileForRead(path: String, body: (InputStream) -> Unit) {
         return FileInputStream(path).use(body)
     }
 
