@@ -1,86 +1,12 @@
 package io.slychat.messenger.ios
 
 import apple.foundation.NSData
-import apple.foundation.NSNumber
 import apple.foundation.NSURL
-import apple.foundation.c.Foundation.*
 import apple.photos.PHAsset
-import apple.photos.PHAssetResource
-import apple.photos.PHImageManager
-import apple.photos.PHImageRequestOptions
 import io.slychat.messenger.services.files.FileInfo
 import io.slychat.messenger.services.files.PlatformFileAccess
-import nl.komponents.kovenant.Kovenant.deferred
 import org.moe.natj.general.ptr.impl.PtrFactory
 import java.io.*
-
-private fun NSURL.getFileInfo(): FileInfo {
-    val errPtr = newNSErrorPtr()
-    val keys = nsarray(
-        NSURLFileSizeKey(),
-        NSURLTypeIdentifierKey(),
-        NSURLNameKey()
-    )
-
-    val resources = promisedItemResourceValuesForKeysError(keys, errPtr)
-
-    checkNSError(errPtr, "NSURL.resourceValuesForKeys")
-
-    val size = resources[NSURLFileSizeKey()] as NSNumber
-    val uti = resources[NSURLTypeIdentifierKey()] as String
-    val name = resources[NSURLNameKey()] as String
-
-    return FileInfo(
-        name,
-        size.longValue(),
-        utiToMimeType(uti)
-    )
-}
-
-private fun PHAsset.getAssetOriginalFileName(): String? {
-    val resources = PHAssetResource.assetResourcesForAsset(this)
-    if (resources.isEmpty())
-        return null
-
-    val resource = resources.first()
-
-    return resource.originalFilename()
-}
-
-private fun <R> withAssetData(asset: PHAsset, body: (data: NSData?, dataUTI: String?) -> R): R {
-    val manager = PHImageManager.defaultManager()
-
-    val options = PHImageRequestOptions.alloc().init()
-    options.isNetworkAccessAllowed = false
-    //using sync here causes a segfault on the worker thread for whatever reason; seems to be some bug with MOE or
-    //something since this works fine via swift
-    //so we just hack around it for now since this works even though it's a waste of a worker thread
-    //TODO check if this affects 1.3 as well
-    //options.isSynchronous = true
-    val d = deferred<Pair<NSData?, String?>, Exception>()
-
-    manager.requestImageDataForAssetOptionsResultHandler(asset, options) { data, dataUTI, orientation, info ->
-        d.resolve(data to dataUTI)
-    }
-
-    val pair = d.promise.get()
-
-    return body(pair.first, pair.second)
-}
-
-private fun PHAsset.getFileInfo(): FileInfo {
-    val originalFileName = this.getAssetOriginalFileName() ?: throw FileNotFoundException("No filename set")
-    val fileInfo = withAssetData(this) { data, dataUTI ->
-        if (data == null || dataUTI == null)
-            null
-        else {
-            val mimeType = utiToMimeType(dataUTI)
-            FileInfo(originalFileName, data.length(), mimeType)
-        }
-    } ?: throw FileNotFoundException("No data found for asset")
-
-    return fileInfo
-}
 
 /**
  * Supported path types:
@@ -130,12 +56,7 @@ class IOSFileAccess : PlatformFileAccess {
     private fun resolveAssetPath(path: String): PathType {
         val url = NSURL.URLWithString(path) ?: throw IllegalArgumentException("Invalid url format")
 
-        val result = PHAsset.fetchAssetsWithALAssetURLsOptions(nsarray(url), null)
-        if (result.count() <= 0) {
-            throw FileNotFoundException("No asset found for url")
-        }
-
-        val asset = result.firstObject()
+        val asset = url.fetchAsset() ?: throw FileNotFoundException("No asset found for url")
 
         return PathType.Asset(asset)
     }

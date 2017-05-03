@@ -17,7 +17,7 @@ interface UIWindowService {
 
     fun selectNotificationSound(previousUri: String?): Promise<UISelectionDialogResult<String?>, Exception>
 
-    fun selectFileForUpload(): Promise<UISelectionDialogResult<String?>, Exception>
+    fun selectFileForUpload(): Promise<UISelectionDialogResult<UISelectUploadFileResult?>, Exception>
 
     fun selectSaveLocation(defaultFileName: String): Promise<UISelectionDialogResult<String?>, Exception>
 

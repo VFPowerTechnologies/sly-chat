@@ -5,6 +5,7 @@ import apple.mobilecoreservices.c.MobileCoreServices.kUTTypeUTF8PlainText
 import apple.uikit.UIPasteboard
 import io.slychat.messenger.ios.ui.WebViewController
 import io.slychat.messenger.services.ui.SoftKeyboardInfo
+import io.slychat.messenger.services.ui.UISelectUploadFileResult
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import nl.komponents.kovenant.Promise
@@ -42,7 +43,7 @@ class IOSUIWindowService(var webViewController: WebViewController?) : UIWindowSe
         TODO()
     }
 
-    override fun selectFileForUpload(): Promise<UISelectionDialogResult<String?>, Exception> {
+    override fun selectFileForUpload(): Promise<UISelectionDialogResult<UISelectUploadFileResult?>, Exception> {
         val vc = webViewController ?: error("No ViewController available")
 
         return vc.displayFileSelectMenu().map {

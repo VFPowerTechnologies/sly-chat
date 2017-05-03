@@ -78,7 +78,7 @@ class DesktopApp : Application() {
     private var loadingScreen: Node? = null
 
     private var dispatcher: Dispatcher? = null
-    private val windowService = DesktopUIWindowService(null)
+    private lateinit var windowService: DesktopUIWindowService
     private var navigationService: NavigationService? = null
     private val uiVisibility = BehaviorSubject.create<Boolean>(false)
 
@@ -192,6 +192,8 @@ class DesktopApp : Application() {
         }
 
         val desktopNotificationService = getPlatformNotificationService()
+        val fileAccess = DesktopFileAccess()
+        windowService = DesktopUIWindowService(null, fileAccess)
 
         val platformModule = PlatformModule(
             DesktopUIPlatformInfoService(),
@@ -210,7 +212,7 @@ class DesktopApp : Application() {
             JavaFxScheduler.getInstance(),
             UserConfig(),
             null,
-            DesktopFileAccess()
+            fileAccess
         )
 
         app.init(platformModule)

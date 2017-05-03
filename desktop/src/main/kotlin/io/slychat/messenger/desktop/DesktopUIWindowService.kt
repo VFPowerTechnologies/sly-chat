@@ -1,5 +1,6 @@
 package io.slychat.messenger.desktop
 
+import io.slychat.messenger.services.ui.UISelectUploadFileResult
 import io.slychat.messenger.services.ui.SoftKeyboardInfo
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
@@ -8,10 +9,14 @@ import javafx.scene.input.ClipboardContent
 import javafx.stage.FileChooser
 import javafx.stage.Stage
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.task
 import java.io.File
 import java.net.URI
 
-class DesktopUIWindowService(var stage: Stage?) : UIWindowService {
+class DesktopUIWindowService(
+    var stage: Stage?,
+    private val fileAccess: DesktopFileAccess
+) : UIWindowService {
     override fun copyTextToClipboard(text: String) {
         val clipboard = Clipboard.getSystemClipboard()
         val content = ClipboardContent()
@@ -36,7 +41,7 @@ class DesktopUIWindowService(var stage: Stage?) : UIWindowService {
         val (ok, value) = if (selectedFile == null)
             false to null
         else
-            true to selectedFile.toURI().toString()
+            true to selectedFile.path
 
         return Promise.of(UISelectionDialogResult(ok, value))
     }
@@ -61,12 +66,23 @@ class DesktopUIWindowService(var stage: Stage?) : UIWindowService {
         return handleFileChooserResult(fileChooser.showOpenDialog(stage))
     }
 
-    override fun selectFileForUpload(): Promise<UISelectionDialogResult<String?>, Exception> {
-        return handleFileChooserResult(FileChooser().apply {
+    override fun selectFileForUpload(): Promise<UISelectionDialogResult<UISelectUploadFileResult?>, Exception> {
+        val file = FileChooser().apply {
             title = "Select file to upload"
             extensionFilters.add(FileChooser.ExtensionFilter("All Files", "*.*"))
             initialDirectory = getUserHome()
-        }.showOpenDialog(stage))
+        }.showOpenDialog(stage)
+
+        if (file == null)
+            return Promise.of(UISelectionDialogResult(false, null))
+
+        val path = file.path
+
+        return task {
+            val info = fileAccess.getFileInfo(path)
+
+            UISelectionDialogResult(true, UISelectUploadFileResult(path, info))
+        }
     }
 
     override fun selectSaveLocation(defaultFileName: String): Promise<UISelectionDialogResult<String?>, Exception> {

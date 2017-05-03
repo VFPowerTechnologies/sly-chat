@@ -24,12 +24,16 @@ import com.vfpowertech.jsbridge.core.dispatcher.Dispatcher
 import io.slychat.messenger.ios.*
 import io.slychat.messenger.ios.webengine.IOSWebEngineInterface
 import io.slychat.messenger.services.di.ApplicationComponent
+import io.slychat.messenger.services.ui.UISelectUploadFileResult
 import io.slychat.messenger.services.ui.js.NavigationService
 import io.slychat.messenger.services.ui.js.javatojs.NavigationServiceToJSProxy
 import io.slychat.messenger.services.ui.registerCoreServicesOnDispatcher
 import nl.komponents.kovenant.Deferred
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import nl.komponents.kovenant.task
+import nl.komponents.kovenant.ui.failUi
+import nl.komponents.kovenant.ui.successUi
 import org.moe.natj.general.Pointer
 import org.moe.natj.general.ann.Owned
 import org.moe.natj.general.ann.ReferenceInfo
@@ -37,6 +41,7 @@ import org.moe.natj.general.ann.RegisterOnStartup
 import org.moe.natj.general.ptr.Ptr
 import org.moe.natj.objc.ann.Selector
 import org.slf4j.LoggerFactory
+import java.io.FileNotFoundException
 
 @RegisterOnStartup
 class WebViewController private constructor(peer: Pointer) :
@@ -53,7 +58,7 @@ class WebViewController private constructor(peer: Pointer) :
     }
 
     //null = cancelled
-    private var fileSelectionDeferred: Deferred<String?, Exception>? = null
+    private var fileSelectionDeferred: Deferred<UISelectUploadFileResult?, Exception>? = null
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -161,16 +166,30 @@ class WebViewController private constructor(peer: Pointer) :
         dismissViewControllerAnimatedCompletion(true, null)
     }
 
-    private fun resolveFileSelection(path: String?) {
+    private fun resolveFileSelection(path: UISelectUploadFileResult?) {
         val d = fileSelectionDeferred ?: return
         d.resolve(path)
 
         fileSelectionDeferred = null
     }
 
-    fun displayFileSelectMenu(): Promise<String?, Exception> {
-        //TODO verify
-        val d = deferred<String?, Exception>()
+    private fun rejectFileSelection(e: Exception) {
+        log.warn("Rejecting file selection: {}", e.message, e)
+
+        val d = fileSelectionDeferred ?: return
+        d.reject(e)
+
+        fileSelectionDeferred = null
+    }
+
+    fun displayFileSelectMenu(): Promise<UISelectUploadFileResult?, Exception> {
+        val pending = fileSelectionDeferred
+        if (pending != null) {
+            log.error("displayFileSelectMenu called with pending request")
+            pending.reject(RuntimeException("File select request already pending"))
+        }
+
+        val d = deferred<UISelectUploadFileResult?, Exception>()
         fileSelectionDeferred = d
 
         displayDocumentPickerMenu()
@@ -249,11 +268,19 @@ class WebViewController private constructor(peer: Pointer) :
     /* UIDocumentPickerDelegate */
     override fun documentPickerDidPickDocumentAtURL(controller: UIDocumentPickerViewController, url: NSURL) {
         dismissModalController()
-        val bookmark = url.access {
-            url.bookmark().base64EncodedStringWithOptions(0)
-        }
 
-        resolveFileSelection(IOSFileAccess.BOOKMARK_SCHEMA + bookmark)
+        task {
+            url.access {
+                val bookmark = url.bookmark().base64EncodedStringWithOptions(0)
+                val path = IOSFileAccess.BOOKMARK_SCHEMA + bookmark
+
+                UISelectUploadFileResult(path, url.getFileInfo())
+            }
+        } successUi {
+            resolveFileSelection(it)
+        } failUi {
+            rejectFileSelection(it)
+        }
     }
 
     override fun documentPickerWasCancelled(controller: UIDocumentPickerViewController) {
@@ -269,7 +296,18 @@ class WebViewController private constructor(peer: Pointer) :
         dismissModalController()
 
         val url = info[UIKit.UIImagePickerControllerReferenceURL()] as NSURL
-        resolveFileSelection(url.absoluteString())
+
+        task {
+            val path = url.absoluteString()
+
+            val asset = url.fetchAsset() ?: throw FileNotFoundException("No asset found")
+
+            UISelectUploadFileResult(path, asset.getFileInfo())
+        } successUi {
+            resolveFileSelection(it)
+        } failUi {
+            rejectFileSelection(it)
+        }
     }
 
     override fun imagePickerControllerDidCancel(picker: UIImagePickerController) {
