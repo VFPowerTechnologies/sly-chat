@@ -179,9 +179,11 @@ class WebViewController private constructor(peer: Pointer) :
     }
 
     private fun displayDocumentPickerMenu() {
+        //if we just use kUTTypeData+kUTTypeContent, we can't select raw binaries files from the iCloud Drive
+        //the type is listed as "data"
+        //so just let the user select any file
         val utis = nsarray(
-            MobileCoreServices.kUTTypeData().toNSString().toString(),
-            MobileCoreServices.kUTTypeContent().toNSString().toString()
+            MobileCoreServices.kUTTypeItem().toNSString().toString()
         )
 
         val controller = UIDocumentMenuViewController.alloc().initWithDocumentTypesInMode(
