@@ -1,7 +1,7 @@
 package io.slychat.messenger.desktop
 
-import io.slychat.messenger.services.ui.UISelectUploadFileResult
 import io.slychat.messenger.services.ui.SoftKeyboardInfo
+import io.slychat.messenger.services.ui.UISelectUploadFileResult
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import javafx.scene.input.Clipboard
@@ -63,7 +63,14 @@ class DesktopUIWindowService(
         }
 
         //TODO allow silence somehow
-        return handleFileChooserResult(fileChooser.showOpenDialog(stage))
+        val selectedFile = fileChooser.showOpenDialog(stage)
+
+        val (ok, value) = if (selectedFile == null)
+            false to null
+        else
+            true to selectedFile.toURI().toString()
+
+        return Promise.of(UISelectionDialogResult(ok, value))
     }
 
     override fun selectFileForUpload(): Promise<UISelectionDialogResult<UISelectUploadFileResult?>, Exception> {
