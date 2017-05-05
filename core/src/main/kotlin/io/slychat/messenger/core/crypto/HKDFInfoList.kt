@@ -13,4 +13,7 @@ object HKDFInfoList {
     fun localData(): HKDFInfo = HKDFInfo("local-data")
 
     fun sqlcipher(): HKDFInfo = HKDFInfo("sqlcipher")
+
+    /** Attachment cache thumbnails. */
+    fun thumbnail(fileId: String, resolution: Int): HKDFInfo = HKDFInfo("$fileId-$resolution")
 }

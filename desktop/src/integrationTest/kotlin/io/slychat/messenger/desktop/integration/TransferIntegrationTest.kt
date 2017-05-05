@@ -19,10 +19,7 @@ import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.files.*
-import io.slychat.messenger.testutils.desc
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenResolveUnit
-import io.slychat.messenger.testutils.withTempFile
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.jvm.asDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
 import org.assertj.core.api.Assertions

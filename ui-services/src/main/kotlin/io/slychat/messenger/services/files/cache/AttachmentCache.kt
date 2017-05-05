@@ -3,7 +3,6 @@ package io.slychat.messenger.services.files.cache
 import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.crypto.ciphers.Key
 import nl.komponents.kovenant.Promise
-import rx.Observable
 import java.io.File
 import java.io.InputStream
 
@@ -12,9 +11,16 @@ import java.io.InputStream
 //we still need the manager to monitor message delete events and update the cache
 /**
  * Interface to disk cache.
+ *
+ * Resolutions are taken to be squares of the given value. Aspect ratio is accounted for.
+ *
+ * Methods must be thread-safe. However, you can assume methods won't be called for the same fileIds concurrently.
+ *
+ * As the OS could delete files at any time, this must not keep state regarding available files.
  */
 interface AttachmentCache {
-    val events: Observable<AttachmentCacheEvent>
+    /** Create cache directory structure. */
+    fun init()
 
     /** Whether or not the original file is present in the cache. */
     fun isOriginalPresent(fileId: String): Boolean
@@ -23,19 +29,31 @@ interface AttachmentCache {
     fun getOriginalImageInputStream(fileId: String, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream?
 
     /** Return an InputStream for the image at the given resolution, or null if it doesn't exist. */
-    fun getThumbnailInputStream(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream
+    fun getThumbnailInputStream(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream?
 
-    /** Return streams for generating a thumbnail for at the given resolution for a file. */
+    /** Return streams for generating a thumbnail for the file at the given resolution for a file. */
     fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams
 
+    /** Returns the temporary download location for a file. */
     fun getDownloadPathForFile(fileId: String): File
 
-    //TODO this should check both in-transit, and on-disk
-    /** Returns the list of fileIds which are already present in the cache. */
+    /** Returns the list of fileIds which have original files already present in the cache. This doesn't check thumbnails. */
     fun filterPresent(fileIds: Set<String>): Promise<Set<String>, Exception>
 
+    /** Delete any cached files associated with the given file IDs. The caller is responsible for making sure all streams are closed prior to calling this. */
     fun delete(fileIds: List<String>): Promise<Unit, Exception>
 
-    //ignore if already moved; may be called twice incase the app closes/etc before request is updated
-    fun markComplete(fileIds: List<String>): Promise<Unit, Exception>
+    /**
+     * Marks an original file as having been completely downloaded.
+     *
+     * Call this multiple times is ok; subsequent calls will be ignored.
+     */
+    fun markOriginalComplete(fileIds: List<String>): Promise<Unit, Exception>
+
+    /**
+     * Marks a thumbnail file as having been completely downloaded.
+     *
+     * Call this multiple times is ok; subsequent calls will be ignored.
+     */
+    fun markThumbnailComplete(fileId: String, resolution: Int): Promise<Unit, Exception>
 }

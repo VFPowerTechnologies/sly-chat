@@ -75,7 +75,7 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCache.delete(any())).thenResolveUnit()
         whenever(attachmentCache.filterPresent(any())).thenResolve(emptySet())
         whenever(attachmentCache.isOriginalPresent(any())).thenReturn(true)
-        whenever(attachmentCache.markComplete(any())).thenResolveUnit()
+        whenever(attachmentCache.markOriginalComplete(any())).thenResolveUnit()
 
         whenever(thumbnailGenerator.generateThumbnail(any(), any(), any())).thenResolveUnit()
     }
@@ -150,6 +150,11 @@ class AttachmentCacheManagerImplTest {
     }
 
     @Test
+    fun `requestCache should not add new requests when the original file is already cached on disk`() {
+        TODO()
+    }
+
+    @Test
     fun `it should update stored request when a download is is assigned`() {
         val info = randomDownloadInfo()
         val download = info.download
@@ -200,7 +205,7 @@ class AttachmentCacheManagerImplTest {
 
         transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
 
-        verify(attachmentCache).markComplete(listOf(download.fileId))
+        verify(attachmentCache).markOriginalComplete(listOf(download.fileId))
     }
 
     @Test

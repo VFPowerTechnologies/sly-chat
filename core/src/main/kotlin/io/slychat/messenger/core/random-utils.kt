@@ -152,21 +152,6 @@ fun randomName(): String {
     return shuffleString("random name")
 }
 
-fun randomString(length: Int): String {
-    val choices = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-    val r = Random()
-
-    val b = StringBuilder()
-
-    (0..length - 1).forEach {
-        val i = r.nextInt(choices.length - 1)
-        b.append(choices[i])
-    }
-
-    return b.toString()
-}
-
 fun randomTtl(): Long = randomInt(500, 1000).toLong()
 
 fun randomAccountInfo(deviceId: Int = randomDeviceId()): AccountInfo {

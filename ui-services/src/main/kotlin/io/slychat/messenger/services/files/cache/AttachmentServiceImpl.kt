@@ -32,6 +32,11 @@ import java.util.*
 //TODO need a watch to know to start thumbnail jobs
 //TODO htf do we notify the ui of non-transient errors/state updates?
 //TODO we actually need to make sure to wait until after sync to notify that something is available
+/**
+ * This handles auto-accepting shared attachments from messages.
+ *
+ * If the attachments should be inlined (eg: images), then these are passed off to AttachmentCacheManager.
+ */
 class AttachmentServiceImpl(
     private val keyVault: KeyVault,
     private val tokenManager: AuthTokenManager,

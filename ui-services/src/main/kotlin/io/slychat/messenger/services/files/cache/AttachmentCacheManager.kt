@@ -3,6 +3,11 @@ package io.slychat.messenger.services.files.cache
 import io.slychat.messenger.core.persistence.ReceivedAttachment
 import nl.komponents.kovenant.Promise
 
+/**
+ * Manages access to the on-disk attachment cache.
+ *
+ * Handles downloading files, as well as accessing and generating thumbnails.
+ */
 interface AttachmentCacheManager {
     fun init()
 
@@ -19,5 +24,8 @@ interface AttachmentCacheManager {
      */
     fun getThumbnailStream(fileId: String, resolution: Int): Promise<ImageLookUpResult, Exception>
 
+    /**
+     * This is used to request caching the original file. Thumbnails are generated on-demand when requested by the UI.
+     */
     fun requestCache(receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception>
 }

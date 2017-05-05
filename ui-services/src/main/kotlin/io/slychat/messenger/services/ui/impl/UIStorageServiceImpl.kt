@@ -2,10 +2,7 @@ package io.slychat.messenger.services.ui.impl
 
 import io.slychat.messenger.core.Quota
 import io.slychat.messenger.services.di.UserComponent
-import io.slychat.messenger.services.files.FileListSyncEvent
-import io.slychat.messenger.services.files.RemoteFileEvent
-import io.slychat.messenger.services.files.StorageService
-import io.slychat.messenger.services.files.TransferEvent
+import io.slychat.messenger.services.files.*
 import io.slychat.messenger.services.ui.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
@@ -88,7 +85,7 @@ class UIStorageServiceImpl(
     }
 
     override fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception> {
-        return getServiceOrThrow().downloadFile(fileId, localFilePath)
+        return getServiceOrThrow().downloadFiles(listOf(DownloadRequest(fileId, localFilePath))).map { Unit }
     }
 
     override fun remove(transferIds: List<String>): Promise<Unit, Exception> {

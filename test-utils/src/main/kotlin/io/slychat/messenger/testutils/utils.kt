@@ -12,6 +12,7 @@ import rx.Observable
 import rx.observers.TestSubscriber
 import rx.plugins.RxJavaHooks
 import java.io.File
+import java.util.*
 
 inline fun <R> withTempFile(suffix: String = "", body: (File) -> R): R {
     val f = File.createTempFile("sly-test", suffix)
@@ -20,6 +21,75 @@ inline fun <R> withTempFile(suffix: String = "", body: (File) -> R): R {
     }
     finally {
         f.delete()
+    }
+}
+
+fun randomString(length: Int): String {
+    val choices = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+    val r = Random()
+
+    val b = StringBuilder()
+
+    (0..length - 1).forEach {
+        val i = r.nextInt(choices.length - 1)
+        b.append(choices[i])
+    }
+
+    return b.toString()
+}
+
+//XXX copied from core since we can't sanely share this
+private fun recursivelyDeleteDir(dir: File) {
+    if (!dir.exists())
+        return
+
+    require(dir.isDirectory) { "$dir is not a directory" }
+
+    val dirs = ArrayDeque<File>()
+    dirs.add(dir)
+
+    while (dirs.isNotEmpty()) {
+        val path = dirs.first
+        val contents = path.listFiles()
+
+        if (contents.isNotEmpty()) {
+            contents.forEach { file ->
+                if (file.isDirectory) {
+                    dirs.addFirst(file)
+                }
+                else if (file.isFile) {
+                    file.delete()
+                }
+                else
+                    throw RuntimeException("$file is not a file or directory")
+            }
+        }
+        else {
+            path.delete()
+            dirs.pop()
+        }
+    }
+}
+
+fun <R> withTempDir(body: (dirPath: File) -> R): R {
+    val property = System.getProperty("java.io.tmpdir")
+    if (property.isBlank())
+        throw RuntimeException("java.io.tmpdir is blank")
+
+    val tempDir = File(property)
+
+    val suffix = randomString(5)
+
+    val dir = File(tempDir, "slytest-$suffix")
+
+    dir.mkdirs()
+
+    return try {
+        body(dir)
+    }
+    finally {
+        recursivelyDeleteDir(dir)
     }
 }
 

@@ -9,6 +9,7 @@ import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.files.*
 import nl.komponents.kovenant.Promise
+import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -106,6 +107,7 @@ class AttachmentCacheManagerImpl(
     override fun requestCache(receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
         val fileIds = receivedAttachments.mapToSet { it.fileId }
 
+        //TODO this should check the current download queue
         return attachmentCache.filterPresent(fileIds) bindUi { cachedFileIds ->
             val (alreadyCached, toCache) = receivedAttachments.partition { it.fileId in cachedFileIds }
 
@@ -175,7 +177,7 @@ class AttachmentCacheManagerImpl(
                 log.info("Download for {} complete", fileId)
 
                 untrackDownload(download)
-                attachmentCache.markComplete(listOf(fileId)) bindUi {
+                attachmentCache.markOriginalComplete(listOf(fileId)) bindUi {
                     untrackRequest(fileId)
                 } fail {
                     log.error("Unable to untrack request: {}", it.message, it)
@@ -234,10 +236,11 @@ class AttachmentCacheManagerImpl(
         val job = thumbnailingQueue.pop()
         currentThumbnailJob = job
 
-        fileListPersistenceManager.getFile(job.fileId) bindUi {
+        fileListPersistenceManager.getFile(job.fileId) bind {
             if (it == null || it.isDeleted)
                 throw InvalidFileException(job.fileId)
 
+            //TODO handle missing files (FileNotFoundException)
             attachmentCache.getThumbnailGenerationStreams(
                 job.fileId,
                 job.resolution,
@@ -247,8 +250,11 @@ class AttachmentCacheManagerImpl(
             ).use {
                 thumbnailGenerator.generateThumbnail(it.inputStream, it.outputStream, job.resolution)
             }
-        } successUi {
+        } bindUi {
             log.info("Thumbnail generated for {}@{}", job.fileId, job.resolution)
+            //TODO test this
+            attachmentCache.markThumbnailComplete(job.fileId, job.resolution)
+        } successUi {
             currentThumbnailJob = null
             nextThumbnailingJob()
         } failUi {
