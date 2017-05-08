@@ -62,7 +62,8 @@ class AttachmentCacheImplTest {
     private fun <R> withDummyThumbnailFull(body: (cache: AttachmentCacheImpl, fileId: String, resolution: Int, original: ByteArray) -> R): R {
         return withDummyOriginalFull { cache, fileId, original ->
             cache.getThumbnailGenerationStreams(fileId, resolution, fileKey, cipher, chunkSize).use {
-                it.inputStream.copyTo(it.outputStream)
+                val streams = assertNotNull(it, "No streams returned")
+                streams.inputStream.copyTo(streams.outputStream)
             }
             cache.markThumbnailComplete(fileId, resolution).get()
 
@@ -151,7 +152,8 @@ class AttachmentCacheImplTest {
     fun `markThumbnailComplete should move thumbnail to completed dir`() {
         withDummyOriginal { cache, fileId ->
             cache.getThumbnailGenerationStreams(fileId, resolution, fileKey, cipher, chunkSize).use {
-                it.inputStream.copyTo(it.outputStream)
+                val streams = assertNotNull(it, "No streams returned")
+                streams.inputStream.copyTo(streams.outputStream)
             }
 
             cache.markThumbnailComplete(fileId, resolution).get()
@@ -209,7 +211,8 @@ class AttachmentCacheImplTest {
     fun `delete should remove pending thumbnails`() {
         withDummyOriginal { cache, fileId ->
             cache.getThumbnailGenerationStreams(fileId, resolution, fileKey, cipher, chunkSize).use {
-                it.inputStream.copyTo(it.outputStream)
+                val streams = assertNotNull(it, "No streams returned")
+                streams.inputStream.copyTo(streams.outputStream)
             }
 
             cache.delete(listOf(fileId)).get()

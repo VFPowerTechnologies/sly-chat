@@ -123,8 +123,8 @@ class AttachmentCacheImpl(
         return getActiveCacheDirForFile(fileId).isDirectory
     }
 
-    override fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams {
-        val inputStream = getOriginalImageInputStream(fileId, fileKey, cipher, chunkSize)!!
+    override fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams? {
+        val inputStream = getOriginalImageInputStream(fileId, fileKey, cipher, chunkSize) ?: return null
         val thumbnailKey = deriveThumbnailKey(fileKey, cipher, fileId, resolution)
 
         val outputStream = try {

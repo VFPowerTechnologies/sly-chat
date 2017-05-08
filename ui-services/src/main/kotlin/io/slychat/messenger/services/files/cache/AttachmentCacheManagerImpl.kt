@@ -2,7 +2,6 @@ package io.slychat.messenger.services.files.cache
 
 import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.files.RemoteFile
-import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.minusAssign
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.rx.plusAssign
@@ -23,6 +22,7 @@ import kotlin.collections.HashSet
 /**
  * Handles managing cache download requests and updating the underlying AttachmentCache
  */
+//TODO should we just ditch the inc count bit? should be tracked by the database anyways based on message refs
 class AttachmentCacheManagerImpl(
     private val fileListPersistenceManager: FileListPersistenceManager,
     private val storageService: StorageService,
@@ -126,25 +126,29 @@ class AttachmentCacheManagerImpl(
         subscriptions.clear()
     }
 
-    private fun addRequests(requests: List<AttachmentCacheRequest>, incCountFor: List<String>): Promise<Unit, Exception> {
+    private fun addRequests(requests: List<AttachmentCacheRequest>): Promise<Unit, Exception> {
         //insert before saving, to insure the same request can't be made twice
         trackNewRequests(requests)
 
-        return attachmentCachePersistenceManager.addRequests(requests, incCountFor)
+        return attachmentCachePersistenceManager.addRequests(requests)
     }
 
-    override fun requestCache(receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
-        val fileIds = receivedAttachments.mapToSet { it.fileId }
+    /** Returns all ids not currently in the queued list. */
+    private fun filterExisting(fileIds: List<String>): List<String> {
+        return fileIds.filter { it !in allRequests }
+    }
 
-        //TODO this should check the current download queue
-        return attachmentCache.filterPresent(fileIds) bindUi { cachedFileIds ->
-            val (alreadyCached, toCache) = receivedAttachments.partition { it.fileId in cachedFileIds }
+    override fun requestCache(fileIds: List<String>): Promise<Unit, Exception> {
+        val idSet = HashSet(fileIds)
 
-            val requests = toCache.map {
-                AttachmentCacheRequest(it.fileId, null, AttachmentCacheRequest.State.PENDING)
+        return attachmentCache.filterPresent(idSet) bindUi { cachedFileIds ->
+            val toCache = idSet.filterNot { it in cachedFileIds }
+
+            val requests = filterExisting(toCache).map {
+                AttachmentCacheRequest(it, null, AttachmentCacheRequest.State.PENDING)
             }
 
-            addRequests(requests, alreadyCached.map { it.fileId })
+            addRequests(requests)
         }
     }
 
@@ -269,20 +273,27 @@ class AttachmentCacheManagerImpl(
             if (it == null || it.isDeleted)
                 throw InvalidFileException(job.fileId)
 
-            //TODO handle missing files (FileNotFoundException)
-            attachmentCache.getThumbnailGenerationStreams(
+            val streams = attachmentCache.getThumbnailGenerationStreams(
                 job.fileId,
                 job.resolution,
                 it.userMetadata.fileKey,
                 CipherList.getCipher(it.userMetadata.cipherId),
                 it.fileMetadata!!.chunkSize
-            ).use {
-                thumbnailGenerator.generateThumbnail(it.inputStream, it.outputStream, job.resolution)
+            )
+
+            streams?.use {
+                thumbnailGenerator.generateThumbnail(it.inputStream, it.outputStream, job.resolution) map { true }
+            } ?: Promise.of(false)
+        } bindUi { wasOriginalPresent ->
+            if (wasOriginalPresent) {
+                log.info("Thumbnail generated for {}@{}", job.fileId, job.resolution)
+                attachmentCache.markThumbnailComplete(job.fileId, job.resolution)
             }
-        } bindUi {
-            log.info("Thumbnail generated for {}@{}", job.fileId, job.resolution)
-            //TODO test this
-            attachmentCache.markThumbnailComplete(job.fileId, job.resolution)
+            else {
+                log.info("Original file missing, requesting download")
+                requestOriginalAndThumbnail(job.fileId, job.resolution, false)
+                Promise.of(Unit)
+            }
         } successUi {
             currentThumbnailJob = null
             nextThumbnailingJob()
@@ -319,7 +330,7 @@ class AttachmentCacheManagerImpl(
         } successUi {
             if (it.inputStream == null && !it.isDeleted) {
                 if (fileId !in allRequests) {
-                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)), emptyList()) fail {
+                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING))) fail {
                         log.error("Failed to add download request for original image to queue: {}", it.message, it)
                     }
 
@@ -327,6 +338,16 @@ class AttachmentCacheManagerImpl(
                 }
             }
         }
+    }
+
+    private fun requestOriginalAndThumbnail(fileId: String, resolution: Int, isOriginalPresent: Boolean) {
+        if (!isOriginalPresent && fileId !in allRequests) {
+            addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING))) fail {
+                log.error("Failed to add download request for original image to queue: {}", it.message, it)
+            }
+        }
+
+        addToThumbnailingQueue(ThumbnailJob(fileId, resolution), !isOriginalPresent)
     }
 
     override fun getThumbnailStream(fileId: String, resolution: Int): Promise<ImageLookUpResult, Exception> {
@@ -348,13 +369,7 @@ class AttachmentCacheManagerImpl(
             }
         } successUi {
             if (it.inputStream == null && !it.isDeleted) {
-                if (!it.isOriginalPresent && fileId !in allRequests) {
-                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)), emptyList()) fail {
-                        log.error("Failed to add download request for original image to queue: {}", it.message, it)
-                    }
-                }
-
-                addToThumbnailingQueue(ThumbnailJob(fileId, resolution), !it.isOriginalPresent)
+                requestOriginalAndThumbnail(fileId, resolution, it.isOriginalPresent)
             }
         }
     }

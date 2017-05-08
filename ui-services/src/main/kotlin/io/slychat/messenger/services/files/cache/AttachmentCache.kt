@@ -31,8 +31,8 @@ interface AttachmentCache {
     /** Return an InputStream for the image at the given resolution, or null if it doesn't exist. */
     fun getThumbnailInputStream(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): InputStream?
 
-    /** Return streams for generating a thumbnail for the file at the given resolution for a file. */
-    fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams
+    /** Return streams for generating a thumbnail for the file at the given resolution for a file. Returns null if the original image can't be found. */
+    fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams?
 
     /** Returns the temporary download location for a file. */
     fun getDownloadPathForFile(fileId: String): File

@@ -94,7 +94,7 @@ class AttachmentServiceImpl(
             attachments.toComplete(completed)
 
             messageService.deleteReceivedAttachments(completed, markInline) bindUi {
-                attachmentCacheManager.requestCache(toCache)
+                attachmentCacheManager.requestCache(toCache.map { it.fileId })
             } fail {
                 log.error("Failed to remove received attachments: {}", it.message, it)
             }

@@ -237,7 +237,7 @@ class AttachmentServiceImplTest {
 
         sendSyncResult(attachment, fileMetadata)
 
-        verify(attachmentCacheManager).requestCache(listOf(attachment))
+        verify(attachmentCacheManager).requestCache(listOf(attachment.fileId))
     }
 
     @Test

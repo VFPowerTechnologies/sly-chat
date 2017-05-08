@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files.cache
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.generateDownloadId
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.AttachmentCachePersistenceManager
@@ -67,7 +68,7 @@ class AttachmentCacheManagerImplTest {
 
         whenever(attachmentCachePersistenceManager.getAllRequests()).thenResolve(emptyList())
         whenever(attachmentCachePersistenceManager.getZeroRefCountFiles()).thenResolve(emptyList())
-        whenever(attachmentCachePersistenceManager.addRequests(any(), any())).thenResolveUnit()
+        whenever(attachmentCachePersistenceManager.addRequests(any())).thenResolveUnit()
         whenever(attachmentCachePersistenceManager.updateRequests(any())).thenResolveUnit()
         whenever(attachmentCachePersistenceManager.deleteRequests(any())).thenResolveUnit()
 
@@ -150,9 +151,7 @@ class AttachmentCacheManagerImplTest {
     fun `requestCache should add new requests to download queue`() {
         val manager = newManager()
 
-        val attachment = randomReceivedAttachment()
-
-        manager.requestCache(listOf(attachment)).get()
+        manager.requestCache(listOf(generateFileId())).get()
 
         verify(storageService).downloadFiles(any())
     }
@@ -161,22 +160,36 @@ class AttachmentCacheManagerImplTest {
     fun `requestCache should persist cache requests`() {
         val manager = newManager()
 
-        val attachment = randomReceivedAttachment()
+        val fileId = generateFileId()
 
-        manager.requestCache(listOf(attachment)).get()
+        manager.requestCache(listOf(fileId)).get()
 
-        val request = AttachmentCacheRequest(attachment.fileId, null, AttachmentCacheRequest.State.PENDING)
-        verify(attachmentCachePersistenceManager).addRequests(listOf(request), emptyList())
+        val request = AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)
+        verify(attachmentCachePersistenceManager).addRequests(listOf(request))
     }
 
     @Test
     fun `requestCache should not add new requests when an active request exists for a file`() {
-        TODO()
+        val fileId = generateFileId()
+
+        val manager = newManagerWithRequest(AttachmentCacheRequest(fileId, generateDownloadId(), AttachmentCacheRequest.State.DOWNLOADING))
+
+        manager.requestCache(listOf(fileId)).get()
+
+        verify(attachmentCachePersistenceManager).addRequests(emptyList())
     }
 
     @Test
     fun `requestCache should not add new requests when the original file is already cached on disk`() {
-        TODO()
+        val manager = newManager()
+
+        val fileId = generateFileId()
+
+        whenever(attachmentCache.filterPresent(any())).thenAnswer { Promise.of(it.arguments[0]) }
+
+        manager.requestCache(listOf(fileId)).get()
+
+        verify(attachmentCachePersistenceManager).addRequests(emptyList())
     }
 
     @Test
@@ -248,7 +261,7 @@ class AttachmentCacheManagerImplTest {
         assertFalse(result.isDeleted)
 
         val request = AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)
-        verify(attachmentCachePersistenceManager).addRequests(listOf(request), emptyList())
+        verify(attachmentCachePersistenceManager).addRequests(listOf(request))
     }
 
     @Test
@@ -283,7 +296,7 @@ class AttachmentCacheManagerImplTest {
         assertNull(result.inputStream)
         assertTrue(result.isDeleted, "File should be listed as deleted")
 
-        verify(attachmentCachePersistenceManager, never()).addRequests(any(), any())
+        verify(attachmentCachePersistenceManager, never()).addRequests(any())
     }
 
     @Test
@@ -299,7 +312,7 @@ class AttachmentCacheManagerImplTest {
         manager.getImageStream(fileId).get()
         manager.getImageStream(fileId).get()
 
-        verify(attachmentCachePersistenceManager, times(1)).addRequests(any(), any())
+        verify(attachmentCachePersistenceManager, times(1)).addRequests(any())
     }
 
     @Test
@@ -319,6 +332,46 @@ class AttachmentCacheManagerImplTest {
         assertFalse(result.isDeleted, "File not should be listed as deleted")
 
         verify(thumbnailGenerator).generateThumbnail(any(), any(), eq(resolution))
+    }
+
+    @Test
+    fun `the cache should be notified when thumbnail generation succeeds`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+        val resolution = 200
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getThumbnailInputStream(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(null)
+        whenever(attachmentCache.getThumbnailGenerationStreams(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(dummyThumbnailStreams())
+
+        val result = manager.getThumbnailStream(fileId, resolution).get()
+        assertNull(result.inputStream)
+        assertFalse(result.isDeleted, "File not should be listed as deleted")
+
+        verify(attachmentCache).markThumbnailComplete(fileId, resolution)
+    }
+
+    @Test
+    fun `requesting thumbnail generation should queue a request to fetch original if unavailable`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+        val resolution = 200
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getThumbnailInputStream(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(null)
+        whenever(attachmentCache.getThumbnailGenerationStreams(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(null)
+
+        val result = manager.getThumbnailStream(fileId, resolution).get()
+        assertNull(result.inputStream)
+
+        verify(attachmentCache, never()).markThumbnailComplete(any(), any())
+
+        val request = AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)
+        verify(attachmentCachePersistenceManager).addRequests(listOf(request))
     }
 
     @Test

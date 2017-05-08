@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.files.cache
 
-import io.slychat.messenger.core.persistence.ReceivedAttachment
 import nl.komponents.kovenant.Promise
 
 /**
@@ -27,5 +26,5 @@ interface AttachmentCacheManager {
     /**
      * This is used to request caching the original file. Thumbnails are generated on-demand when requested by the UI.
      */
-    fun requestCache(receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception>
+    fun requestCache(fileIds: List<String>): Promise<Unit, Exception>
 }

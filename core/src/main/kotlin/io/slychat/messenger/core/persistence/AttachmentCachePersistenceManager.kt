@@ -5,7 +5,7 @@ import nl.komponents.kovenant.Promise
 interface AttachmentCachePersistenceManager {
     fun getAllRequests(): Promise<List<AttachmentCacheRequest>, Exception>
 
-    fun addRequests(requests: List<AttachmentCacheRequest>, incCountFor: List<String>): Promise<Unit, Exception>
+    fun addRequests(requests: List<AttachmentCacheRequest>): Promise<Unit, Exception>
 
     fun updateRequests(requests: List<AttachmentCacheRequest>): Promise<Unit, Exception>
 
