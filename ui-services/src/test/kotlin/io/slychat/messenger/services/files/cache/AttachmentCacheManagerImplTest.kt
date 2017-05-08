@@ -130,7 +130,7 @@ class AttachmentCacheManagerImplTest {
     @Test
     fun `it should start downloading pending state requests on init`() {
         val fileId = generateFileId()
-        val manager = newManagerWithRequest(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING))
+        val manager = newManagerWithRequest(AttachmentCacheRequest(fileId, null))
 
         verify(storageService).downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path)))
     }
@@ -164,7 +164,7 @@ class AttachmentCacheManagerImplTest {
 
         manager.requestCache(listOf(fileId)).get()
 
-        val request = AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)
+        val request = AttachmentCacheRequest(fileId, null)
         verify(attachmentCachePersistenceManager).addRequests(listOf(request))
     }
 
@@ -172,7 +172,7 @@ class AttachmentCacheManagerImplTest {
     fun `requestCache should not add new requests when an active request exists for a file`() {
         val fileId = generateFileId()
 
-        val manager = newManagerWithRequest(AttachmentCacheRequest(fileId, generateDownloadId(), AttachmentCacheRequest.State.DOWNLOADING))
+        val manager = newManagerWithRequest(AttachmentCacheRequest(fileId, generateDownloadId()))
 
         manager.requestCache(listOf(fileId)).get()
 
@@ -199,9 +199,9 @@ class AttachmentCacheManagerImplTest {
 
         whenever(storageService.downloadFiles(listOf(DownloadRequest(download.fileId, dummyCachePath.path)))).thenResolve(listOf(info))
 
-        val manager = newManagerWithRequest(AttachmentCacheRequest(download.fileId, null, AttachmentCacheRequest.State.PENDING))
+        val manager = newManagerWithRequest(AttachmentCacheRequest(download.fileId, null))
 
-        val expected = AttachmentCacheRequest(download.fileId, download.id, AttachmentCacheRequest.State.DOWNLOADING)
+        val expected = AttachmentCacheRequest(download.fileId, download.id)
         verify(attachmentCachePersistenceManager).updateRequests(listOf(expected))
     }
 
@@ -218,7 +218,7 @@ class AttachmentCacheManagerImplTest {
     @Test
     fun `it should not requeue a stored request in downloading state`() {
         val download = randomDownload()
-        val request = AttachmentCacheRequest(download.fileId, download.id, AttachmentCacheRequest.State.DOWNLOADING)
+        val request = AttachmentCacheRequest(download.fileId, download.id)
         val manager = newManagerWithRequest(request)
 
         verify(attachmentCachePersistenceManager, never()).updateRequests(any())
@@ -227,7 +227,7 @@ class AttachmentCacheManagerImplTest {
     @Test
     fun `it should delete a request when download completes successfully`() {
         val download = randomDownload()
-        val request = AttachmentCacheRequest(download.fileId, download.id, AttachmentCacheRequest.State.DOWNLOADING)
+        val request = AttachmentCacheRequest(download.fileId, download.id)
         val manager = newManagerWithRequest(request)
 
         transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
@@ -238,7 +238,7 @@ class AttachmentCacheManagerImplTest {
     @Test
     fun `it should mark a cache file as complete when download completes successfully`() {
         val download = randomDownload()
-        val request = AttachmentCacheRequest(download.fileId, download.id, AttachmentCacheRequest.State.DOWNLOADING)
+        val request = AttachmentCacheRequest(download.fileId, download.id)
         val manager = newManagerWithRequest(request)
 
         transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
@@ -260,7 +260,7 @@ class AttachmentCacheManagerImplTest {
         assertNull(result.inputStream)
         assertFalse(result.isDeleted)
 
-        val request = AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)
+        val request = AttachmentCacheRequest(fileId, null)
         verify(attachmentCachePersistenceManager).addRequests(listOf(request))
     }
 
@@ -370,7 +370,7 @@ class AttachmentCacheManagerImplTest {
 
         verify(attachmentCache, never()).markThumbnailComplete(any(), any())
 
-        val request = AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING)
+        val request = AttachmentCacheRequest(fileId, null)
         verify(attachmentCachePersistenceManager).addRequests(listOf(request))
     }
 

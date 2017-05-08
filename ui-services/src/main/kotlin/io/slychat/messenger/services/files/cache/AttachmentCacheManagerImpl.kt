@@ -145,7 +145,7 @@ class AttachmentCacheManagerImpl(
             val toCache = idSet.filterNot { it in cachedFileIds }
 
             val requests = filterExisting(toCache).map {
-                AttachmentCacheRequest(it, null, AttachmentCacheRequest.State.PENDING)
+                AttachmentCacheRequest(it, null)
             }
 
             addRequests(requests)
@@ -161,14 +161,11 @@ class AttachmentCacheManagerImpl(
         requests.forEach {
             allRequests[it.fileId] = it
 
-            when (it.state) {
-                AttachmentCacheRequest.State.PENDING -> {
-                    toDownload.add(it)
-                }
-
-                AttachmentCacheRequest.State.DOWNLOADING -> {
-                    trackDownload(it.downloadId!!, it.fileId)
-                }
+            if (it.downloadId == null) {
+                toDownload.add(it)
+            }
+            else {
+                trackDownload(it.downloadId!!, it.fileId)
             }
         }
 
@@ -330,7 +327,7 @@ class AttachmentCacheManagerImpl(
         } successUi {
             if (it.inputStream == null && !it.isDeleted) {
                 if (fileId !in allRequests) {
-                    addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING))) fail {
+                    addRequests(listOf(AttachmentCacheRequest(fileId, null))) fail {
                         log.error("Failed to add download request for original image to queue: {}", it.message, it)
                     }
 
@@ -342,7 +339,7 @@ class AttachmentCacheManagerImpl(
 
     private fun requestOriginalAndThumbnail(fileId: String, resolution: Int, isOriginalPresent: Boolean) {
         if (!isOriginalPresent && fileId !in allRequests) {
-            addRequests(listOf(AttachmentCacheRequest(fileId, null, AttachmentCacheRequest.State.PENDING))) fail {
+            addRequests(listOf(AttachmentCacheRequest(fileId, null))) fail {
                 log.error("Failed to add download request for original image to queue: {}", it.message, it)
             }
         }
@@ -393,7 +390,7 @@ class AttachmentCacheManagerImpl(
 
                 trackDownload(downloadId, fileId)
 
-                val updated = request.copy(downloadId = downloadId, state = AttachmentCacheRequest.State.DOWNLOADING)
+                val updated = request.copy(downloadId = downloadId)
 
                 allRequests[request.fileId] = updated
 
