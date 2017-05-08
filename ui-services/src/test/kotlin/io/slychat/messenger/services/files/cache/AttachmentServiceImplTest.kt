@@ -95,7 +95,6 @@ class AttachmentServiceImplTest {
             messageService,
             storageService,
             attachmentCacheManager,
-            messageUpdateEvents,
             networkStatus,
             syncEvents
         )

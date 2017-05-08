@@ -1,15 +1,13 @@
 package io.slychat.messenger.services.files.cache
 
 import com.nhaarman.mockito_kotlin.*
+import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
-import io.slychat.messenger.core.emptyByteArray
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.AttachmentCachePersistenceManager
 import io.slychat.messenger.core.persistence.AttachmentCacheRequest
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
-import io.slychat.messenger.core.randomDownload
-import io.slychat.messenger.core.randomReceivedAttachment
-import io.slychat.messenger.core.randomRemoteFile
+import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.files.*
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenResolve
@@ -46,6 +44,8 @@ class AttachmentCacheManagerImplTest {
     private val thumbnailGenerator: ThumbnailGenerator = mock()
 
     private val fileEvents = PublishSubject.create<RemoteFileEvent>()
+
+    private val messageUpdateEvents = PublishSubject.create<MessageUpdateEvent>()
 
     private val transferEvents = PublishSubject.create<TransferEvent>()
 
@@ -87,7 +87,8 @@ class AttachmentCacheManagerImplTest {
             attachmentCache,
             attachmentCachePersistenceManager,
             thumbnailGenerator,
-            fileEvents
+            fileEvents,
+            messageUpdateEvents
         )
     }
 
@@ -99,6 +100,30 @@ class AttachmentCacheManagerImplTest {
         manager.init()
 
         return manager
+    }
+
+    private fun testDeletedMessageGetZeroRefCountFiles(ev: MessageUpdateEvent) {
+        val manager = newManager()
+
+        messageUpdateEvents.onNext(ev)
+
+        verify(attachmentCachePersistenceManager).getZeroRefCountFiles()
+    }
+
+    private fun testDeletedMessageTransferCancellation(ev: MessageUpdateEvent) {
+        val manager = newManager()
+
+        val transfer = randomDownloadTransferStatus(TransferState.QUEUED)
+
+        val fileIds = listOf(transfer.file!!.id)
+
+        whenever(storageService.transfers).thenReturn(listOf(transfer))
+
+        whenever(attachmentCachePersistenceManager.getZeroRefCountFiles()).thenResolve(fileIds)
+
+        messageUpdateEvents.onNext(ev)
+
+        verify(storageService).cancel(listOf(transfer.id))
     }
 
     @Test
@@ -401,5 +426,45 @@ class AttachmentCacheManagerImplTest {
         transferEvents.onNext(TransferEvent.StateChanged(info.download, TransferState.COMPLETE))
 
         verify(thumbnailGenerator).generateThumbnail(any(), any(), eq(resolution))
+    }
+
+    @Test
+    fun `a message Deleted event should trigger a check for zero ref'ed files`() {
+        val ev = MessageUpdateEvent.Deleted(randomUserConversationId(), randomMessageIds(), false)
+        testDeletedMessageGetZeroRefCountFiles(ev)
+    }
+
+    @Test
+    fun `a message DeletedAll event should trigger a check for zero ref'ed files`() {
+        val ev = MessageUpdateEvent.DeletedAll(randomUserConversationId(), 1, false)
+        testDeletedMessageGetZeroRefCountFiles(ev)
+    }
+
+    @Test
+    fun `a message Deleted event should should cancellation of associated downloads`() {
+        val ev = MessageUpdateEvent.Deleted(randomUserConversationId(), randomMessageIds(), false)
+        testDeletedMessageTransferCancellation(ev)
+    }
+
+    @Test
+    fun `a message DeletedAll event should trigger cancellation of associated downloads`() {
+        val ev = MessageUpdateEvent.DeletedAll(randomUserConversationId(), 1, false)
+        testDeletedMessageTransferCancellation(ev)
+    }
+
+    @Test
+    fun `it should cancel associated downloads if a file is deleted`() {
+        val transfer = randomDownloadTransferStatus(TransferState.QUEUED)
+        val file = randomRemoteFile(fileId = transfer.file!!.id, isDeleted = true)
+
+        whenever(storageService.transfers).thenReturn(listOf(transfer))
+
+        val ev = RemoteFileEvent.Deleted(listOf(file))
+
+        val manager = newManager()
+
+        fileEvents.onNext(ev)
+
+        verify(storageService).cancel(listOf(transfer.id))
     }
 }

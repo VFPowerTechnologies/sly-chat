@@ -14,7 +14,6 @@ import io.slychat.messenger.core.persistence.AttachmentId
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ReceivedAttachment
 import io.slychat.messenger.core.rx.plusAssign
-import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.files.FileListSyncEvent
@@ -44,7 +43,6 @@ class AttachmentServiceImpl(
     private val messageService: MessageService,
     private val storageService: StorageService,
     private val attachmentCacheManager: AttachmentCacheManager,
-    messageUpdateEvents: Observable<MessageUpdateEvent>,
     networkStatus: Observable<Boolean>,
     syncEvents: Observable<FileListSyncEvent>
 ) : AttachmentService {
@@ -75,7 +73,6 @@ class AttachmentServiceImpl(
 
     init {
         subscriptions += networkStatus.subscribe { onNetworkAvailability(it) }
-        subscriptions += messageUpdateEvents.subscribe { onMessageUpdateEvent(it) }
         subscriptions += syncEvents.ofType(FileListSyncEvent.Result::class.java).subscribe { onFileListSyncResult(it) }
     }
 
@@ -108,14 +105,6 @@ class AttachmentServiceImpl(
         val fileMetadata = file.fileMetadata ?: return false
 
         return fileMetadata.mimeType.startsWith("image/") && fileMetadata.size <= INLINE_FILE_SIZE_LIMIT
-    }
-
-    //TODO cancel+remove any queued transfers; also delete cache entries
-    private fun onMessageUpdateEvent(ev: MessageUpdateEvent) {
-        when (ev) {
-            is MessageUpdateEvent.Deleted -> TODO()
-            is MessageUpdateEvent.DeletedAll -> TODO()
-        }
     }
 
     private fun onNetworkAvailability(isAvailable: Boolean) {

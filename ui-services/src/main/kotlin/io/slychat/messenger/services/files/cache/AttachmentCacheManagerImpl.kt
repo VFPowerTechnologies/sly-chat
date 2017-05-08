@@ -6,6 +6,7 @@ import io.slychat.messenger.core.mapToSet
 import io.slychat.messenger.core.minusAssign
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.rx.plusAssign
+import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.files.*
 import nl.komponents.kovenant.Promise
@@ -17,8 +18,8 @@ import org.slf4j.LoggerFactory
 import rx.Observable
 import rx.subscriptions.CompositeSubscription
 import java.util.*
+import kotlin.collections.HashSet
 
-//TODO track message deletion
 /**
  * Handles managing cache download requests and updating the underlying AttachmentCache
  */
@@ -28,7 +29,8 @@ class AttachmentCacheManagerImpl(
     private val attachmentCache: AttachmentCache,
     private val attachmentCachePersistenceManager: AttachmentCachePersistenceManager,
     private val thumbnailGenerator: ThumbnailGenerator,
-    fileEvents: Observable<RemoteFileEvent>
+    fileEvents: Observable<RemoteFileEvent>,
+    messageUpdateEvents: Observable<MessageUpdateEvent>
 ) : AttachmentCacheManager {
     private data class ThumbnailJob(val fileId: String, val resolution: Int)
 
@@ -57,6 +59,16 @@ class AttachmentCacheManagerImpl(
         }
 
         subscriptions += storageService.transferEvents.ofType(TransferEvent.StateChanged::class.java).subscribe { onTransferEvent(it) }
+
+        subscriptions += messageUpdateEvents.subscribe { onMessageUpdateEvent(it) }
+    }
+
+    private fun onMessageUpdateEvent(ev: MessageUpdateEvent) {
+        when (ev) {
+            is MessageUpdateEvent.Deleted -> checkForDeletedFiles()
+
+            is MessageUpdateEvent.DeletedAll -> checkForDeletedFiles()
+        }
     }
 
     private fun deleteCachedFiles(fileIds: List<String>) {
@@ -72,19 +84,36 @@ class AttachmentCacheManagerImpl(
     private fun onFilesDelete(files: List<RemoteFile>) {
         val fileIds = files.map { it.id }
 
-        log.info("Files deleted, cleaning up cache entries")
+        log.info("Files deleted, cleaning up cache entries, cancelling transactions")
+
+        cancelTransfers(fileIds)
 
         attachmentCache.delete(fileIds) fail {
             log.error("Unable to delete files: {}", it.message, it)
         }
     }
 
-    override fun init() {
+    private fun cancelTransfers(fileIds: List<String>) {
+        val ids = HashSet(fileIds)
+
+        val toCancel = storageService.transfers
+            .filter { it.file?.id in ids }
+            .map { it.id }
+
+        storageService.cancel(toCancel)
+    }
+
+    private fun checkForDeletedFiles() {
         attachmentCachePersistenceManager.getZeroRefCountFiles() successUi {
+            cancelTransfers(it)
             deleteCachedFiles(it)
         } fail {
             log.error("Unable to read files with zero ref counts from storage", it.message, it)
         }
+    }
+
+    override fun init() {
+        checkForDeletedFiles()
 
         attachmentCachePersistenceManager.getAllRequests() successUi {
             trackNewRequests(it)
