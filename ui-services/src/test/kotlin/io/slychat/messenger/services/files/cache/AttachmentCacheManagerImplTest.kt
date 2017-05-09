@@ -71,6 +71,7 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCachePersistenceManager.addRequests(any())).thenResolveUnit()
         whenever(attachmentCachePersistenceManager.updateRequests(any())).thenResolveUnit()
         whenever(attachmentCachePersistenceManager.deleteRequests(any())).thenResolveUnit()
+        whenever(attachmentCachePersistenceManager.deleteZeroRefCountEntries(any())).thenResolveUnit()
 
         whenever(attachmentCache.getDownloadPathForFile(any())).thenReturn(dummyCachePath)
         whenever(attachmentCache.delete(any())).thenResolveUnit()
@@ -145,6 +146,18 @@ class AttachmentCacheManagerImplTest {
         manager.init()
 
         verify(attachmentCache).delete(fileIds)
+    }
+
+    @Test
+    fun `it should remove deleted files with a zero file count from db after deleting files`() {
+        val fileIds = listOf(generateFileId())
+        whenever(attachmentCachePersistenceManager.getZeroRefCountFiles()).thenResolve(fileIds)
+
+        val manager = newManager()
+
+        manager.init()
+
+        verify(attachmentCachePersistenceManager).deleteZeroRefCountEntries(fileIds)
     }
 
     @Test

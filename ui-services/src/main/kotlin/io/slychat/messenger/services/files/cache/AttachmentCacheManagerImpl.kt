@@ -104,9 +104,10 @@ class AttachmentCacheManagerImpl(
     }
 
     private fun checkForDeletedFiles() {
-        attachmentCachePersistenceManager.getZeroRefCountFiles() successUi {
+        attachmentCachePersistenceManager.getZeroRefCountFiles() bindUi {
             cancelTransfers(it)
             deleteCachedFiles(it)
+            attachmentCachePersistenceManager.deleteZeroRefCountEntries(it)
         } fail {
             log.error("Unable to read files with zero ref counts from storage", it.message, it)
         }
