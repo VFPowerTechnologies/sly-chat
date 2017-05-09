@@ -12,10 +12,8 @@ interface AttachmentCachePersistenceManager {
     //fileid
     fun deleteRequests(fileIds: List<String>): Promise<Unit, Exception>
 
+    /** Returns all file ids with zero ref count. */
     fun getZeroRefCountFiles(): Promise<List<String>, Exception>
 
-//    fun incRefCount(fileIds: List<String>): Promise<Unit, Exception>
-//
-//    /** Returns subset of fileIds which have zero ref counts.*/
-//    fun decRefCount(fileIds: List<String>): Promise<List<String>, Exception>
+    fun deleteZeroRefCountEntries(fileIds: List<String>): Promise<Unit, Exception>
 }

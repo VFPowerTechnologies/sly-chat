@@ -132,6 +132,7 @@ VALUES
     (:conversationId, :messageId, :n, :fileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId, :state)
 """
 
+        //TODO update attachment_cache_refcounts (also on delete)
         connection.withPrepared(sql) { stmt ->
             stmt.bind(":conversationId", conversationId)
             stmt.bind(":messageId", messageId)
