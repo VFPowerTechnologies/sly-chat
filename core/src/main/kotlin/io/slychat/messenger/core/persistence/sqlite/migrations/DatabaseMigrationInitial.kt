@@ -35,7 +35,8 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "upload_parts",
             "downloads",
             "attachments",
-            "received_attachments"
+            "received_attachments",
+            "attachment_cache_requests"
         )
     }
 
