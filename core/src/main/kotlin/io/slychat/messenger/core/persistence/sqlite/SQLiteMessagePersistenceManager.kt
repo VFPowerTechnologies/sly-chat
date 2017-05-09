@@ -122,6 +122,21 @@ class SQLiteMessagePersistenceManager(
         }
     }
 
+    private fun updateAttachmentRefCount(connection: SQLiteConnection, fileId: String, adjustment: Int) {
+        val initial = if (adjustment > 0) adjustment else 0
+
+        val sql = """
+INSERT OR REPLACE INTO attachment_cache_refcounts
+    (file_id, ref_count)
+VALUES
+    (:fileId, coalesce((SELECT ref_count + $adjustment FROM attachment_cache_refcounts WHERE file_id = :fileId), $initial))
+"""
+        connection.withPrepared(sql) {
+            it.bind(":fileId", fileId)
+            it.step()
+        }
+    }
+
     private fun insertReceivedAttachments(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, receivedAttachments: List<ReceivedAttachment>) {
         //language=SQLite
         val sql = """
@@ -132,7 +147,6 @@ VALUES
     (:conversationId, :messageId, :n, :fileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId, :state)
 """
 
-        //TODO update attachment_cache_refcounts (also on delete)
         connection.withPrepared(sql) { stmt ->
             stmt.bind(":conversationId", conversationId)
             stmt.bind(":messageId", messageId)
@@ -161,6 +175,8 @@ VALUES
                 }
 
                 stmt.reset(false)
+
+                updateAttachmentRefCount(connection, it.fileId, 1)
             }
         }
     }
@@ -476,28 +492,56 @@ VALUES
         }
     }
 
-    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
-        if (messageIds.isNotEmpty()) {
-            val tableName = ConversationTable.getTablename(conversationId)
+    private fun decAttachmentRefCountForMessages(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
+        val sql = """
+UPDATE
+    attachment_cache_refcounts
+SET
+    ref_count = ref_count - 1
+WHERE
+    file_id IN (SELECT file_id FROM attachments WHERE conversation_id = :conversationId AND message_id = :messageId)
+"""
 
-            try {
-                connection.prepare("DELETE FROM $tableName WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
-                    messageIds.forEachIndexed { i, messageId ->
-                        stmt.bind(i + 1, messageId)
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(":conversationId", conversationId)
+
+            messageIds.forEach {
+                stmt.bind(":messageId", it)
+                stmt.step()
+                stmt.reset(false)
+            }
+        }
+    }
+
+    override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
+        if (messageIds.isEmpty())
+            return Promise.of(Unit)
+
+        return sqlitePersistenceManager.runQuery { connection ->
+            connection.withTransaction {
+                decAttachmentRefCountForMessages(connection, conversationId, messageIds)
+
+                val tableName = ConversationTable.getTablename(conversationId)
+
+                try {
+                    connection.prepare("DELETE FROM $tableName WHERE id IN (${getPlaceholders(messageIds.size)})").use { stmt ->
+                        messageIds.forEachIndexed { i, messageId ->
+                            stmt.bind(i + 1, messageId)
+                        }
+
+                        stmt.step()
                     }
 
-                    stmt.step()
+                    deleteFailures(connection, conversationId, messageIds)
+                }
+                catch (e: SQLiteException) {
+                    handleInvalidConversationException(e, conversationId)
                 }
 
-                deleteFailures(connection, conversationId, messageIds)
-            }
-            catch (e: SQLiteException) {
-                handleInvalidConversationException(e, conversationId)
-            }
+                deleteExpiringMessages(connection, conversationId, messageIds)
 
-            deleteExpiringMessages(connection, conversationId, messageIds)
-
-            updateConversationInfo(connection, conversationId)
+                updateConversationInfo(connection, conversationId)
+            }
         }
     }
 
@@ -555,7 +599,22 @@ LIMIT
             else
                 stmt.columnLong(0)
         }
+    }
 
+    private fun decAttachmentRefCountForConvo(connection: SQLiteConnection, conversationId: ConversationId) {
+        //language=SQLite
+        val sql = """
+UPDATE
+    attachment_cache_refcounts
+SET
+    ref_count = ref_count - 1
+WHERE
+    file_id IN (SELECT file_id FROM attachments WHERE conversation_id = :conversationId)
+"""
+        connection.withPrepared(sql) {
+            it.bind(":conversationId", conversationId)
+            it.step()
+        }
     }
 
     override fun deleteAllMessages(conversationId: ConversationId): Promise<Long?, Exception> = sqlitePersistenceManager.runQuery { connection ->
@@ -567,6 +626,7 @@ LIMIT
                 null
             }
             else {
+                decAttachmentRefCountForConvo(connection, conversationId)
                 val tableName = ConversationTable.getTablename(conversationId)
                 connection.withPrepared("DELETE FROM $tableName", SQLiteStatement::step)
 
@@ -630,8 +690,39 @@ WHERE
         }
     }
 
+    private fun decAttachmentRefCountUntil(connection: SQLiteConnection, conversationId: ConversationId, timestamp: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+        val sql = """
+UPDATE
+    attachment_cache_refcounts
+SET
+    ref_count = ref_count - 1
+WHERE
+    file_id IN (
+        SELECT
+            file_id
+        FROM
+            attachments a
+        JOIN
+            $tableName c
+        ON
+            a.conversation_id = :conversationId
+        AND
+            a.message_id = c.id
+        WHERE
+            c.timestamp <= :timestamp
+    )
+"""
+        connection.withPrepared(sql) {
+            it.bind(":conversationId", conversationId)
+            it.bind(":timestamp", timestamp)
+            it.step()
+        }
+    }
+
     override fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
+            decAttachmentRefCountUntil(connection, conversationId, timestamp)
             deleteExpiringEntriesUntil(connection, conversationId, timestamp)
             deleteFailuresUntil(connection, conversationId, timestamp)
             deleteAllConvoMessagesUntil(connection, conversationId, timestamp)

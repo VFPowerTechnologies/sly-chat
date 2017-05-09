@@ -101,6 +101,33 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         return assertNotNull(messagePersistenceManager.getConversationInfo(conversationId).get(), "No last conversation info")
     }
 
+    private class MessageWithAttachments(
+        val attachmentInfo: MessageAttachmentInfo,
+        val messageInfo: MessageInfo,
+        val receivedAttachment: ReceivedAttachment,
+        val conversationMessageInfo: ConversationMessageInfo
+    ) {
+        val fileId: String
+            get() = attachmentInfo.fileId
+    }
+
+    private fun randomMessageWithAttachments(conversationId: ConversationId, speaker: UserId?): MessageWithAttachments {
+        val attachmentInfo = randomMessageAttachmentInfo(0)
+
+        val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
+
+        val receivedAttachment = randomReceivedAttachment(
+            0,
+            fileId = attachmentInfo.fileId,
+            conversationId = conversationId,
+            messageId = messageInfo.id
+        )
+
+        val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+        return MessageWithAttachments(attachmentInfo, messageInfo, receivedAttachment, conversationMessageInfo)
+    }
+
     //TODO we should clean up all these tests to use this instead, since due to the merge the majority of behavior is
     //identical between conversation types
     private class MessageTestFixture : GroupPersistenceManagerTestUtils {
@@ -110,6 +137,8 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         override val contactsPersistenceManager = SQLiteContactsPersistenceManager(persistenceManager)
         override val groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
         val conversationInfoTestUtils = ConversationInfoTestUtils(persistenceManager)
+
+        val attachmentCachePersistenceManager = SQLiteAttachmentCachePersistenceManager(persistenceManager)
 
         fun getConversationInfo(conversationId: ConversationId): ConversationInfo {
             return assertNotNull(conversationInfoTestUtils.getConversationInfo(conversationId), "No last conversation info")
@@ -127,8 +156,8 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             return addMessage(conversationId, conversationMessageInfo)
         }
 
-        fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo): ConversationMessageInfo {
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, emptyList()).get()
+        fun addMessage(conversationId: ConversationId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment> = emptyList()): ConversationMessageInfo {
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, receivedAttachments).get()
 
             return conversationMessageInfo
         }
@@ -208,7 +237,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         }
     }
 
-    private fun foreachConvType(body: MessageTestFixture.(ConversationId, Set<UserId>) -> Unit) {
+    private fun foreachConvType(body: MessageTestFixture.(ConversationId, participants: Set<UserId>) -> Unit) {
         MessageTestFixture().run {
             val contactInfo = randomContactInfo(AllowedMessageLevel.ALL)
             val userId = contactInfo.id
@@ -462,19 +491,38 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         foreachConvType { conversationId, participants ->
             val speaker = participants.first()
 
-            val attachmentInfo = randomMessageAttachmentInfo(0)
+            val info = randomMessageWithAttachments(conversationId, speaker)
+            messagePersistenceManager.addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment)).get()
 
-            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
-
-            val receivedAttachment = randomReceivedAttachment(0, conversationId = conversationId, messageId = messageInfo.id)
-
-            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
-
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
-
-            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, messageInfo.id).get()).desc("Should contain received attachments") {
-                containsOnly(receivedAttachment)
+            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, info.messageInfo.id).get()).desc("Should contain received attachments") {
+                containsOnly(info.receivedAttachment)
             }
+        }
+    }
+
+    @Test
+    fun `addMessage should insert new rows for cache ref count`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+            val info = randomMessageWithAttachments(conversationId, speaker)
+
+            messagePersistenceManager.addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment)).get()
+
+            assertEquals(1, attachmentCachePersistenceManager.getRefCountForEntry(info.attachmentInfo.fileId), "Attachment count not increased")
+        }
+    }
+
+    @Test
+    fun `addMessage should inc ref counts for existing attachments`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+            val info = randomMessageWithAttachments(conversationId, speaker)
+
+            attachmentCachePersistenceManager.addRefCountFor(info.attachmentInfo.fileId, 1)
+
+            messagePersistenceManager.addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment)).get()
+
+            assertEquals(2, attachmentCachePersistenceManager.getRefCountForEntry(info.attachmentInfo.fileId), "Attachment count not increased")
         }
     }
 
@@ -813,6 +861,18 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteAllMessagesUntil should decrease the attachment ref count`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.deleteAllMessagesUntil(conversationId, info.messageInfo.timestamp).get()
+
+            assertEquals(0, attachmentCachePersistenceManager.getRefCountForEntry(info.fileId), "Ref count not modified")
+        }
+    }
+
+    @Test
     fun `deleteAllMessagesUntil should remove any deleted expiring entries`() {
         foreachConvType { conversationId, participants ->
             val messages = (0..1L).map {
@@ -1037,6 +1097,18 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteMessages should decrease attachment ref counts`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.deleteMessages(conversationId, listOf(info.messageInfo.id)).get()
+
+            assertEquals(0, attachmentCachePersistenceManager.getRefCountForEntry(info.fileId), "Ref count not modified")
+        }
+    }
+
+    @Test
     fun `deleteMessages should update the corresponding group conversation info when no messages remain`() {
         withJoinedGroup { groupId, members ->
             val ids = insertRandomReceivedMessages(groupId, members)
@@ -1140,6 +1212,18 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             messagePersistenceManager.deleteAllMessages(groupId.toConversationId()).get()
 
             conversationInfoTestUtils.assertInitialConversationInfo(groupId)
+        }
+    }
+
+    @Test
+    fun `deleteAllMessages should decrease attachment ref counts`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.deleteAllMessages(conversationId).get()
+
+            assertEquals(0, attachmentCachePersistenceManager.getRefCountForEntry(info.fileId), "Ref count not modified")
         }
     }
 
