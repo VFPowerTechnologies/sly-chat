@@ -873,6 +873,19 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteAllMessagesUntil should remove associated attachment entries`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.deleteAllMessagesUntil(conversationId, info.messageInfo.timestamp).get()
+
+            val attachments = messagePersistenceManager.getAttachmentsForMessage(conversationId, info.messageInfo.id).get()
+            assertTrue(attachments.isEmpty(), "Attachment references not deleted")
+        }
+    }
+
+    @Test
     fun `deleteAllMessagesUntil should remove any deleted expiring entries`() {
         foreachConvType { conversationId, participants ->
             val messages = (0..1L).map {
@@ -1109,6 +1122,19 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     }
 
     @Test
+    fun `deleteMessages should remove associated attachment entries`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.deleteMessages(conversationId, listOf(info.messageInfo.id)).get()
+
+            val attachments = messagePersistenceManager.getAttachmentsForMessage(conversationId, info.messageInfo.id).get()
+            assertTrue(attachments.isEmpty(), "Attachment references not deleted")
+        }
+    }
+
+    @Test
     fun `deleteMessages should update the corresponding group conversation info when no messages remain`() {
         withJoinedGroup { groupId, members ->
             val ids = insertRandomReceivedMessages(groupId, members)
@@ -1224,6 +1250,19 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             messagePersistenceManager.deleteAllMessages(conversationId).get()
 
             assertEquals(0, attachmentCachePersistenceManager.getRefCountForEntry(info.fileId), "Ref count not modified")
+        }
+    }
+
+    @Test
+    fun `deleteAllMessages should remove associated attachment entries`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.deleteAllMessages(conversationId).get()
+
+            val attachments = messagePersistenceManager.getAttachmentsForMessage(conversationId, info.messageInfo.id).get()
+            assertTrue(attachments.isEmpty(), "Attachment references not deleted")
         }
     }
 

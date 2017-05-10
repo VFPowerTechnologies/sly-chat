@@ -513,6 +513,26 @@ WHERE
         }
     }
 
+    private fun deleteAttachmentRefsForMessages(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
+        //language=SQLite
+        val sql = """
+DELETE FROM
+    attachments
+WHERE
+    conversation_id = :conversationId
+AND
+    message_id = :messageId
+"""
+        connection.withPrepared(sql) { stmt ->
+            stmt.bind(":conversationId", conversationId)
+            messageIds.forEach {
+                stmt.bind(":messageId", it)
+                stmt.step()
+                stmt.reset(false)
+            }
+        }
+    }
+
     override fun deleteMessages(conversationId: ConversationId, messageIds: Collection<String>): Promise<Unit, Exception> {
         if (messageIds.isEmpty())
             return Promise.of(Unit)
@@ -520,6 +540,8 @@ WHERE
         return sqlitePersistenceManager.runQuery { connection ->
             connection.withTransaction {
                 decAttachmentRefCountForMessages(connection, conversationId, messageIds)
+
+                deleteAttachmentRefsForMessages(connection, conversationId, messageIds)
 
                 val tableName = ConversationTable.getTablename(conversationId)
 
@@ -617,6 +639,20 @@ WHERE
         }
     }
 
+    private fun deleteAttachmentRefsForConvo(connection: SQLiteConnection, conversationId: ConversationId) {
+        //language=SQLite
+        val sql = """
+DELETE FROM
+    attachments
+WHERE
+    conversation_id = :conversationId
+"""
+        connection.withPrepared(sql) {
+            it.bind(":conversationId", conversationId)
+            it.step()
+        }
+    }
+
     override fun deleteAllMessages(conversationId: ConversationId): Promise<Long?, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             val lastMessageTimestamp = getLastConvoTimestamp(connection, conversationId)
@@ -627,6 +663,9 @@ WHERE
             }
             else {
                 decAttachmentRefCountForConvo(connection, conversationId)
+
+                deleteAttachmentRefsForConvo(connection, conversationId)
+
                 val tableName = ConversationTable.getTablename(conversationId)
                 connection.withPrepared("DELETE FROM $tableName", SQLiteStatement::step)
 
@@ -723,10 +762,37 @@ WHERE
     override fun deleteAllMessagesUntil(conversationId: ConversationId, timestamp: Long): Promise<Unit, Exception> = sqlitePersistenceManager.runQuery { connection ->
         connection.withTransaction {
             decAttachmentRefCountUntil(connection, conversationId, timestamp)
+            deleteAttachmentRefsUntil(connection, conversationId, timestamp)
             deleteExpiringEntriesUntil(connection, conversationId, timestamp)
             deleteFailuresUntil(connection, conversationId, timestamp)
             deleteAllConvoMessagesUntil(connection, conversationId, timestamp)
             updateConversationInfo(connection, conversationId)
+        }
+    }
+
+    private fun deleteAttachmentRefsUntil(connection: SQLiteConnection, conversationId: ConversationId, timestamp: Long) {
+        val tableName = ConversationTable.getTablename(conversationId)
+
+        //language=SQLite
+        val sql = """
+DELETE FROM
+    attachments
+WHERE
+    conversation_id = :conversationId
+AND
+    message_id IN (
+        SELECT
+            id
+        FROM
+            $tableName
+        WHERE
+            timestamp <= :timestamp
+    )
+"""
+        connection.withPrepared(sql) {
+            it.bind(":conversationId", conversationId)
+            it.bind(":timestamp", timestamp)
+            it.step()
         }
     }
 
@@ -1291,6 +1357,11 @@ AND
 
             r
         }
+    }
+
+    //just used for testing currently, so not part of the internal
+    fun getAttachmentsForMessage(conversationId: ConversationId, messageId: String): Promise<List<MessageAttachmentInfo>, Exception> = sqlitePersistenceManager.runQuery {
+        selectAttachments(it, conversationId, messageId)
     }
 
     private fun selectAttachments(connection: SQLiteConnection, conversationId: ConversationId, messageId: String): List<MessageAttachmentInfo> {
