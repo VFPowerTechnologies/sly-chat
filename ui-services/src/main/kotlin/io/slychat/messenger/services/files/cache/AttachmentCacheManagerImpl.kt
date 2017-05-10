@@ -379,7 +379,7 @@ class AttachmentCacheManagerImpl(
 
         val dlRequests = requests.map {
             tracking[it.fileId] = it
-            DownloadRequest(it.fileId, attachmentCache.getPendingPathForFile(it.fileId).path)
+            DownloadRequest(it.fileId, attachmentCache.getPendingPathForFile(it.fileId).path, true)
         }
 
         storageService.downloadFiles(dlRequests) bindUi {

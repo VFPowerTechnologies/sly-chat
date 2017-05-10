@@ -297,7 +297,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
 
         files.forEach {
             val path = downloadDir / it.userMetadata.fileName
-            uc.storageService.downloadFiles(listOf(DownloadRequest(it.id, path.path))) fail {
+            uc.storageService.downloadFiles(listOf(DownloadRequest(it.id, path.path, true))) fail {
                 log.error("Failed to start download")
             }
         }

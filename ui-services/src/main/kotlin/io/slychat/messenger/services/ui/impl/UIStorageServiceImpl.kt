@@ -85,7 +85,7 @@ class UIStorageServiceImpl(
     }
 
     override fun downloadFile(fileId: String, localFilePath: String): Promise<Unit, Exception> {
-        return getServiceOrThrow().downloadFiles(listOf(DownloadRequest(fileId, localFilePath))).map { Unit }
+        return getServiceOrThrow().downloadFiles(listOf(DownloadRequest(fileId, localFilePath, true))).map { Unit }
     }
 
     override fun remove(transferIds: List<String>): Promise<Unit, Exception> {

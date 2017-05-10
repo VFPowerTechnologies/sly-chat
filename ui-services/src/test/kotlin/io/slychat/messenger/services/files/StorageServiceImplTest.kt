@@ -20,6 +20,7 @@ import rx.subjects.PublishSubject
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertNotNull
 
 class StorageServiceImplTest {
     companion object {
@@ -83,6 +84,7 @@ class StorageServiceImplTest {
         whenever(transferManager.transfers).thenReturn(emptyList())
         whenever(transferManager.remove(any())).thenResolveUnit()
         whenever(transferManager.upload(any())).thenResolveUnit()
+        whenever(transferManager.download(any())).thenResolveUnit()
         whenever(fileAccess.getFileInfo(any())).thenReturn(FileInfo("displayName", randomLong(), "*/*"))
 
         whenever(attachmentCache.getFinalPathForFile(any())).thenReturn(dummyCachePath)
@@ -420,5 +422,31 @@ class StorageServiceImplTest {
 
         verify(transferManager).remove(listOf(status.id))
         verify(fileListPersistenceManager).deleteFiles(fileIds)
+    }
+
+    private fun testDownloadDecryptionSetting(doDecrypt: Boolean) {
+        val service = newService(false)
+
+        val request = DownloadRequest(generateFileId(), "/localPath", doDecrypt)
+
+        val file = randomRemoteFile(request.fileId)
+
+        whenever(fileListPersistenceManager.getFilesById(any())).thenResolve(mapOf(file.id to file))
+
+        val results = service.downloadFiles(listOf(request, request)).get()
+
+        val info = assertNotNull(results.firstOrNull(), "Empty download info")
+
+        assertEquals(doDecrypt, info.download.doDecrypt, "Decryption setting not respected")
+    }
+
+    @Test
+    fun `downloadFile should obey request decryption setting (false)`() {
+        testDownloadDecryptionSetting(false)
+    }
+
+    @Test
+    fun `downloadFile should obey request decryption setting (true)`() {
+        testDownloadDecryptionSetting(true)
     }
 }

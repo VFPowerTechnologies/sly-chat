@@ -284,7 +284,7 @@ class StorageServiceImpl(
                     DownloadState.CREATED,
                     it.localFilePath,
                     "${file.userMetadata.directory}/${file.userMetadata.fileName}",
-                    true,
+                    it.doDecrypt,
                     null
                 )
 
