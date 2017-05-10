@@ -784,13 +784,17 @@ class SlyApplication {
 
     private fun disconnectFromRelay() {
         val userComponent = this.userComponent ?: return
+        disconnectFromRelay(userComponent)
+    }
+
+    private fun disconnectFromRelay(userComponent: UserComponent) {
         stopRelayKeepAlive()
         userComponent.relayClientManager.disconnect()
     }
 
     private fun deinitializeUserSession(userComponent: UserComponent) {
         shutdownUserComponents(userComponent)
-        disconnectFromRelay()
+        disconnectFromRelay(userComponent)
     }
 
     /** Returns true if a session was present, false otherwise. */

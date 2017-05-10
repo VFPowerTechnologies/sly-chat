@@ -469,4 +469,13 @@ class SlyApplicationTest {
 
         verify(userComponent.addressBookOperationManager, never()).withCurrentSyncJobNoScheduler(any())
     }
+
+    @Test
+    fun `it should disconnect from the relay on log out`() {
+        val app = auth()
+
+        app.logout()
+
+        verify(userComponent.relayClientManager).disconnect()
+    }
 }
