@@ -13,6 +13,7 @@ import io.slychat.messenger.core.http.api.contacts.ContactLookupAsyncClientImpl
 import io.slychat.messenger.core.http.api.offline.OfflineMessagesAsyncClientImpl
 import io.slychat.messenger.core.http.api.prekeys.HttpPreKeyClient
 import io.slychat.messenger.core.http.api.prekeys.PreKeyAsyncClient
+import io.slychat.messenger.core.http.api.share.ShareAsyncClientImpl
 import io.slychat.messenger.core.http.api.storage.StorageAsyncClientImpl
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.base.RelayConnector
@@ -30,8 +31,7 @@ import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.SlyHttp
 import io.slychat.messenger.services.di.annotations.UIVisibility
 import io.slychat.messenger.services.files.*
-import io.slychat.messenger.services.files.cache.AttachmentCache
-import io.slychat.messenger.services.files.cache.AttachmentCacheImpl
+import io.slychat.messenger.services.files.cache.*
 import io.slychat.messenger.services.messaging.*
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -571,6 +571,53 @@ class UserModule(
             Schedulers.computation(),
             mainScheduler,
             false
+        )
+    }
+
+    @UserScope
+    @Provides
+    fun providesAttachmentCacheService(
+        serverUrls: ServerUrls,
+        @SlyHttp httpClientFactory: HttpClientFactory,
+        keyVault: KeyVault,
+        tokenManager: AuthTokenManager,
+        messageService: MessageService,
+        storageService: StorageService,
+        attachmentCacheManager: AttachmentCacheManager,
+        @NetworkStatus networkStatus: Observable<Boolean>
+    ): AttachmentService {
+        val shareClient = ShareAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
+
+        return AttachmentServiceImpl(
+            keyVault,
+            tokenManager,
+            shareClient,
+            messageService,
+            storageService,
+            attachmentCacheManager,
+            networkStatus,
+            storageService.syncEvents
+        )
+    }
+
+    @UserScope
+    @Provides
+    fun providesAttachmentCacheManager(
+        fileListPersistenceManager: FileListPersistenceManager,
+        storageService: StorageService,
+        attachmentCache: AttachmentCache,
+        attachmentCachePersistenceManager: AttachmentCachePersistenceManager,
+        thumbnailGenerator: ThumbnailGenerator,
+        messageService: MessageService
+    ): AttachmentCacheManager {
+        return AttachmentCacheManagerImpl(
+            fileListPersistenceManager,
+            storageService,
+            attachmentCache,
+            attachmentCachePersistenceManager,
+            thumbnailGenerator,
+            storageService.fileEvents,
+            messageService.messageUpdates
         )
     }
 

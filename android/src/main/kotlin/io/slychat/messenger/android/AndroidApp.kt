@@ -184,7 +184,8 @@ class AndroidApp : Application() {
             AndroidSchedulers.mainThread(),
             defaultUserConfig,
             PushNotificationService.GCM,
-            AndroidFileAccess(this)
+            AndroidFileAccess(this),
+            AndroidThumbnailGenerator()
         )
 
         app.init(platformModule)

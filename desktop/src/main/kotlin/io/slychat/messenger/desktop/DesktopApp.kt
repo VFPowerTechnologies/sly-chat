@@ -212,7 +212,8 @@ class DesktopApp : Application() {
             JavaFxScheduler.getInstance(),
             UserConfig(),
             null,
-            fileAccess
+            fileAccess,
+            DesktopThumbnailGenerator()
         )
 
         app.init(platformModule)

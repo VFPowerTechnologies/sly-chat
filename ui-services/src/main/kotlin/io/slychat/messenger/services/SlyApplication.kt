@@ -469,6 +469,7 @@ class SlyApplication {
         //we could break this up into parts and emit progress events between stages
         return task {
             localAccountDirectory.createUserDirectories(userId)
+            userComponent.attachmentCache.init()
         } bind {
             accountParamsManager.update(authResult.accountLocalInfo)
         } bind {
@@ -523,7 +524,6 @@ class SlyApplication {
     }
 
     private fun startUserComponents(userComponent: UserComponent) {
-        userComponent.attachmentCache.init()
         //dagger lazily initializes all components, so we need to force creation
         userComponent.notifierService.init()
         userComponent.messageProcessor.init()
@@ -539,6 +539,7 @@ class SlyApplication {
         userComponent.transferManager.init()
         userComponent.storageService.init()
         userComponent.fileListSyncWatcher.init()
+        userComponent.attachmentService.init()
     }
 
     private fun shutdownUserComponents(userComponent: UserComponent) {
@@ -560,6 +561,7 @@ class SlyApplication {
         userComponent.transferManager.shutdown()
         userComponent.storageService.shutdown()
         userComponent.fileListSyncWatcher.shutdown()
+        userComponent.attachmentService.shutdown()
     }
 
     //should come up with something better...

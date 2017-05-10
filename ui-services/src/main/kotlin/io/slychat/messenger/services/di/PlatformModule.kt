@@ -13,6 +13,7 @@ import io.slychat.messenger.services.config.UserConfig
 import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.UIVisibility
 import io.slychat.messenger.services.files.PlatformFileAccess
+import io.slychat.messenger.services.files.cache.ThumbnailGenerator
 import io.slychat.messenger.services.ui.*
 import rx.Observable
 import rx.Scheduler
@@ -84,6 +85,9 @@ class PlatformModule(
     val pushNotificationService: PushNotificationService?,
 
     @get:Provides
-    val fileAccess: PlatformFileAccess
+    val fileAccess: PlatformFileAccess,
+
+    @get:Provides
+    val thumbnailGenerator: ThumbnailGenerator
 )
 

@@ -180,6 +180,8 @@ class AttachmentServiceImpl(
     }
 
     override fun init() {
+        attachmentCacheManager.init()
+
         messageService.getAllReceivedAttachments() successUi {
             attachments.add(it)
 

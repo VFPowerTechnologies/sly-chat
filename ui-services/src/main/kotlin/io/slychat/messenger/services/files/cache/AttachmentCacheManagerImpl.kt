@@ -22,7 +22,6 @@ import kotlin.collections.HashSet
 /**
  * Handles managing cache download requests and updating the underlying AttachmentCache
  */
-//TODO should we just ditch the inc count bit? should be tracked by the database anyways based on message refs
 class AttachmentCacheManagerImpl(
     private val fileListPersistenceManager: FileListPersistenceManager,
     private val storageService: StorageService,

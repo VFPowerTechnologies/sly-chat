@@ -168,4 +168,12 @@ class UserPersistenceModule {
     ): DownloadPersistenceManager {
         return SQLiteDownloadPersistenceManager(sqlitePersistenceManager)
     }
+
+    @UserScope
+    @Provides
+    fun providesAttachmentCachePersistenceManager(
+        sqlitePersistenceManager: SQLitePersistenceManager
+    ): AttachmentCachePersistenceManager {
+        return SQLiteAttachmentCachePersistenceManager(sqlitePersistenceManager)
+    }
 }

@@ -23,7 +23,6 @@ import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.subscriptions.CompositeSubscription
-import java.io.File
 import java.util.*
 
 /**
@@ -229,14 +228,14 @@ class MessengerServiceImpl(
 
                 //this is in this order since right now there's nothing to detect missing queued messages from addMessage
                 messageSender.addToQueue(SenderMessageEntry(metadata, serialized)) bind {
-                    messageService.addMessage(userId.toConversationId(), conversationMessageInfo, TODO())
+                    messageService.addMessage(userId.toConversationId(), conversationMessageInfo, emptyList())
                 }
             }
             else {
                 //we don't actually wanna send a text message to ourselves; mostly because both the sent and received ids would be the same
                 //so we just add a new sent message, then broadcast the sync message to other devices
 
-                messageService.addMessage(userId.toConversationId(), conversationMessageInfo, TODO()) bindUi {
+                messageService.addMessage(userId.toConversationId(), conversationMessageInfo, emptyList()) bindUi {
                     broadcastSentMessage(metadata, conversationMessageInfo) map { Unit }
                 }
             }

@@ -1,14 +1,18 @@
 package io.slychat.messenger.desktop.debug
 
 import io.slychat.messenger.core.Quota
+import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.div
 import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.persistence.AllowedMessageLevel
 import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.desktop.getUserHome
 import io.slychat.messenger.services.SlyApplication
+import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.di.UserComponent
 import io.slychat.messenger.services.files.*
+import io.slychat.messenger.services.messaging.AttachmentSource
 import javafx.beans.binding.Bindings
 import javafx.beans.property.*
 import javafx.collections.FXCollections
@@ -21,6 +25,7 @@ import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.stage.FileChooser
 import javafx.stage.Stage
+import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.subscriptions.CompositeSubscription
@@ -258,7 +263,32 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
             downloadFile(fileTableView.selectionModel.selectedItems)
         }
 
-        fileItemContextMenu.items.addAll(download, delete)
+        val share = MenuItem("Share")
+        share.setOnAction {
+            shareFile(fileTableView.selectionModel.selectedItems)
+        }
+
+        fileItemContextMenu.items.addAll(download, delete, share)
+    }
+
+    private fun shareFile(selectedItems: List<RemoteFile>) {
+        uc.contactsService.getAll() bindUi {
+            val dialog = ChoiceDialog<UserId>(null, it.filter { it.allowedMessageLevel == AllowedMessageLevel.ALL }.map { it.id })
+            val selected = dialog.showAndWait()
+            if (selected.isPresent) {
+                val toContact = selected.get()
+
+                val attachments = selectedItems.map {
+                    AttachmentSource.Remote(it.id, doCacheCheckBox.isSelected)
+                }
+
+                uc.messengerService.sendMessageTo(toContact, "Testing share", 0, attachments)
+            }
+            else
+                Promise.of(Unit)
+        } fail {
+            log.error("Failed to get contact list: {}", it.message, it)
+        }
     }
 
     private fun downloadFile(files: List<RemoteFile>) {
