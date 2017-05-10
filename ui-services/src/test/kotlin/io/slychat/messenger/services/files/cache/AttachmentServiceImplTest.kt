@@ -119,7 +119,7 @@ class AttachmentServiceImplTest {
         val messageId = randomMessageId()
         val receivedAttachment = randomReceivedAttachment(0)
 
-        service.addNewReceived(conversationId, sender, messageId, listOf(receivedAttachment))
+        service.addNewReceived(conversationId, sender, listOf(receivedAttachment))
 
         verify(shareClient).acceptShare(any(), capture {
             assertEquals(it.theirUserId, sender, "Invalid sender")
@@ -130,6 +130,18 @@ class AttachmentServiceImplTest {
         })
     }
 
+    @Test
+    fun `addNewReceived should do nothing when given empty attachments`() {
+        val service = newService()
+
+        val conversationId = randomUserConversationId()
+        val sender = randomUserId()
+
+        service.addNewReceived(conversationId, sender, emptyList())
+
+        verify(shareClient, never()).acceptShare(any(), any())
+    }
+
     private fun testSyncResponse(fileId: String, mergeResults: FileListMergeResults, times: VerificationMode) {
         val service = newService()
 
@@ -138,7 +150,7 @@ class AttachmentServiceImplTest {
         val messageId = randomMessageId()
         val receivedAttachment = randomReceivedAttachment(conversationId = conversationId, messageId = messageId, fileId = fileId)
 
-        service.addNewReceived(conversationId, sender, messageId, listOf(receivedAttachment))
+        service.addNewReceived(conversationId, sender, listOf(receivedAttachment))
 
         syncEvents.onNext(FileListSyncEvent.Result(FileListSyncResult(0, mergeResults, 1, randomQuota())))
 
@@ -192,11 +204,11 @@ class AttachmentServiceImplTest {
 
         whenever(shareClient.acceptShare(any(), any())).thenReturn(d.promise)
 
-        service.addNewReceived(conversationId, sender, randomMessageId(), listOf(receivedAttachment))
+        service.addNewReceived(conversationId, sender, listOf(receivedAttachment))
 
         d.resolve(response)
 
-        service.addNewReceived(conversationId, sender, randomMessageId(), listOf(receivedAttachment2))
+        service.addNewReceived(conversationId, sender, listOf(receivedAttachment2))
 
         val captor = argumentCaptor<AcceptShareRequest>()
 

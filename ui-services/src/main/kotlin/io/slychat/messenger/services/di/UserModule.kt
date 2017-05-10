@@ -148,7 +148,8 @@ class UserModule(
         groupService: GroupService,
         @UIVisibility uiVisibility: Observable<Boolean>,
         uiEventService: UIEventService,
-        relayClock: RelayClock
+        relayClock: RelayClock,
+        attachmentService: AttachmentService
     ): MessageProcessor = MessageProcessorImpl(
         userData.userId,
         contactsService,
@@ -157,6 +158,7 @@ class UserModule(
         messageCipherService,
         groupService,
         relayClock,
+        attachmentService,
         uiVisibility,
         uiEventService.events
     )

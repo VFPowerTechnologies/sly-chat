@@ -9,5 +9,5 @@ interface AttachmentService {
 
     fun shutdown()
 
-    fun addNewReceived(conversationId: ConversationId, sender: UserId, messageId: String, receivedAttachments: List<ReceivedAttachment>)
+    fun addNewReceived(conversationId: ConversationId, sender: UserId, receivedAttachments: List<ReceivedAttachment>)
 }

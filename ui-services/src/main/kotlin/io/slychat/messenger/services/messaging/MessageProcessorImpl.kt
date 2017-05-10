@@ -10,6 +10,7 @@ import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.files.StorageService
+import io.slychat.messenger.services.files.cache.AttachmentService
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.map
 import org.slf4j.LoggerFactory
@@ -25,6 +26,7 @@ class MessageProcessorImpl(
     private val messageCipherService: MessageCipherService,
     private val groupService: GroupService,
     private val relayClock: RelayClock,
+    private val attachmentService: AttachmentService,
     uiVisibility: Observable<Boolean>,
     uiEvents: Observable<UIEvent>
 ) : MessageProcessor {
@@ -141,6 +143,7 @@ class MessageProcessorImpl(
         }
     }
 
+    //TODO
     private fun handleSelfMessage(m: SyncMessage.SelfMessage): Promise<Unit, Exception> {
         val sentMessageInfo = m.sentMessageInfo
 
@@ -157,20 +160,21 @@ class MessageProcessorImpl(
             is ConversationId.User -> contactsService.addMissingContacts(setOf(conversationId.id)) bindUi {
                 addSingleMessage(conversationId.id, conversationMessageInfo, emptyList())
             }
-            is ConversationId.Group -> addGroupMessage(conversationId.id, conversationMessageInfo)
+            is ConversationId.Group -> addGroupMessage(conversationId.id, conversationMessageInfo, TODO(), TODO())
         }
     }
 
-    private fun addSingleMessage(userId: UserId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
-        val conversationId = userId.toConversationId()
+    private fun addSingleMessage(sender: UserId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
+        val conversationId = sender.toConversationId()
         return messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments) bindRecoverForUi { e: InvalidMessageLevelException ->
             log.debug("User doesn't have appropriate message level, upgrading")
 
-            contactsService.allowAll(userId) bindUi {
-                messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments) mapUi {
-                    //TODO AttachmentService.addReceived
-                }
+            contactsService.allowAll(sender) bindUi {
+                messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments)
             }
+        } mapUi {
+            log.debug("Queuing received attachments: {}")
+            attachmentService.addNewReceived(conversationId, sender, receivedAttachments)
         }
     }
 
@@ -226,13 +230,18 @@ class MessageProcessorImpl(
         }
         else {
             groupService.getInfo(groupId) bindUi { groupInfo ->
-                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, conversationInfo) }
+                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, conversationInfo, sender, receivedAttachments) }
             }
         }
     }
 
-    private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo): Promise<Unit, Exception> {
-        return messageService.addMessage(groupId.toConversationId(), conversationMessageInfo, emptyList())
+    private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo, sender: UserId, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
+        val conversationId = groupId.toConversationId()
+
+        return messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments) mapUi {
+            log.debug("Queuing received attachments: {}")
+            attachmentService.addNewReceived(conversationId, sender, receivedAttachments)
+        }
     }
 
     private fun handleGroupMessage(sender: UserId, m: GroupEventMessage): Promise<Unit, Exception> {

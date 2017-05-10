@@ -201,7 +201,10 @@ class AttachmentServiceImpl(
         subscriptions.clear()
     }
 
-    override fun addNewReceived(conversationId: ConversationId, sender: UserId, messageId: String, receivedAttachments: List<ReceivedAttachment>) {
+    override fun addNewReceived(conversationId: ConversationId, sender: UserId, receivedAttachments: List<ReceivedAttachment>) {
+        if (receivedAttachments.isEmpty())
+            return
+
         attachments.add(receivedAttachments)
         queue.add(AcceptJob(sender, receivedAttachments))
 

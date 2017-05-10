@@ -15,6 +15,7 @@ import io.slychat.messenger.services.*
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.files.StorageService
+import io.slychat.messenger.services.files.cache.AttachmentService
 import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.thenReject
 import io.slychat.messenger.testutils.thenResolve
@@ -47,6 +48,7 @@ class MessageProcessorImplTest {
     private val storageService: StorageService = mock()
     private val groupService: GroupService = mock()
     private val relayClock: RelayClock = mock()
+    private val attachmentService: AttachmentService = mock()
     private val uiVisibility: BehaviorSubject<Boolean> = BehaviorSubject.create(true)
     private val uiEvents: PublishSubject<UIEvent> = PublishSubject.create()
 
@@ -95,6 +97,7 @@ class MessageProcessorImplTest {
             messageCipherService,
             groupService,
             relayClock,
+            attachmentService,
             uiVisibility,
             uiEvents
         )
@@ -151,6 +154,49 @@ class MessageProcessorImplTest {
 
             assertEquals(attachment.fileName, a.displayName, "Invalid displayName")
         }, any())
+    }
+
+    @Test
+    fun `it should add received attachments to the cache service when present in a single message`() {
+        val processor = createProcessor()
+
+        val attachment = TextMessageAttachment(
+            FileId(generateFileId()),
+            generateShareKey(),
+            "dummy.jpg",
+            Key(byteArrayOf(0x77)),
+            CipherList.defaultDataEncryptionCipher.id
+        )
+
+        val m = randomTextMessage(attachments = listOf(attachment))
+        val sender = randomUserId()
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(attachmentService).addNewReceived(eq(sender.toConversationId()), eq(sender), any())
+    }
+
+    @Test
+    fun `it should add received attachments to the cache service when present in a group message`() {
+        val processor = createProcessor()
+
+        val attachment = TextMessageAttachment(
+            FileId(generateFileId()),
+            generateShareKey(),
+            "dummy.jpg",
+            Key(byteArrayOf(0x77)),
+            CipherList.defaultDataEncryptionCipher.id
+        )
+
+        val group = randomGroupInfo(GroupMembershipLevel.JOINED)
+        whenever(groupService.getInfo(group.id)).thenResolve(group)
+
+        val m = randomTextMessage(attachments = listOf(attachment), groupId = group.id)
+        val sender = randomUserId()
+
+        processor.processMessage(sender, wrap(m)).get()
+
+        verify(attachmentService).addNewReceived(eq(group.id.toConversationId()), eq(sender), any())
     }
 
     @Test
