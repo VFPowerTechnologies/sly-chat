@@ -274,6 +274,7 @@ class TransferTestWindow(mainStage: Stage, app: SlyApplication) : Stage() {
     private fun shareFile(selectedItems: List<RemoteFile>) {
         uc.contactsService.getAll() bindUi {
             val dialog = ChoiceDialog<UserId>(null, it.filter { it.allowedMessageLevel == AllowedMessageLevel.ALL }.map { it.id })
+            dialog.title = "Select a contact"
             val selected = dialog.showAndWait()
             if (selected.isPresent) {
                 val toContact = selected.get()

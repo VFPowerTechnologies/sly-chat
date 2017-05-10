@@ -133,7 +133,7 @@ class AttachmentCacheManagerImplTest {
         val fileId = generateFileId()
         val manager = newManagerWithRequest(AttachmentCacheRequest(fileId, null))
 
-        verify(storageService).downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path, true)))
+        verify(storageService).downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path, false)))
     }
 
     @Test
@@ -210,7 +210,7 @@ class AttachmentCacheManagerImplTest {
         val info = randomDownloadInfo()
         val download = info.download
 
-        whenever(storageService.downloadFiles(listOf(DownloadRequest(download.fileId, dummyCachePath.path, true)))).thenResolve(listOf(info))
+        whenever(storageService.downloadFiles(listOf(DownloadRequest(download.fileId, dummyCachePath.path, false)))).thenResolve(listOf(info))
 
         val manager = newManagerWithRequest(AttachmentCacheRequest(download.fileId, null))
 
@@ -467,7 +467,7 @@ class AttachmentCacheManagerImplTest {
         assertFalse(result.isDeleted)
         assertFalse(result.isOriginalPresent)
 
-        verify(storageService).downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path, true)))
+        verify(storageService).downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path, false)))
     }
 
     @Test
@@ -485,7 +485,7 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCache.getThumbnailInputStream(any(), any(), any(), any(), any())).thenReturn(null)
         whenever(attachmentCache.getThumbnailGenerationStreams(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(dummyThumbnailStreams())
 
-        whenever(storageService.downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path, true)))).thenResolve(listOf(info))
+        whenever(storageService.downloadFiles(listOf(DownloadRequest(fileId, dummyCachePath.path, false)))).thenResolve(listOf(info))
 
         manager.getThumbnailStream(fileId, resolution).get()
 
