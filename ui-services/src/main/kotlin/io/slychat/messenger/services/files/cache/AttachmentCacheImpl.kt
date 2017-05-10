@@ -18,9 +18,7 @@ import java.util.*
 /**
  * Manages the on-disk cache.
  */
-class AttachmentCacheImpl(
-    cacheRoot: File
-) : AttachmentCache {
+class AttachmentCacheImpl(cacheRoot: File) : AttachmentCache {
     //this is a flat dir; images are named <fileId>_(original|<resolution>)
     private val pendingDir = cacheRoot / "pending"
 
@@ -85,8 +83,12 @@ class AttachmentCacheImpl(
         return activeDir / fileId
     }
 
-    override fun getDownloadPathForFile(fileId: String): File {
+    override fun getPendingPathForFile(fileId: String): File {
         return getPendingPathForOriginal(fileId)
+    }
+
+    override fun getFinalPathForFile(fileId: String): File {
+        return getActivePathForOriginal(fileId)
     }
 
     override fun filterPresent(fileIds: Set<String>): Promise<Set<String>, Exception> {

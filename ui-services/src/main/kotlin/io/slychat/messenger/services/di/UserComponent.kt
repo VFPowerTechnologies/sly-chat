@@ -12,6 +12,7 @@ import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.di.annotations.EmptyReadMessageQueue
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.files.TransferManager
+import io.slychat.messenger.services.files.cache.AttachmentCache
 import io.slychat.messenger.services.messaging.*
 import rx.Observable
 
@@ -91,4 +92,6 @@ interface UserComponent {
     val readMessageQueueIsEmpty: Observable<Unit>
 
     val fileListSyncWatcher: FileListSyncWatcher
+
+    val attachmentCache: AttachmentCache
 }

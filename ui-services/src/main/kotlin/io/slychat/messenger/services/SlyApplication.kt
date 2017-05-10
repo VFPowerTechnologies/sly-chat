@@ -1,13 +1,12 @@
 package io.slychat.messenger.services
 
-import com.fasterxml.jackson.core.JsonParseException
 import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.kovenant.recover
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.relay.*
-import io.slychat.messenger.core.sentry.*
+import io.slychat.messenger.core.sentry.ReportSubmitter
 import io.slychat.messenger.services.LoginEvent.*
 import io.slychat.messenger.services.auth.AuthApiResponseException
 import io.slychat.messenger.services.auth.AuthResult
@@ -26,7 +25,6 @@ import rx.subjects.BehaviorSubject
 import rx.subscriptions.CompositeSubscription
 import java.io.IOException
 import java.util.*
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 
 class SlyApplication {
@@ -525,6 +523,7 @@ class SlyApplication {
     }
 
     private fun startUserComponents(userComponent: UserComponent) {
+        userComponent.attachmentCache.init()
         //dagger lazily initializes all components, so we need to force creation
         userComponent.notifierService.init()
         userComponent.messageProcessor.init()

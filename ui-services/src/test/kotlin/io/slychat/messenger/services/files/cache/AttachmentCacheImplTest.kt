@@ -45,7 +45,7 @@ class AttachmentCacheImplTest {
     private fun <R> withDummyOriginalFull(body: (cache: AttachmentCacheImpl, fileId: String, original: ByteArray) -> R): R {
         return withCache {
             val fileId = generateFileId()
-            val path = it.getDownloadPathForFile(fileId)
+            val path = it.getPendingPathForFile(fileId)
 
             val data = writeDummyOriginalFileTo(path)
 
@@ -93,7 +93,7 @@ class AttachmentCacheImplTest {
     fun `getOriginalImageInputStream should return null if image isn't present in active dir`() {
         withCache {
             val fileId = generateFileId()
-            val path = it.getDownloadPathForFile(fileId)
+            val path = it.getPendingPathForFile(fileId)
 
             writeDummyOriginalFileTo(path)
 
@@ -138,7 +138,7 @@ class AttachmentCacheImplTest {
     fun `markOriginalComplete should move file to completed dir`() {
         withCache {
             val fileId = generateFileId()
-            val path = it.getDownloadPathForFile(fileId)
+            val path = it.getPendingPathForFile(fileId)
 
             writeDummyOriginalFileTo(path)
 
@@ -185,7 +185,7 @@ class AttachmentCacheImplTest {
     fun `delete should remove pending original files`() {
         withCache {
             val fileId = generateFileId()
-            val path = it.getDownloadPathForFile(fileId)
+            val path = it.getPendingPathForFile(fileId)
 
             writeDummyOriginalFileTo(path)
 

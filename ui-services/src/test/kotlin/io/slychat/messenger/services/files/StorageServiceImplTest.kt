@@ -5,8 +5,8 @@ import io.slychat.messenger.core.*
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
-import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
+import io.slychat.messenger.services.files.cache.AttachmentCache
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
@@ -67,16 +67,9 @@ class StorageServiceImplTest {
     private val fileAccess: PlatformFileAccess = mock()
     private val syncJobFactory: StorageSyncJobFactory = mock()
     private val syncJob = MockStorageSyncJob()
-    private val userPaths = UserPaths(
-        File("accountDir"),
-        File("keyVault"),
-        File("accountInfo"),
-        File("accountParams"),
-        File("sessionData"),
-        File("db"),
-        File("config"),
-        File("cacheDir")
-    )
+    private val attachmentCache: AttachmentCache = mock()
+
+    private val dummyCachePath = File("/cachePath")
 
     private val transferEvents = PublishSubject.create<TransferEvent>()
     private val quotaEvents = PublishSubject.create<Quota>()
@@ -92,6 +85,7 @@ class StorageServiceImplTest {
         whenever(transferManager.upload(any())).thenResolveUnit()
         whenever(fileAccess.getFileInfo(any())).thenReturn(FileInfo("displayName", randomLong(), "*/*"))
 
+        whenever(attachmentCache.getFinalPathForFile(any())).thenReturn(dummyCachePath)
     }
 
     private fun newService(isNetworkAvailable: Boolean = true): StorageServiceImpl {
@@ -102,7 +96,7 @@ class StorageServiceImplTest {
             syncJobFactory,
             transferManager,
             fileAccess,
-            userPaths,
+            attachmentCache,
             networkStatus
         )
     }
@@ -374,6 +368,20 @@ class StorageServiceImplTest {
         assertThat(events).desc("It should not emit an Added event") {
             isEmpty()
         }
+    }
+
+    //TODO we need to call markOriginalComplete when CacheOperation completes as well
+    //or maybe we could omit the cache path now and pull it during upload later? but then we need Uploader to be able to handle this somehow
+    //we also need to trigger caching via requestCache when sending a message with an attachment
+    @Test
+    fun `uploadFile should use the cache dir cache is requested`() {
+        val service = newService(true)
+
+        service.uploadFile("/localPath", "/remoteDir", "fileName", true).get()
+
+        verify(transferManager).upload(capture {
+            assertEquals(dummyCachePath.path, it.upload.cachePath, "Invalid cache path")
+        })
     }
 
     @Test

@@ -8,6 +8,7 @@ import io.slychat.messenger.core.persistence.UploadPart
 import io.slychat.messenger.core.rx.observable
 import io.slychat.messenger.services.UploadClientFactory
 import io.slychat.messenger.services.auth.AuthTokenManager
+import io.slychat.messenger.services.files.cache.AttachmentCache
 import nl.komponents.kovenant.Promise
 import rx.Observable
 import rx.Scheduler
@@ -18,7 +19,8 @@ class UploadOperationsImpl(
     private val authTokenManager: AuthTokenManager,
     private val uploadClientFactory: UploadClientFactory,
     private val keyVault: KeyVault,
-    private val subscribeScheduler: Scheduler
+    private val subscribeScheduler: Scheduler,
+    private val attachmentCache: AttachmentCache
 ) : UploadOperations {
     override fun create(upload: Upload, file: RemoteFile): Promise<NewUploadResponse, Exception> {
         return authTokenManager.map {
@@ -51,7 +53,7 @@ class UploadOperationsImpl(
 
     override fun cache(upload: Upload, file: RemoteFile, isCancelled: AtomicBoolean): Observable<Long> {
         return observable<Long> {
-            CacheFileOperation(fileAccess, upload, file, it, isCancelled).run()
+            CacheFileOperation(fileAccess, upload, file, it, isCancelled, attachmentCache).run()
         }.subscribeOn(subscribeScheduler)
     }
 

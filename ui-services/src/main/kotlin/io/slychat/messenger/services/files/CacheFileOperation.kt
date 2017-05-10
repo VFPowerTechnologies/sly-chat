@@ -4,7 +4,9 @@ import io.slychat.messenger.core.crypto.EncryptInputStream
 import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.persistence.Upload
+import io.slychat.messenger.services.files.cache.AttachmentCache
 import rx.Subscriber
+import java.io.FileOutputStream
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -13,7 +15,8 @@ class CacheFileOperation(
     private val upload: Upload,
     private val file: RemoteFile,
     private val subscriber: Subscriber<in Long>,
-    private val isCancelled: AtomicBoolean
+    private val isCancelled: AtomicBoolean,
+    private val attachmentCache: AttachmentCache
 ) {
     init {
         require(upload.cachePath != null) { "No cache path set for upload" }
@@ -28,9 +31,9 @@ class CacheFileOperation(
 
             var wasCancelled = false
 
-            val cachePath = upload.cachePath!!
+            val outputPath = attachmentCache.getPendingPathForFile(file.id)
 
-            fileAccess.openFileForWrite(cachePath).use { outputStream ->
+            FileOutputStream(outputPath).use { outputStream ->
                 val buffer = ByteArray(8 * 1024)
 
                 while (true) {
@@ -50,9 +53,11 @@ class CacheFileOperation(
             }
 
             if (wasCancelled) {
-                fileAccess.delete(cachePath)
+                outputPath.delete()
                 throw CancellationException()
             }
+
+            attachmentCache.markOriginalComplete(listOf(file.id)).get()
         }
     }
 }

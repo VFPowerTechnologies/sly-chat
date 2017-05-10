@@ -30,6 +30,8 @@ import io.slychat.messenger.services.di.annotations.NetworkStatus
 import io.slychat.messenger.services.di.annotations.SlyHttp
 import io.slychat.messenger.services.di.annotations.UIVisibility
 import io.slychat.messenger.services.files.*
+import io.slychat.messenger.services.files.cache.AttachmentCache
+import io.slychat.messenger.services.files.cache.AttachmentCacheImpl
 import io.slychat.messenger.services.messaging.*
 import io.slychat.messenger.services.ui.UIEventService
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -535,6 +537,14 @@ class UserModule(
 
     @UserScope
     @Provides
+    fun providesAttachmentCache(
+        userPaths: UserPaths
+    ): AttachmentCache {
+        return AttachmentCacheImpl(userPaths.fileCacheDir)
+    }
+
+    @UserScope
+    @Provides
     fun providesUploader(
         serverUrls: ServerUrls,
         @SlyHttp httpClientFactory: HttpClientFactory,
@@ -542,14 +552,16 @@ class UserModule(
         uploadPersistenceManager: UploadPersistenceManager,
         mainScheduler: Scheduler,
         keyVault: KeyVault,
-        fileAccess: PlatformFileAccess
+        fileAccess: PlatformFileAccess,
+        attachmentCache: AttachmentCache
     ): Uploader {
         val operations = UploadOperationsImpl(
             fileAccess,
             authTokenManager,
             UploadClientFactoryImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory),
             keyVault,
-            Schedulers.io()
+            Schedulers.io(),
+            attachmentCache
         )
 
         return UploaderImpl(
@@ -592,9 +604,9 @@ class UserModule(
         fileListPersistenceManager: FileListPersistenceManager,
         transferManager: TransferManager,
         fileAccess: PlatformFileAccess,
-        userPaths: UserPaths,
         @NetworkStatus networkStatus: Observable<Boolean>,
-        keyVault: KeyVault
+        keyVault: KeyVault,
+        attachmentCache: AttachmentCache
     ): StorageService {
         val storageClient = StorageAsyncClientImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory)
         val syncJobFactory = StorageSyncJobFactoryImpl(keyVault, fileListPersistenceManager, storageClient)
@@ -605,7 +617,7 @@ class UserModule(
             syncJobFactory,
             transferManager,
             fileAccess,
-            userPaths,
+            attachmentCache,
             networkStatus
         )
     }

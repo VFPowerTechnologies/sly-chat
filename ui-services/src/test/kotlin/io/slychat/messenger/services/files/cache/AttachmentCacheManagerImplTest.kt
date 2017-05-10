@@ -73,7 +73,7 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCachePersistenceManager.deleteRequests(any())).thenResolveUnit()
         whenever(attachmentCachePersistenceManager.deleteZeroRefCountEntries(any())).thenResolveUnit()
 
-        whenever(attachmentCache.getDownloadPathForFile(any())).thenReturn(dummyCachePath)
+        whenever(attachmentCache.getPendingPathForFile(any())).thenReturn(dummyCachePath)
         whenever(attachmentCache.delete(any())).thenResolveUnit()
         whenever(attachmentCache.filterPresent(any())).thenResolve(emptySet())
         whenever(attachmentCache.isOriginalPresent(any())).thenReturn(true)

@@ -350,7 +350,6 @@ class TransferIntegrationTest {
             getMockSyncJobFactory(),
             transferManager,
             fileAccess,
-            userPaths,
             networkStatus
         )
 

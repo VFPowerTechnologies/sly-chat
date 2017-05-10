@@ -8,9 +8,9 @@ import io.slychat.messenger.core.files.RemoteFile
 import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.rx.plusAssign
-import io.slychat.messenger.services.UserPaths
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.bindUi
+import io.slychat.messenger.services.files.cache.AttachmentCache
 import io.slychat.messenger.services.mapUi
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.functional.bind
@@ -24,15 +24,13 @@ import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 
-//XXX an issue right now is that upload adds a file to the list but it isn't reflected in the file list until the upload completes
-//I guess this isn't that much of an issue anyways
 class StorageServiceImpl(
     private val authTokenManager: AuthTokenManager,
     private val fileListPersistenceManager: FileListPersistenceManager,
     private val syncJobFactory: StorageSyncJobFactory,
     private val transferManager: TransferManager,
     private val fileAccess: PlatformFileAccess,
-    private val userPaths: UserPaths,
+    private val attachmentCache: AttachmentCache,
     networkStatus: Observable<Boolean>
 ) : StorageService {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -244,7 +242,7 @@ class StorageServiceImpl(
             )
 
             val cachePath = if (cache)
-                (userPaths.fileCacheDir / file.id).toString()
+                attachmentCache.getFinalPathForFile(file.id).path
             else
                 null
 

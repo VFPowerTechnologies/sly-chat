@@ -35,7 +35,10 @@ interface AttachmentCache {
     fun getThumbnailGenerationStreams(fileId: String, resolution: Int, fileKey: Key, cipher: Cipher, chunkSize: Int): ThumbnailWriteStreams?
 
     /** Returns the temporary download location for a file. */
-    fun getDownloadPathForFile(fileId: String): File
+    fun getPendingPathForFile(fileId: String): File
+
+    /** Returns the final location where the original file will be cached. Used during upload creation. */
+    fun getFinalPathForFile(fileId: String): File
 
     /** Returns the list of fileIds which have original files already present in the cache. This doesn't check thumbnails. */
     fun filterPresent(fileIds: Set<String>): Promise<Set<String>, Exception>
