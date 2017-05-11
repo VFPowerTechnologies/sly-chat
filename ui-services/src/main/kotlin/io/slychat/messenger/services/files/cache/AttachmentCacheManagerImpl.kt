@@ -9,7 +9,6 @@ import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.files.*
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.functional.bind
 import nl.komponents.kovenant.functional.map
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
@@ -277,7 +276,7 @@ class AttachmentCacheManagerImpl(
         val job = thumbnailingQueue.pop()
         currentThumbnailJob = job
 
-        fileListPersistenceManager.getFile(job.fileId) bind {
+        fileListPersistenceManager.getFile(job.fileId) map {
             if (it == null || it.isDeleted)
                 throw InvalidFileException(job.fileId)
 
@@ -290,8 +289,9 @@ class AttachmentCacheManagerImpl(
             )
 
             streams?.use {
-                thumbnailGenerator.generateThumbnail(it.inputStream, it.outputStream, job.resolution) map { true }
-            } ?: Promise.of(false)
+                thumbnailGenerator.generateThumbnail(it.inputStream, it.outputStream, job.resolution)
+                true
+            } ?: false
         } bindUi { wasOriginalPresent ->
             if (wasOriginalPresent) {
                 log.info("Thumbnail generated for {}@{}", job.fileId, job.resolution)

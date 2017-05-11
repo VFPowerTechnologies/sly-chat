@@ -8,6 +8,8 @@ import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.files.cache.AttachmentCacheEvent
+import io.slychat.messenger.services.files.cache.AttachmentService
 import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.services.messaging.MessengerService
@@ -29,6 +31,7 @@ class UIMessengerServiceImpl(
     private val messageStatusUpdateListeners = ArrayList<(UIMessageUpdateEvent) -> Unit>()
     private val conversationInfoUpdateListeners = ArrayList<(UIConversationDisplayInfo) -> Unit>()
     private val clockDifferenceUpdateListeners = ArrayList<(Long) -> Unit>()
+    private val attachmentEventListeners = ArrayList<(UIAttachmentCacheEvent) -> Unit>()
 
     private var relayClockDiff = 0L
 
@@ -36,6 +39,7 @@ class UIMessengerServiceImpl(
 
     private var messengerService: MessengerService? = null
     private var messageService: MessageService? = null
+    private var attachmentService: AttachmentService? = null
     private var relayClock: RelayClock? = null
 
     init {
@@ -51,18 +55,32 @@ class UIMessengerServiceImpl(
             subscriptions.add(messageService.conversationInfoUpdates.subscribe { onConversationInfoUpdate(it) })
             subscriptions.add(userComponent.relayClock.clockDiffUpdates.subscribe { onClockDifferenceUpdate(it) })
 
+            val attachmentService = userComponent.attachmentService
+
+            subscriptions.add(attachmentService.events.subscribe { onAttachmentCacheEvent(it) })
+
             messengerService = userComponent.messengerService
             relayClock = userComponent.relayClock
             this.messageService = messageService
+            this.attachmentService = attachmentService
         }
         else {
             subscriptions.clear()
 
             messengerService = null
+            attachmentService = null
             relayClock = null
 
             relayClockDiff = 0
         }
+    }
+
+    private fun onAttachmentCacheEvent(ev: AttachmentCacheEvent) {
+        val e = when (ev) {
+            is AttachmentCacheEvent.Available -> UIAttachmentCacheEvent.Available(ev.fileId, ev.resolution)
+        }
+
+        attachmentEventListeners.forEach { it(e) }
     }
 
     private fun onConversationInfoUpdate(conversationDisplayInfo: ConversationDisplayInfo) {
@@ -195,6 +213,10 @@ class UIMessengerServiceImpl(
         listener(relayClockDiff)
     }
 
+    override fun addAttachmentCacheEventListener(listener: (UIAttachmentCacheEvent) -> Unit) {
+        attachmentEventListeners.add(listener)
+    }
+
     override fun getLastMessagesFor(userId: UserId, startingAt: Int, count: Int): Promise<List<UIMessage>, Exception> {
         return getMessengerServiceOrThrow().getLastMessagesFor(userId, startingAt, count) map { messages ->
             messages.map { it.info.toUI(it.failures) }
@@ -237,5 +259,6 @@ class UIMessengerServiceImpl(
         messageStatusUpdateListeners.clear()
         conversationInfoUpdateListeners.clear()
         clockDifferenceUpdateListeners.clear()
+        attachmentEventListeners.clear()
     }
 }

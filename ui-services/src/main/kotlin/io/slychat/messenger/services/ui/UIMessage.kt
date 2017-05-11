@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.ui
 
 import io.slychat.messenger.core.UserId
+import io.slychat.messenger.core.persistence.MessageAttachmentInfo
 import io.slychat.messenger.core.persistence.MessageSendFailure
 
 /**
@@ -26,6 +27,7 @@ data class UIMessage(
     val ttl: Long,
     val expiresAt: Long,
     val isExpired: Boolean,
-    val failures: Map<UserId, MessageSendFailure>
+    val failures: Map<UserId, MessageSendFailure>,
+    val attachments: List<MessageAttachmentInfo>
 )
 

@@ -11,6 +11,7 @@ ChatController.prototype = {
     init : function () {
         this.addMessageUpdateListener();
         this.addNewMessageListener();
+        this.addAttachmentCacheEventListener();
     },
 
     addMessageUpdateListener : function () {
@@ -62,6 +63,10 @@ ChatController.prototype = {
 
     addNewMessageListener : function () {
         messengerService.addNewMessageListener(this.handleNewMessageDisplay.bind(this));
+    },
+
+    addAttachmentCacheEventListener : function () {
+        messengerService.addAttachmentCacheEventListener(this.handleAttachmentCacheEvent.bind(this));
     },
 
     clearCache : function () {
@@ -149,6 +154,14 @@ ChatController.prototype = {
                     }, 1000);
                 }
                 countdown();
+            }
+
+            //FIXME
+            if (message.attachments.length > 0) {
+                var attachment = message.attachments[0];
+                messageCore.append('<div>');
+                messageCore.append('<img id="attachment_' + attachment.fileId + '" src="attachment://' + attachment.fileId + '?res=200" alt="' + attachment.displayName + '">');
+                messageCore.append('<span style="text-align: center;">' + attachment.displayName + '</span></div>');
             }
         }
 
@@ -1038,5 +1051,17 @@ ChatController.prototype = {
                 this.updateConvoTTLSettings();
             }
         }.bind(this));
+    },
+
+    //FIXME
+    handleAttachmentCacheEvent : function (ev) {
+        switch (ev.type) {
+            case 'AVAILABLE':
+                $("#attachment_" + ev.fileId).each(function (index, e) {
+                    e.setAttribute('src', e.getAttribute('src') + '&t=' + Date.now());
+                });
+
+                break;
+        }
     }
 };

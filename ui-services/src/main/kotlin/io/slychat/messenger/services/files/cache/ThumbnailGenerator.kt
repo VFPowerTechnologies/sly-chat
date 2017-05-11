@@ -17,5 +17,5 @@ interface ThumbnailGenerator {
      *
      * Must be thread-safe.
      */
-    fun generateThumbnail(originalInputStream: InputStream, thumbnailOutputStream: OutputStream, thumbnailResolution: Int): Promise<Unit, Exception>
+    fun generateThumbnail(originalInputStream: InputStream, thumbnailOutputStream: OutputStream, thumbnailResolution: Int)
 }

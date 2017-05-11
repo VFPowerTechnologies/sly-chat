@@ -64,6 +64,7 @@ import nl.komponents.kovenant.ui.KovenantUi
 import org.slf4j.LoggerFactory
 import rx.schedulers.JavaFxScheduler
 import rx.subjects.BehaviorSubject
+import java.net.URL
 import java.util.*
 import javax.crypto.Cipher
 
@@ -217,6 +218,8 @@ class DesktopApp : Application() {
         )
 
         app.init(platformModule)
+
+        URL.setURLStreamHandlerFactory(ApplicationURLStreamHandlerFactory(app.userSessionAvailable))
 
         when (desktopNotificationService) {
             is DesktopNotificationService ->

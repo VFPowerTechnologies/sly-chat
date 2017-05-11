@@ -78,8 +78,14 @@ class DecryptInputStream(
             return Update(State.COPY_DATA, true, toCopy)
     }
 
+    //JFX's PNGReader actually uses this variant to read a chunk
     override fun read(): Int {
-        TODO()
+        val b = ByteArray(1)
+
+        return if (read(b) == -1)
+            -1
+        else
+            b[0].toInt() and 0xff
     }
 
     override fun read(b: ByteArray): Int {

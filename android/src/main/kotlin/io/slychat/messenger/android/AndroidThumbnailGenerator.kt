@@ -3,8 +3,6 @@ package io.slychat.messenger.android
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import io.slychat.messenger.services.files.cache.ThumbnailGenerator
-import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.task
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.io.OutputStream
@@ -52,7 +50,7 @@ private fun writeThumbnailStream(bitmap: Bitmap, outputStream: OutputStream) {
 }
 
 class AndroidThumbnailGenerator : ThumbnailGenerator {
-    override fun generateThumbnail(originalInputStream: InputStream, thumbnailOutputStream: OutputStream, thumbnailResolution: Int): Promise<Unit, Exception> = task {
+    override fun generateThumbnail(originalInputStream: InputStream, thumbnailOutputStream: OutputStream, thumbnailResolution: Int) {
         val bitmap = readSubsampled(originalInputStream, thumbnailResolution, thumbnailResolution) ?:
             throw RuntimeException("Image in unrecognized format, unable to decode")
 

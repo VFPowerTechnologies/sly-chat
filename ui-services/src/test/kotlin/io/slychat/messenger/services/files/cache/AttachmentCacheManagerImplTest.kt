@@ -79,7 +79,6 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCache.markOriginalComplete(any())).thenResolveUnit()
         whenever(attachmentCache.markThumbnailComplete(any(), any())).thenResolveUnit()
 
-        whenever(thumbnailGenerator.generateThumbnail(any(), any(), any())).thenResolveUnit()
         whenever(attachmentCache.getThumbnailInputStream(any(), any(), any(), any(), any())).thenReturn(null)
     }
 

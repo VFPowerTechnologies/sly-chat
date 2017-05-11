@@ -208,4 +208,32 @@ class DecryptInputStreamTest {
 
         assertEquals(-1, read, "Expected EOF")
     }
+
+    @Test
+    fun `single byte read should work`() {
+        //choosen to be above 127 to make sure single byte read() converts properly
+        val plaintext = ByteArray(10, { -4 })
+        val ciphertext = cipher.encrypt(key, plaintext)
+
+        val inputStream = ByteArrayInputStream(ciphertext)
+
+        val got = ByteArray(plaintext.size)
+        var currentPos = 0
+
+        DecryptInputStream(cipher, key, inputStream, 10).use { inputStream ->
+            while (true) {
+                val b = inputStream.read()
+
+                if (b == -1)
+                    break
+
+                got[currentPos] = b.toByte()
+                currentPos += 1
+            }
+        }
+
+        assertEquals(plaintext.size, currentPos, "EOF reached early")
+
+        assertByteArraysEqual(plaintext, got)
+    }
 }
