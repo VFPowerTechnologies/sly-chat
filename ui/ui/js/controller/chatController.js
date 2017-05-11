@@ -160,7 +160,7 @@ ChatController.prototype = {
             if (message.attachments.length > 0) {
                 var attachment = message.attachments[0];
                 messageCore.append('<div>');
-                messageCore.append('<img id="attachment_' + attachment.fileId + '" src="attachment://' + attachment.fileId + '?res=200" alt="' + attachment.displayName + '">');
+                messageCore.append('<img id="attachment_' + attachment.fileId + '_200" src="attachment://' + attachment.fileId + '?res=200" alt="' + attachment.displayName + '">');
                 messageCore.append('<span style="text-align: center;">' + attachment.displayName + '</span></div>');
             }
         }
@@ -1057,7 +1057,7 @@ ChatController.prototype = {
     handleAttachmentCacheEvent : function (ev) {
         switch (ev.type) {
             case 'AVAILABLE':
-                $("#attachment_" + ev.fileId).each(function (index, e) {
+                $("#attachment_" + ev.fileId + '_' + ev.resolution).each(function (index, e) {
                     e.setAttribute('src', e.getAttribute('src') + '&t=' + Date.now());
                 });
 
