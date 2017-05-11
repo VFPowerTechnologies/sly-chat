@@ -1,7 +1,6 @@
 package io.slychat.messenger.services.messaging
 
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.files.SharedFrom
 import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.*
@@ -194,7 +193,7 @@ class MessageProcessorImpl(
         val subdir = groupId?.toString() ?: sender.toString()
 
         textAttachments.forEachIndexed { i, a ->
-            val fileId = generateFileId()
+            val fileId = a.fileId.string
 
             attachments.add(MessageAttachmentInfo(i, a.fileName, fileId, false))
 
@@ -206,7 +205,7 @@ class MessageProcessorImpl(
                 SharedFrom(sender, null)
             )
 
-            receivedAttachments.add(ReceivedAttachment(AttachmentId(conversationId, messageId, i), a.fileId.string, a.shareKey, userMetadata, ReceivedAttachmentState.PENDING, null))
+            receivedAttachments.add(ReceivedAttachment(AttachmentId(conversationId, messageId, i), fileId, a.shareKey, userMetadata, ReceivedAttachmentState.PENDING, null))
         }
 
         return attachments to receivedAttachments
