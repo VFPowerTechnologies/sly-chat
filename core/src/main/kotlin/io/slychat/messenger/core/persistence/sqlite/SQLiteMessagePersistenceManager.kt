@@ -175,8 +175,6 @@ VALUES
                 }
 
                 stmt.reset(false)
-
-                updateAttachmentRefCount(connection, it.fileId, 1)
             }
         }
     }
@@ -476,6 +474,8 @@ VALUES
                 stmt.step()
 
                 stmt.reset()
+
+                updateAttachmentRefCount(connection, it.fileId, 1)
             }
         }
     }

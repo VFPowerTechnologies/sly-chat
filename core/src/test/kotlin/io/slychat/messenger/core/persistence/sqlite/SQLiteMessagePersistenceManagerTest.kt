@@ -506,7 +506,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
             val speaker = participants.first()
             val info = randomMessageWithAttachments(conversationId, speaker)
 
-            messagePersistenceManager.addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment)).get()
+            messagePersistenceManager.addMessage(conversationId, info.conversationMessageInfo, emptyList()).get()
 
             assertEquals(1, attachmentCachePersistenceManager.getRefCountForEntry(info.attachmentInfo.fileId), "Attachment count not increased")
         }
@@ -520,7 +520,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
             attachmentCachePersistenceManager.addRefCountFor(info.attachmentInfo.fileId, 1)
 
-            messagePersistenceManager.addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment)).get()
+            messagePersistenceManager.addMessage(conversationId, info.conversationMessageInfo, emptyList()).get()
 
             assertEquals(2, attachmentCachePersistenceManager.getRefCountForEntry(info.attachmentInfo.fileId), "Attachment count not increased")
         }
