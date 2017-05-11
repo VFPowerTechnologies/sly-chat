@@ -1,9 +1,11 @@
 package io.slychat.messenger.core.persistence.sqlite
 
 import io.slychat.messenger.core.crypto.generateUploadId
+import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.core.randomName
 import io.slychat.messenger.core.randomRemoteFile
+import io.slychat.messenger.core.randomSharedFrom
 import io.slychat.messenger.core.randomUserMetadata
 import io.slychat.messenger.testutils.desc
 import org.assertj.core.api.Assertions.assertThat
@@ -44,9 +46,9 @@ class SQLiteUploadPersistenceManagerTest {
         return "/path/file.ext"
     }
 
-    private fun insertUploadFull(error: UploadError? = null, directory: String? = null): UploadInfo {
-        val userMetadata = randomUserMetadata(directory)
-        val file = randomRemoteFile(userMetadata = userMetadata)
+    private fun insertUploadFull(error: UploadError? = null, directory: String? = null, userMetadata: UserMetadata? = null): UploadInfo {
+        val um = userMetadata ?: randomUserMetadata(directory)
+        val file = randomRemoteFile(userMetadata = um)
         val upload = randomUpload(file.id, error)
         val info = UploadInfo(upload, file)
         uploadPersistenceManager.add(info).get()
@@ -282,6 +284,15 @@ class SQLiteUploadPersistenceManagerTest {
 
         assertThat(uploadPersistenceManager.getAll().get()).desc("Should return uploads without associated files") {
             containsOnly(expected)
+        }
+    }
+
+    @Test
+    fun `getAll should handle SharedFrom`() {
+        val info = insertUploadFull(userMetadata = randomUserMetadata(sharedFrom = randomSharedFrom()))
+
+        assertThat(uploadPersistenceManager.getAll().get()).desc("Should return uploads with shared from") {
+            containsOnly(info)
         }
     }
 }
