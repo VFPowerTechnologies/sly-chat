@@ -55,6 +55,25 @@ class MessageProcessorImplTest {
     private fun randomTextMessage(groupId: GroupId? = null, attachments: List<TextMessageAttachment>? = null): TextMessage =
         TextMessage(MessageId(randomMessageId()), currentTimestamp(), randomUUID(), groupId, randomInt(50, 100).toLong(), attachments ?: emptyList())
 
+    private fun randomMessageInfoAttachment(n: Int = 0, isInline: Boolean = false): MessageAttachmentInfo {
+        return MessageAttachmentInfo(
+            n,
+            randomName(),
+            generateFileId(),
+            isInline
+        )
+    }
+
+    private fun randomTextMessageAttachment(): TextMessageAttachment {
+        return TextMessageAttachment(
+            FileId(generateFileId()),
+            generateShareKey(),
+            "dummy.jpg",
+            Key(byteArrayOf(0x77)),
+            CipherList.defaultDataEncryptionCipher.id
+        )
+    }
+
     private fun returnGroupInfo(groupInfo: GroupInfo?) {
         if (groupInfo != null)
             whenever(groupService.getInfo(groupInfo.id)).thenResolve(groupInfo)
@@ -86,6 +105,8 @@ class MessageProcessorImplTest {
         whenever(messageCipherService.addSelfDevice(any())).thenResolve(Unit)
 
         whenever(relayClock.currentTime()).thenReturn(currentTimestamp())
+
+        whenever(attachmentService.requestCache(any())).thenResolveUnit()
     }
 
     fun createProcessor(): MessageProcessorImpl {
@@ -135,13 +156,7 @@ class MessageProcessorImplTest {
     fun `it should process attachments in user conversation TextMessages`() {
         val processor = createProcessor()
 
-        val attachment = TextMessageAttachment(
-            FileId(generateFileId()),
-            generateShareKey(),
-            "dummy.jpg",
-            Key(byteArrayOf(0x77)),
-            CipherList.defaultDataEncryptionCipher.id
-        )
+        val attachment = randomTextMessageAttachment()
 
         val m = randomTextMessage(attachments = listOf(attachment))
         val sender = randomUserId()
@@ -160,13 +175,7 @@ class MessageProcessorImplTest {
     fun `it should add received attachments to the cache service when present in a single message`() {
         val processor = createProcessor()
 
-        val attachment = TextMessageAttachment(
-            FileId(generateFileId()),
-            generateShareKey(),
-            "dummy.jpg",
-            Key(byteArrayOf(0x77)),
-            CipherList.defaultDataEncryptionCipher.id
-        )
+        val attachment = randomTextMessageAttachment()
 
         val m = randomTextMessage(attachments = listOf(attachment))
         val sender = randomUserId()
@@ -180,13 +189,7 @@ class MessageProcessorImplTest {
     fun `it should add received attachments to the cache service when present in a group message`() {
         val processor = createProcessor()
 
-        val attachment = TextMessageAttachment(
-            FileId(generateFileId()),
-            generateShareKey(),
-            "dummy.jpg",
-            Key(byteArrayOf(0x77)),
-            CipherList.defaultDataEncryptionCipher.id
-        )
+        val attachment = randomTextMessageAttachment()
 
         val group = randomGroupInfo(GroupMembershipLevel.JOINED)
         whenever(groupService.getInfo(group.id)).thenResolve(group)
@@ -197,6 +200,39 @@ class MessageProcessorImplTest {
         processor.processMessage(sender, wrap(m)).get()
 
         verify(attachmentService).addNewReceived(eq(group.id.toConversationId()), eq(sender), any())
+    }
+
+    @Test
+    fun `it should request caching for inlined received single self message attachments`() {
+        val processor = createProcessor()
+
+        val attachment = randomMessageInfoAttachment(isInline = true)
+        val nonInlineAttachment = randomMessageInfoAttachment(isInline = false)
+
+        val info = randomSingleSentMessageInfo(randomUserId(), attachments = listOf(attachment, nonInlineAttachment))
+        val m = SyncMessage.SelfMessage(info)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(attachmentService).requestCache(listOf(attachment.fileId))
+    }
+
+    @Test
+    fun `it should request caching for inlined received group self message attachments`() {
+        val processor = createProcessor()
+
+        val group = randomGroupInfo(GroupMembershipLevel.JOINED)
+        whenever(groupService.getInfo(group.id)).thenResolve(group)
+
+        val attachment = randomMessageInfoAttachment(isInline = true)
+        val nonInlineAttachment = randomMessageInfoAttachment(isInline = false)
+
+        val info = randomGroupSentMessageInfo(group.id, attachments = listOf(attachment, nonInlineAttachment))
+        val m = SyncMessage.SelfMessage(info)
+
+        processor.processMessage(selfId, wrap(m)).get()
+
+        verify(attachmentService).requestCache(listOf(attachment.fileId))
     }
 
     @Test
@@ -725,25 +761,27 @@ class MessageProcessorImplTest {
         verify(messageCipherService).addSelfDevice(newDeviceInfo)
     }
 
-    fun randomSingleSentMessageInfo(userId: UserId): SyncSentMessageInfo {
+    private fun randomSingleSentMessageInfo(userId: UserId, attachments: List<MessageAttachmentInfo> = emptyList()): SyncSentMessageInfo {
         return SyncSentMessageInfo(
             randomMessageId(),
             ConversationId.User(userId),
             randomMessageText(),
             currentTimestamp(),
             currentTimestamp(),
-            randomTtl()
+            randomTtl(),
+            attachments
         )
     }
 
-    fun randomGroupSentMessageInfo(groupId: GroupId): SyncSentMessageInfo {
+    private fun randomGroupSentMessageInfo(groupId: GroupId, attachments: List<MessageAttachmentInfo> = emptyList()): SyncSentMessageInfo {
         return SyncSentMessageInfo(
             randomMessageId(),
             ConversationId.Group(groupId),
             randomMessageText(),
             currentTimestamp(),
             currentTimestamp(),
-            randomTtl()
+            randomTtl(),
+            attachments
         )
     }
 

@@ -86,7 +86,7 @@ class MessageProcessorImpl(
         is SlyMessage.Control -> handleControlMessage(sender, message.m)
     }
 
-    private fun  handleControlMessage(sender: UserId, m: ControlMessage): Promise<Unit, Exception> {
+    private fun handleControlMessage(sender: UserId, m: ControlMessage): Promise<Unit, Exception> {
         return when (m) {
             is ControlMessage.WasAdded -> {
                 log.info("{} added us as a contact", sender)
@@ -143,7 +143,6 @@ class MessageProcessorImpl(
         }
     }
 
-    //TODO
     private fun handleSelfMessage(m: SyncMessage.SelfMessage): Promise<Unit, Exception> {
         val sentMessageInfo = m.sentMessageInfo
 
@@ -155,26 +154,36 @@ class MessageProcessorImpl(
 
         val conversationId = sentMessageInfo.conversationId
 
+        val attachmentFileIds = messageInfo.attachments
+            .filter { it.isInline }
+            .map { it.fileId }
+
         return when (conversationId) {
             //if we add a new contact, then message them right away, the SelfMessage'll get here before the AddressBookSync one
             is ConversationId.User -> contactsService.addMissingContacts(setOf(conversationId.id)) bindUi {
                 addSingleMessage(conversationId.id, conversationMessageInfo, emptyList())
             }
-            is ConversationId.Group -> addGroupMessage(conversationId.id, conversationMessageInfo, TODO(), TODO())
+            is ConversationId.Group -> addGroupMessage(conversationId.id, conversationMessageInfo, emptyList())
+        } bindUi {
+            attachmentService.requestCache(attachmentFileIds)
         }
     }
 
-    private fun addSingleMessage(sender: UserId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
-        val conversationId = sender.toConversationId()
+    private fun addSingleMessage(userId: UserId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
+        val conversationId = userId.toConversationId()
+        val sender = conversationMessageInfo.speaker
+
         return messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments) bindRecoverForUi { e: InvalidMessageLevelException ->
             log.debug("User doesn't have appropriate message level, upgrading")
 
-            contactsService.allowAll(sender) bindUi {
+            contactsService.allowAll(userId) bindUi {
                 messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments)
             }
         } mapUi {
-            log.debug("Queuing received attachments: {}")
-            attachmentService.addNewReceived(conversationId, sender, receivedAttachments)
+            if (sender != null) {
+                log.debug("Queuing received attachments: {}")
+                attachmentService.addNewReceived(conversationId, sender, receivedAttachments)
+            }
         }
     }
 
@@ -230,17 +239,21 @@ class MessageProcessorImpl(
         }
         else {
             groupService.getInfo(groupId) bindUi { groupInfo ->
-                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, conversationInfo, sender, receivedAttachments) }
+                runIfJoinedAndUserIsMember(groupInfo, sender) { addGroupMessage(groupId, conversationInfo, receivedAttachments) }
             }
         }
     }
 
-    private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo, sender: UserId, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
+    private fun addGroupMessage(groupId: GroupId, conversationMessageInfo: ConversationMessageInfo, receivedAttachments: List<ReceivedAttachment>): Promise<Unit, Exception> {
         val conversationId = groupId.toConversationId()
 
+        val sender = conversationMessageInfo.speaker
+
         return messageService.addMessage(conversationId, conversationMessageInfo, receivedAttachments) mapUi {
-            log.debug("Queuing received attachments: {}")
-            attachmentService.addNewReceived(conversationId, sender, receivedAttachments)
+            if (sender != null) {
+                log.debug("Queuing received attachments: {}")
+                attachmentService.addNewReceived(conversationId, sender, receivedAttachments)
+            }
         }
     }
 

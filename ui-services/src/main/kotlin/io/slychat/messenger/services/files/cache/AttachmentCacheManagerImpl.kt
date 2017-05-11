@@ -139,6 +139,9 @@ class AttachmentCacheManagerImpl(
     }
 
     override fun requestCache(fileIds: List<String>): Promise<Unit, Exception> {
+        if (fileIds.isEmpty())
+            return Promise.of(Unit)
+
         val idSet = HashSet(fileIds)
 
         return attachmentCache.filterPresent(idSet) bindUi { cachedFileIds ->

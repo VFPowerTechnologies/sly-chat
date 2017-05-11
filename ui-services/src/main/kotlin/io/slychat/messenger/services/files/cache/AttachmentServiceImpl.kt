@@ -19,6 +19,7 @@ import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.files.FileListSyncEvent
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.messaging.MessageService
+import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
@@ -209,5 +210,17 @@ class AttachmentServiceImpl(
         queue.add(AcceptJob(sender, receivedAttachments))
 
         processNext()
+    }
+
+    override fun getImageStream(fileId: String): Promise<ImageLookUpResult, Exception> {
+        return attachmentCacheManager.getImageStream(fileId)
+    }
+
+    override fun getThumbnailStream(fileId: String, resolution: Int): Promise<ImageLookUpResult, Exception> {
+        return attachmentCacheManager.getThumbnailStream(fileId, resolution)
+    }
+
+    override fun requestCache(fileIds: List<String>): Promise<Unit, Exception> {
+        return attachmentCacheManager.requestCache(fileIds)
     }
 }
