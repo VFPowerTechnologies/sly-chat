@@ -29,7 +29,6 @@ import java.util.*
 
 //TODO update quota somehow; maybe quota should be moved to a separate component since it's updated in a few spots?
 //TODO need something to fetch and retry attachments that failed
-//TODO need a watch to know to start thumbnail jobs
 //TODO htf do we notify the ui of non-transient errors/state updates?
 //TODO we actually need to make sure to wait until after sync to notify that something is available
 /**
@@ -50,6 +49,9 @@ class AttachmentServiceImpl(
     companion object {
         internal val INLINE_FILE_SIZE_LIMIT: Long = 6L.mb
     }
+
+    override val events: Observable<AttachmentCacheEvent>
+        get() = attachmentCacheManager.events
 
     private class AcceptJob(val sender: UserId, val attachments: List<ReceivedAttachment>)
 

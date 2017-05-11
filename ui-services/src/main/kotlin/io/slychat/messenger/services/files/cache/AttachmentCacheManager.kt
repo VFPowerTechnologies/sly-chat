@@ -1,6 +1,7 @@
 package io.slychat.messenger.services.files.cache
 
 import nl.komponents.kovenant.Promise
+import rx.Observable
 
 /**
  * Manages access to the on-disk attachment cache.
@@ -8,6 +9,8 @@ import nl.komponents.kovenant.Promise
  * Handles downloading files, as well as accessing and generating thumbnails.
  */
 interface AttachmentCacheManager {
+    val events: Observable<AttachmentCacheEvent>
+
     fun init()
 
     fun shutdown()

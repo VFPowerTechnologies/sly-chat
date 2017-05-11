@@ -15,6 +15,7 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
 import kotlin.collections.HashSet
@@ -32,6 +33,11 @@ class AttachmentCacheManagerImpl(
     messageUpdateEvents: Observable<MessageUpdateEvent>
 ) : AttachmentCacheManager {
     private data class ThumbnailJob(val fileId: String, val resolution: Int)
+
+    private val eventSubject = PublishSubject.create<AttachmentCacheEvent>()
+
+    override val events: Observable<AttachmentCacheEvent>
+        get() = eventSubject
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -217,6 +223,8 @@ class AttachmentCacheManagerImpl(
                 }
 
                 processPendingThumbnailQueue(fileId)
+
+                eventSubject.onNext(AttachmentCacheEvent.Available(fileId, 0))
             }
 
             //I guess do nothing? we should probably raise some kinda event though
@@ -297,6 +305,7 @@ class AttachmentCacheManagerImpl(
         } successUi {
             currentThumbnailJob = null
             nextThumbnailingJob()
+            eventSubject.onNext(AttachmentCacheEvent.Available(job.fileId, job.resolution))
         } failUi {
             if (it is InvalidFileException) {
                 log.warn("Failed to generate thumbnail for {}, file has disappeared", job.fileId)

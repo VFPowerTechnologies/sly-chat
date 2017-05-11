@@ -4,8 +4,11 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ReceivedAttachment
 import nl.komponents.kovenant.Promise
+import rx.Observable
 
 interface AttachmentService {
+    val events: Observable<AttachmentCacheEvent>
+
     fun init()
 
     fun shutdown()

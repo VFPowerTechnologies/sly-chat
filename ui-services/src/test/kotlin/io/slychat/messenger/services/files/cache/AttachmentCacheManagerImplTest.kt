@@ -10,11 +10,10 @@ import io.slychat.messenger.core.persistence.AttachmentCacheRequest
 import io.slychat.messenger.core.persistence.FileListPersistenceManager
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.files.*
-import io.slychat.messenger.testutils.KovenantTestModeRule
-import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenResolveUnit
+import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.deferred
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Test
@@ -78,8 +77,10 @@ class AttachmentCacheManagerImplTest {
         whenever(attachmentCache.filterPresent(any())).thenResolve(emptySet())
         whenever(attachmentCache.isOriginalPresent(any())).thenReturn(true)
         whenever(attachmentCache.markOriginalComplete(any())).thenResolveUnit()
+        whenever(attachmentCache.markThumbnailComplete(any(), any())).thenResolveUnit()
 
         whenever(thumbnailGenerator.generateThumbnail(any(), any(), any())).thenResolveUnit()
+        whenever(attachmentCache.getThumbnailInputStream(any(), any(), any(), any(), any())).thenReturn(null)
     }
 
     private fun newManager(): AttachmentCacheManager {
@@ -532,5 +533,41 @@ class AttachmentCacheManagerImplTest {
         fileEvents.onNext(ev)
 
         verify(storageService).cancel(listOf(transfer.id))
+    }
+
+    @Test
+    fun `it should emit an Added event when an original file becomes available`() {
+        val download = randomDownload()
+        val request = AttachmentCacheRequest(download.fileId, download.id)
+        val manager = newManagerWithRequest(request)
+
+        val testSubscriber = manager.events.testSubscriber()
+
+        transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
+
+        assertThat(testSubscriber.onNextEvents).desc("Should emit an available event") {
+            contains(AttachmentCacheEvent.Available(download.fileId, 0))
+        }
+    }
+
+    @Test
+    fun `it should emit an Added event when a thumbnail becomes available`() {
+        val manager = newManager()
+
+        val file = randomRemoteFile()
+        val fileId = file.id
+        val resolution = 200
+
+        whenever(fileListPersistenceManager.getFile(fileId)).thenResolve(file)
+        whenever(attachmentCache.getThumbnailInputStream(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(null)
+        whenever(attachmentCache.getThumbnailGenerationStreams(eq(fileId), eq(resolution), any(), any(), any())).thenReturn(dummyThumbnailStreams())
+
+        val testSubscriber = manager.events.testSubscriber()
+
+        manager.getThumbnailStream(fileId, resolution).get()
+
+        assertThat(testSubscriber.onNextEvents).desc("Should emit an available event") {
+            contains(AttachmentCacheEvent.Available(fileId, resolution))
+        }
     }
 }
