@@ -30,7 +30,7 @@ class SQLiteFileListPersistenceManagerTest {
     private lateinit var fileListPersistenceManager: SQLiteFileListPersistenceManager
 
     private fun insertFile(lastUpdateVersion: Long = 1, directory: String? = null, isDeleted: Boolean = false): RemoteFile {
-        val userMetadata = randomUserMetadata(directory = directory)
+        val userMetadata = randomUserMetadata(directory = directory, sharedFrom = randomSharedFrom())
         val file = randomRemoteFile(userMetadata = userMetadata, isDeleted = isDeleted).copy(lastUpdateVersion = lastUpdateVersion)
 
         fileListPersistenceManager.addFile(file).get()

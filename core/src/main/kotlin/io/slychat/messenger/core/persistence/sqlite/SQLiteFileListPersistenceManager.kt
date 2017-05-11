@@ -5,6 +5,7 @@ import com.almworks.sqlite4java.SQLiteStatement
 import io.slychat.messenger.core.crypto.ciphers.CipherId
 import io.slychat.messenger.core.crypto.ciphers.Key
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.core.files.SharedFrom
 import io.slychat.messenger.core.files.UserMetadata
 import io.slychat.messenger.core.persistence.*
 import nl.komponents.kovenant.Promise
@@ -144,7 +145,9 @@ SET
     chunk_size = :chunkSize,
     file_size = :fileSize,
     mime_type = :mimeType,
-    is_pending = 0
+    is_pending = 0,
+    shared_from_user_id = :sharedFromUserId,
+    shared_from_group_id = :sharedFromGroupId
 WHERE
     id = :id
 """
@@ -359,7 +362,9 @@ SELECT
     f.file_key,
     f.cipher_id,
     f.file_name,
-    f.directory
+    f.directory,
+    f.shared_from_user_id,
+    f.shared_from_group_id
 FROM
     remote_file_updates u
 JOIN
@@ -380,11 +385,17 @@ ON
             UPDATE_TYPE_DELETE -> FileListUpdate.Delete(fileId)
 
             UPDATE_TYPE_METADATA -> {
+                val sharedFromUserId = stmt.columnNullableUserId(6)
+                val sharedFrom = sharedFromUserId?.let {
+                    SharedFrom(it, stmt.columnNullableGroupId(7))
+                }
+
                 val userMetadata = UserMetadata(
                     Key(stmt.columnBlob(2)),
                     CipherId(stmt.columnInt(3).toShort()),
                     stmt.columnString(5),
-                    stmt.columnString(4), null
+                    stmt.columnString(4),
+                    sharedFrom
                 )
                 FileListUpdate.MetadataUpdate(fileId, userMetadata)
             }
