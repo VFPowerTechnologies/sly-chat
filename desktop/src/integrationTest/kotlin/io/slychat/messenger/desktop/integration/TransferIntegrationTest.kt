@@ -19,6 +19,7 @@ import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.files.*
+import io.slychat.messenger.services.files.cache.AttachmentCache
 import io.slychat.messenger.testutils.*
 import nl.komponents.kovenant.jvm.asDispatcher
 import nl.komponents.kovenant.ui.KovenantUi
@@ -218,8 +219,7 @@ class TransferIntegrationTest {
 
         resultObservable.connect().use {
             storageService.downloadFiles(
-                file.id,
-                outputFile.path
+                listOf(DownloadRequest(file.id, outputFile.path, true))
             ).get()
 
             resultObservable
@@ -285,15 +285,19 @@ class TransferIntegrationTest {
 
         val authTokenManager = MockAuthTokenManager(authUser.userCredentials)
 
-        val httpClientFactory = JavaHttpClientFactory(HttpClientConfig(4000, 4000), null)
+
+        val httpClientFactory = JavaHttpClientFactory(HttpClientConfig(4000, 4000), null, null)
         val uploadClientFactory = UploadClientFactoryImpl(serverBaseUrl, fileServerBaseUrl, httpClientFactory)
+
+        val attachmentCache = mock<AttachmentCache>()
 
         val uploadOperations = UploadOperationsImpl(
             fileAccess,
             authTokenManager,
             uploadClientFactory,
             keyVault,
-            Schedulers.io()
+            Schedulers.io(),
+            attachmentCache
         )
 
         val uploader = UploaderImpl(
@@ -350,6 +354,7 @@ class TransferIntegrationTest {
             getMockSyncJobFactory(),
             transferManager,
             fileAccess,
+            attachmentCache,
             networkStatus
         )
 
@@ -363,7 +368,7 @@ class TransferIntegrationTest {
 
                 val file = uploadFile(inputFile, storageService)
 
-                whenever(fileListPersistenceManager.getFile(file.id)).thenResolve(file)
+                whenever(fileListPersistenceManager.getFilesById(listOf(file.id))).thenResolve(hashMapOf(file.id to file))
 
                 withTempFile { outputFile ->
                     downloadFile(file, outputFile, storageService)
