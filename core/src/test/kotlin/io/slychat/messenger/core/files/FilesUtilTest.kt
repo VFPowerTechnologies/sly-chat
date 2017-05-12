@@ -1,5 +1,6 @@
 package io.slychat.messenger.core.files
 
+import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.generateKey
 import io.slychat.messenger.core.crypto.generateNewKeyVault
 import io.slychat.messenger.core.randomFileMetadata
@@ -26,7 +27,8 @@ class FilesUtilTest {
 
     @Test
     fun `decryptFileMetadata should decrypt result of encryptFileMetadata`() {
-        val um = randomUserMetadata().copy(fileKey = generateKey(128))
+        val cipher = CipherList.defaultDataEncryptionCipher
+        val um = randomUserMetadata().copy(fileKey = generateKey(cipher.keySizeBits))
         val original = randomFileMetadata()
 
         val ciphertext = encryptFileMetadata(um, original)
