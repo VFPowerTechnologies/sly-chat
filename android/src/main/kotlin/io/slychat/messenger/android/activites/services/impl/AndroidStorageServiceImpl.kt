@@ -4,6 +4,7 @@ import android.support.v7.app.AppCompatActivity
 import io.slychat.messenger.android.AndroidApp
 import io.slychat.messenger.android.activites.services.*
 import io.slychat.messenger.core.files.RemoteFile
+import io.slychat.messenger.services.files.DownloadRequest
 import io.slychat.messenger.services.files.RemoteFileEvent
 import io.slychat.messenger.services.files.TransferEvent
 import nl.komponents.kovenant.Promise
@@ -52,7 +53,7 @@ class AndroidStorageServiceImpl(activity: AppCompatActivity): AndroidStorageServ
     }
 
     override fun downloadFile(fileId: String, dir: String): Promise<Unit, Exception> {
-        return storageService.downloadFile(fileId, dir)
+        return storageService.downloadFiles(listOf(DownloadRequest(fileId, dir, true))) map { Unit }
     }
 
     override fun uploadFile(localFilePath: String, remoteFileDirectory: String, remoteFileName: String, cache: Boolean): Promise<Unit, Exception> {

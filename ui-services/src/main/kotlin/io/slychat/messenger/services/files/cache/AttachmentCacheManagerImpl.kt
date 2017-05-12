@@ -243,7 +243,7 @@ class AttachmentCacheManagerImpl(
     }
 
     private fun processPendingThumbnailQueue(fileId: String) {
-        val wasRemoved = pendingThumbnailQueue.removeIf {
+        val wasRemoved = pendingThumbnailQueue.removeAll {
             val matches = it.fileId == fileId
 
             if (matches) {
