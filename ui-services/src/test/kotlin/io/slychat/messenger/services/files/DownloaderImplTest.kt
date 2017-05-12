@@ -333,7 +333,7 @@ class DownloaderImplTest {
         downloadOperations.sendDownloadProgress(info.download.id, 1000)
         advanceDownloadProgressBuffer()
 
-        assertEventEmitted(downloader, TransferEvent.Progress(info.download, DownloadTransferProgress(0, info.file.remoteFileSize))) {
+        assertEventEmitted(downloader, TransferEvent.Progress(info.download.copy(error = DownloadError.UNKNOWN), DownloadTransferProgress(0, info.file.remoteFileSize))) {
             downloadOperations.errorDownload(info.download.id, TestException())
         }
     }

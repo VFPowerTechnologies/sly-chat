@@ -5,6 +5,7 @@ import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.MockUserComponent
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.files.cache.AttachmentCacheEvent
 import io.slychat.messenger.services.messaging.ConversationMessage
 import org.junit.Before
 import org.junit.Test
@@ -13,12 +14,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class UIMessengerServiceImplTest {
-    val userComponent = MockUserComponent()
+    private val userComponent = MockUserComponent()
 
-    val messageUpdates: PublishSubject<MessageUpdateEvent> = PublishSubject.create()
-    val conversationInfoUpdates: PublishSubject<ConversationDisplayInfo> = PublishSubject.create()
-    val newMessages: PublishSubject<ConversationMessage> = PublishSubject.create()
-    val clockDiffUpdates: PublishSubject<Long> = PublishSubject.create()
+    private val messageUpdates: PublishSubject<MessageUpdateEvent> = PublishSubject.create()
+    private val conversationInfoUpdates: PublishSubject<ConversationDisplayInfo> = PublishSubject.create()
+    private val newMessages: PublishSubject<ConversationMessage> = PublishSubject.create()
+    private val clockDiffUpdates: PublishSubject<Long> = PublishSubject.create()
+    private val attachmentCacheEvents = PublishSubject.create<AttachmentCacheEvent>()
 
     @Before
     fun before() {
@@ -26,6 +28,7 @@ class UIMessengerServiceImplTest {
         whenever(userComponent.messageService.conversationInfoUpdates).thenReturn(conversationInfoUpdates)
         whenever(userComponent.messageService.newMessages).thenReturn(newMessages)
         whenever(userComponent.relayClock.clockDiffUpdates).thenReturn(clockDiffUpdates)
+        whenever(userComponent.attachmentService.events).thenReturn(attachmentCacheEvents)
     }
 
     @Test

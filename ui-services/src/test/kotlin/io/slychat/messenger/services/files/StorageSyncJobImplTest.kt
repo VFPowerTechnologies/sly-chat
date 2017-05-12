@@ -2,6 +2,7 @@ package io.slychat.messenger.services.files
 
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.*
+import io.slychat.messenger.core.crypto.ciphers.CipherList
 import io.slychat.messenger.core.crypto.generateFileId
 import io.slychat.messenger.core.crypto.generateKey
 import io.slychat.messenger.core.crypto.generateNewKeyVault
@@ -42,7 +43,8 @@ class StorageSyncJobImplTest {
     private val dummyQuota = randomQuota()
 
     private fun generateTestFileInfo(): Pair<RemoteFile, FileInfo> {
-        val um = randomUserMetadata().copy(fileKey = generateKey(128))
+        val cipher = CipherList.defaultDataEncryptionCipher
+        val um = randomUserMetadata().copy(fileKey = generateKey(cipher.keySizeBits))
         val file = randomRemoteFile(userMetadata = um)
 
         val info = FileInfo(

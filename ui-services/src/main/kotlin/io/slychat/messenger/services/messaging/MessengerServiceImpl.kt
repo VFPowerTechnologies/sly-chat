@@ -280,7 +280,7 @@ class MessengerServiceImpl(
         return sendMessageToGroup(groupId, m, MessageCategory.TEXT_GROUP, messageId) bindUi {
             val messageInfo = MessageInfo.newSent(message, timestamp, ttlMs, emptyList()).copy(id = messageId)
             val conversationMessageInfo = ConversationMessageInfo(null, messageInfo)
-            messageService.addMessage(groupId.toConversationId(), conversationMessageInfo, TODO())
+            messageService.addMessage(groupId.toConversationId(), conversationMessageInfo, emptyList())
         }
     }
 

@@ -237,7 +237,7 @@ class TransferManagerImplTest {
             scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
         }
 
-        verify(uploader, times(2)).clearError(transfer.id)
+        verify(downloader, times(2)).clearError(transfer.id)
     }
 
     private fun testTriggerRetry(transfer: Transfer): TransferManagerImpl {

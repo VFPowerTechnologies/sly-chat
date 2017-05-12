@@ -671,7 +671,7 @@ class UploaderImplTest {
             info.file!!.remoteFileSize
         )
 
-        val event = TransferEvent.Progress(info.upload, progress)
+        val event = TransferEvent.Progress(info.upload.copy(error = UploadError.UNKNOWN), progress)
         assertEventEmitted(uploader, event) {
             uploadOperations.errorUploadPartOperation(1, TestException())
         }

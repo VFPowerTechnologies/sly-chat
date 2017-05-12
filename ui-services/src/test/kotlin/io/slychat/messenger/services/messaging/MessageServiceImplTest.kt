@@ -32,7 +32,7 @@ class MessageServiceImplTest {
 
     @Before
     fun before() {
-        whenever(messagePersistenceManager.addMessage(any(), any(), emptyList())).thenResolveUnit()
+        whenever(messagePersistenceManager.addMessage(any(), any(), eq(emptyList()))).thenResolveUnit()
         whenever(messagePersistenceManager.markMessageAsDelivered(any(), any(), any())).thenResolve(null)
         whenever(messagePersistenceManager.markConversationAsRead(any())).thenResolve(randomMessageIds())
         whenever(messagePersistenceManager.markConversationMessagesAsRead(any(), any())).thenAnswerWithArg(1)

@@ -23,6 +23,7 @@ import nl.komponents.kovenant.Promise
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Test
 import rx.subjects.PublishSubject
 import java.util.*
@@ -78,6 +79,8 @@ class MessengerServiceImplTest {
         whenever(groupService.part(any())).thenResolve(true)
         whenever(groupService.block(any())).thenResolve(Unit)
         whenever(groupService.getMembers(any())).thenResolve(emptySet())
+
+        whenever(storageService.getFilesById(any())).thenResolve(emptyMap())
 
         whenever(relayClock.currentTime()).thenReturn(1)
     }
@@ -1114,6 +1117,7 @@ class MessengerServiceImplTest {
         }
     }
 
+    @Ignore
     @Test
     fun `it should include group message attachment info for remote source attachments if present`() {
         TODO()
