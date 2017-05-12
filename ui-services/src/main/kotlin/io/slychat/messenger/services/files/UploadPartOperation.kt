@@ -24,7 +24,6 @@ class UploadPartOperation(
     private val isCancelled: AtomicBoolean
 ) {
     fun run() {
-        //TODO handle missing file (FileNotFoundException), and then any other exception that's raised
         val filePath = upload.cachePath ?: upload.filePath
 
         fileAccess.openFileForRead(filePath) { fileInputStream ->

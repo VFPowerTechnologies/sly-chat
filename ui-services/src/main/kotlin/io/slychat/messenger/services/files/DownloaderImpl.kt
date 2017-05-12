@@ -145,10 +145,10 @@ class DownloaderImpl(
     }
 
     private fun handleDownloadException(downloadId: String, e: Throwable) {
-        resetProgress(downloadId)
-
         if (e is CancellationException) {
             deleteAndMarkCancelled(downloadId)
+
+            resetProgress(downloadId)
 
             return
         }
@@ -178,6 +178,8 @@ class DownloaderImpl(
 
         downloadPersistenceManager.setError(downloadId, downloadError) successUi {
             moveUploadToErrorState(downloadId, downloadError)
+            //this is here so we can ignore the progress change in the retry logic
+            resetProgress(downloadId)
         } fail {
             log.error("Failed to set download error for {}: {}", downloadId, it.message, it)
         }

@@ -248,6 +248,9 @@ class UploaderImpl(
     private fun updateUploadState(uploadId: String, newState: UploadState): Promise<Unit, Exception> {
         return uploadPersistenceManager.setState(uploadId, newState) mapUi {
             updateCachedUploadState(uploadId, newState)
+
+            //this is just to notify that the upload's state itself has changed
+            updateTransferState(uploadId, TransferState.ACTIVE)
         } failUi {
             log.error("Failed to update upload {} state to {}: {}", uploadId, newState, it.message, it)
             moveUploadToErrorState(uploadId, UploadError.UNKNOWN)
@@ -319,12 +322,12 @@ class UploaderImpl(
     }
 
     private fun handleUploadException(uploadId: String, partN: Int, e: Throwable, origin: String) {
-        resetPartProgress(uploadId, partN)
-
         if (e is CancellationException) {
             moveUploadToCancellingState(uploadId) successUi {
                 nextStep(uploadId)
             }
+
+            resetPartProgress(uploadId, partN)
 
             return
         }
@@ -354,6 +357,8 @@ class UploaderImpl(
 
         uploadPersistenceManager.setError(uploadId, uploadError) successUi {
             moveUploadToErrorState(uploadId, uploadError)
+            //this is here so we can ignore the progress change in the retry logic
+            resetPartProgress(uploadId, partN)
         } fail {
             log.error("Failed to set upload error for {}: {}", uploadId, it.message, it)
         }
@@ -465,6 +470,7 @@ class UploaderImpl(
 
             updateUploadState(uploadId, nextState)
         } successUi {
+            log.info("Upload {} created remotely", uploadId)
             nextStep(uploadId)
         } failUi {
             handleUploadException(uploadId, 0, it, "create")

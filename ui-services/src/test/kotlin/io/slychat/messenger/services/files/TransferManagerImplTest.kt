@@ -3,6 +3,7 @@ package io.slychat.messenger.services.files
 import com.nhaarman.mockito_kotlin.*
 import io.slychat.messenger.core.persistence.DownloadError
 import io.slychat.messenger.core.persistence.UploadError
+import io.slychat.messenger.core.persistence.UploadState
 import io.slychat.messenger.core.randomDownload
 import io.slychat.messenger.core.randomUpload
 import io.slychat.messenger.services.config.DummyConfigBackend
@@ -18,6 +19,8 @@ import rx.schedulers.TestScheduler
 import rx.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class TransferManagerImplTest {
     private val userConfigService = UserConfigService(DummyConfigBackend())
@@ -216,6 +219,75 @@ class TransferManagerImplTest {
     fun `it should ignore updated transfers with transient errors (download)`() {
         val transfer = Transfer.D(randomDownload(error = DownloadError.NO_SPACE))
         testRetryErrorTransfer(transfer, TransferEvent.StateChanged(transfer, TransferState.ERROR), never())
+    }
+
+    @Test
+    fun `it should increase timeout on consecutive failures`() {
+        val transfer = Transfer.D(randomDownload(error = DownloadError.NETWORK_ISSUE))
+
+        val manager = newManager()
+
+        val subject = getEventSubject(transfer)
+
+        val ev = TransferEvent.StateChanged(transfer, TransferState.ERROR)
+
+        (0..1).forEach {
+            //this is kinda hacky but so long as the number's <= 2^2 it's fine
+            subject.onNext(ev)
+            scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
+        }
+
+        verify(uploader, times(2)).clearError(transfer.id)
+    }
+
+    private fun testTriggerRetry(transfer: Transfer): TransferManagerImpl {
+        val manager = newManager()
+
+        val subject = getEventSubject(transfer)
+
+        val ev = TransferEvent.StateChanged(transfer, TransferState.ERROR)
+
+        subject.onNext(ev)
+        scheduler.advanceTimeBy(30, TimeUnit.SECONDS)
+
+        return manager
+    }
+
+    //TODO test when error doesn't stay null
+    @Test
+    fun `it should clear the retry timer when progress is received`() {
+        val transfer = Transfer.D(randomDownload(error = DownloadError.NETWORK_ISSUE))
+
+        val manager = testTriggerRetry(transfer)
+
+        val subject = getEventSubject(transfer)
+        subject.onNext(TransferEvent.Progress(transfer.download.copy(error = null), DownloadTransferProgress(1, 10)))
+
+        assertNull(manager.retryAttemptCounters[transfer.id], "Retry count not cleared")
+    }
+
+    @Test
+    fun `it should clear the retry timer when the underlying transfer's state changes`() {
+        val transfer = Transfer.U(randomUpload(error = UploadError.NETWORK_ISSUE))
+
+        val manager = testTriggerRetry(transfer)
+
+        val subject = getEventSubject(transfer)
+        subject.onNext(TransferEvent.StateChanged(transfer.upload.copy(error = null, state = UploadState.CREATED), TransferState.ACTIVE))
+
+        assertNull(manager.retryAttemptCounters[transfer.id], "Retry count not cleared")
+    }
+
+    @Test
+    fun `it should not clear the retry timer when the underlying transfer's state doesn't change`() {
+        val transfer = Transfer.U(randomUpload(error = UploadError.NETWORK_ISSUE))
+
+        val manager = testTriggerRetry(transfer)
+
+        val subject = getEventSubject(transfer)
+        subject.onNext(TransferEvent.StateChanged(transfer.upload.copy(error = null), TransferState.ACTIVE))
+
+        assertNotNull(manager.retryAttemptCounters[transfer.id], "Retry count cleared")
     }
 
     @Test

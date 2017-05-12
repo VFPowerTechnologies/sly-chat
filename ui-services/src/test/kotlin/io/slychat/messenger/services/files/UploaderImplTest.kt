@@ -319,6 +319,23 @@ class UploaderImplTest {
     }
 
     @Test
+    fun `it should emit a transfer state changed event when creation succeeds`() {
+        val uploader = newUploader()
+
+        val uploadInfo = randomUploadInfo()
+
+        uploadOperations.autoResolveCreate = true
+
+        val testSubscriber = uploader.events.testSubscriber()
+
+        uploader.upload(uploadInfo).get()
+
+        assertThat(testSubscriber.onNextEvents).desc("Should contain an update event") {
+            contains(TransferEvent.StateChanged(uploadInfo.upload.copy(state = UploadState.CREATED), TransferState.ACTIVE))
+        }
+    }
+
+    @Test
     fun `creation should move to caching state if isEncrypted is true`() {
         val file = randomRemoteFile()
 

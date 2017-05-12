@@ -34,6 +34,14 @@ class TransferManagerImpl(
 
     private val timerSubscriptions = HashMap<String, Subscription>()
 
+    //tracks the total consecutive retry attempts per transfer
+    //cleared whenever progress is received for a transfer
+    //attempts begin at 1
+    internal val retryAttemptCounters = HashMap<String, Int>()
+
+    //UploadState or DownloadState
+    private val previousTransferState = HashMap<String, Any>()
+
     private val eventsSubject = PublishSubject.create<TransferEvent>()
     override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events, eventsSubject)
 
@@ -66,6 +74,11 @@ class TransferManagerImpl(
         subscriptions += downloader.events.subscribe { onTransferEvent(it) }
     }
 
+    private fun clearRetryData(transfer: Transfer) {
+        previousTransferState.remove(transfer.id)
+        retryAttemptCounters.remove(transfer.id)
+    }
+
     private fun onTransferEvent(event: TransferEvent) {
         when (event) {
             is TransferEvent.Added -> {
@@ -74,14 +87,25 @@ class TransferManagerImpl(
             }
 
             is TransferEvent.StateChanged -> {
-                val error = event.transfer.error
+                val transfer = event.transfer
+                val error = transfer.error
 
                 if (error != null) {
                     if (error.isTransient)
-                    startRetryTimer(event.transfer)
+                        startRetryTimer(transfer)
                 }
-                else
-                    cancelTimer(event.transfer)
+                else {
+                    if (hasTransferStateChanged(transfer))
+                        clearRetryData(transfer)
+
+                    cancelTimer(transfer)
+                }
+            }
+
+            is TransferEvent.Progress -> {
+                //ignore progress reset events
+                if (event.transfer.error == null)
+                    clearRetryData(event.transfer)
             }
 
             is TransferEvent.Removed -> {
@@ -100,13 +124,36 @@ class TransferManagerImpl(
         }
     }
 
+    private fun updateTransferState(transfer: Transfer) {
+        previousTransferState[transfer.id] = when (transfer) {
+            is Transfer.U -> transfer.upload.state
+            is Transfer.D -> transfer.download.state
+        }
+    }
+
+    private fun hasTransferStateChanged(transfer: Transfer): Boolean {
+        val previous = previousTransferState[transfer.id] ?: return true
+
+        val current = when (transfer) {
+            is Transfer.U -> transfer.upload.state
+            is Transfer.D -> transfer.download.state
+        }
+
+        return current != previous
+    }
+
     private fun startRetryTimer(transfer: Transfer) {
         if (transfer.id in timerSubscriptions)
             return
 
-        log.info("Starting retry timer for transfer {}", transfer.id)
+        //cap at 2^7s
+        val currentAttempt = Math.min((retryAttemptCounters[transfer.id] ?: 0) + 1, 7)
+        retryAttemptCounters[transfer.id] = currentAttempt
+        updateTransferState(transfer)
 
-        val timeoutSecs = 30L
+        log.info("Starting retry timer for transfer {} (attempt {})", transfer.id, currentAttempt)
+
+        val timeoutSecs = nextRetryTimerValue(currentAttempt)
 
         timerSubscriptions[transfer.id] = Observable
             .interval(1, TimeUnit.SECONDS, timerScheduler)
@@ -236,5 +283,10 @@ class TransferManagerImpl(
         return downloader.remove(downloadsToRemove) bindUi {
             uploader.remove(uploadsToRemove)
         }
+    }
+
+    private fun nextRetryTimerValue(attemptN: Int): Long {
+        val exp = Math.pow(2.0, attemptN.toDouble())
+        return Random().nextInt(exp.toInt() + 1).toLong() + 1
     }
 }
