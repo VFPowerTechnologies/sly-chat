@@ -118,7 +118,7 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
 
         val receivedAttachment = randomReceivedAttachment(
             0,
-            fileId = attachmentInfo.fileId,
+            theirFileId = attachmentInfo.fileId,
             conversationId = conversationId,
             messageId = messageInfo.id
         )

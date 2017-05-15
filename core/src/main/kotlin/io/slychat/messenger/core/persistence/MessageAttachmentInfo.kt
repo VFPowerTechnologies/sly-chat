@@ -11,6 +11,7 @@ data class MessageAttachmentInfo(
     val displayName: String,
 
     //may be invalid if file was deleted since
+    //may change if file was already accepted on a previous device
     @JsonProperty("fileId")
     val fileId: String,
 

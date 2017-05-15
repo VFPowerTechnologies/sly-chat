@@ -97,7 +97,7 @@ class AttachmentServiceImpl(
             attachments.toComplete(completed)
 
             messageService.deleteReceivedAttachments(completed, markInline) bindUi {
-                attachmentCacheManager.requestCache(toCache.map { it.fileId })
+                attachmentCacheManager.requestCache(toCache.map { it.ourFileId })
             } fail {
                 log.error("Failed to remove received attachments: {}", it.message, it)
             }
@@ -133,7 +133,7 @@ class AttachmentServiceImpl(
             val shareInfo = job.attachments.map {
                 val um = encryptUserMetadata(keyVault, it.userMetadata)
                 val pathHash = getFilePathHash(keyVault, it.userMetadata)
-                ShareInfo(it.fileId, it.theirShareKey, generateShareKey(), um, pathHash)
+                ShareInfo(it.theirFileId, it.ourFileId, it.theirShareKey, generateShareKey(), um, pathHash)
             }
 
             val request = AcceptShareRequest(
@@ -158,7 +158,7 @@ class AttachmentServiceImpl(
     }
 
     private fun completeAcceptJob(acceptJob: AcceptJob, response: AcceptShareResponse) {
-        val all = acceptJob.attachments.mapTo(HashSet()) { it.fileId }
+        val all = acceptJob.attachments.mapTo(HashSet()) { it.theirFileId }
 
         //TODO wtf do we do with this
         val errors = response.errors.keys
@@ -171,7 +171,7 @@ class AttachmentServiceImpl(
 
         val successfulIds = acceptJob.attachments
             .filterMap {
-                if (it.fileId in successful)
+                if (it.theirFileId in successful)
                     it.id
                 else
                     null

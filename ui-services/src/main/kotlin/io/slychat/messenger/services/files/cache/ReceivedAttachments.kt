@@ -39,7 +39,7 @@ class ReceivedAttachments {
             val attachmentId = it.id
 
             if (it.state == ReceivedAttachmentState.WAITING_ON_SYNC) {
-                waitingForSync[it.fileId] = attachmentId
+                waitingForSync[it.ourFileId] = attachmentId
             }
 
             all[attachmentId] = it
@@ -65,7 +65,7 @@ class ReceivedAttachments {
 
     fun toWaitingOnSync(ids: Iterable<AttachmentId>) {
         updateAll(ids) {
-            waitingForSync[it.fileId] = it.id
+            waitingForSync[it.ourFileId] = it.id
             it.copy(state = ReceivedAttachmentState.WAITING_ON_SYNC)
         }
     }
@@ -73,7 +73,7 @@ class ReceivedAttachments {
     fun toComplete(ids: Iterable<AttachmentId>) {
         ids.forEach { id ->
             val attachment = all[id] ?: error("No such attachment: $id")
-            waitingForSync.remove(attachment.fileId)
+            waitingForSync.remove(attachment.ourFileId)
             all.remove(id)
         }
     }

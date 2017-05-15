@@ -3,8 +3,10 @@ package io.slychat.messenger.core.http.api.share
 import com.fasterxml.jackson.annotation.JsonProperty
 
 class ShareInfo(
-    @JsonProperty("fileId")
-    val fileId: String,
+    @JsonProperty("theirFileId")
+    val theirFileId: String,
+    @JsonProperty("ourFileId")
+    val ourFileId: String,
     @JsonProperty("theirShareKey")
     val theirShareKey: String,
     @JsonProperty("ourShareKey")

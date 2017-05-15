@@ -16,7 +16,10 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.files.cache.AttachmentService
-import io.slychat.messenger.testutils.*
+import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.thenReject
+import io.slychat.messenger.testutils.thenResolve
+import io.slychat.messenger.testutils.thenResolveUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
@@ -180,29 +183,6 @@ class MessageProcessorImplTest {
         processor.processMessage(sender, wrap(m)).get()
 
         verify(attachmentService).addNewReceived(eq(sender.toConversationId()), eq(sender), any())
-    }
-
-    @Test
-    fun `received attachments and message attachments should have matching file ids`() {
-        val processor = createProcessor()
-
-        val attachment = randomTextMessageAttachment()
-
-        val m = randomTextMessage(attachments = listOf(attachment))
-        val sender = randomUserId()
-
-        processor.processMessage(sender, wrap(m)).get()
-
-        val infoCaptor = argumentCaptor<ConversationMessageInfo>()
-        val receivedCaptor = argumentCaptor<List<ReceivedAttachment>>()
-        verify(messageService).addMessage(any(), capture(infoCaptor), capture(receivedCaptor))
-
-        val attachments = infoCaptor.value.info.attachments.map { it.fileId }
-        val receivedAttachments = receivedCaptor.value.map { it.fileId }
-
-        assertThat(receivedAttachments).desc("Should have matching file ids") {
-            containsAll(attachments)
-        }
     }
 
     @Test

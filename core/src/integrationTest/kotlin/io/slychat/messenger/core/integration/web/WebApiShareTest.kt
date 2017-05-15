@@ -60,6 +60,7 @@ class WebApiShareTest {
         )
         devClient.addFile(sendingUser.user.id, fileInfo)
 
+        val ourFileId = generateFileId()
         val ourShareKey = generateShareKey()
         val userMetadata = byteArrayOf(0x77)
         val request = AcceptShareRequest(
@@ -67,6 +68,7 @@ class WebApiShareTest {
             listOf(
                 ShareInfo(
                     fileInfo.id,
+                    ourFileId,
                     fileInfo.shareKey,
                     ourShareKey,
                     userMetadata,
@@ -87,5 +89,10 @@ class WebApiShareTest {
             inHexadecimal()
             isEqualTo(userMetadata)
         }
+    }
+
+    @Test
+    fun `acceptShare should be idempotent`() {
+        TODO()
     }
 }

@@ -25,6 +25,7 @@ import io.slychat.messenger.testutils.thenResolveUnit
 import nl.komponents.kovenant.deferred
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Test
 import org.mockito.verification.VerificationMode
 import rx.subjects.BehaviorSubject
@@ -74,7 +75,7 @@ class AttachmentServiceImplTest {
         val result = FileListSyncResult(
             1,
             FileListMergeResults(
-                listOf(randomRemoteFile(fileId = attachment.fileId, fileMetadata = fm)),
+                listOf(randomRemoteFile(fileId = attachment.ourFileId, fileMetadata = fm)),
                 emptyList(),
                 emptyList()
             ),
@@ -125,7 +126,7 @@ class AttachmentServiceImplTest {
             assertEquals(it.theirUserId, sender, "Invalid sender")
             assertEquals(1, it.shareInfo.size, "Invalid number of ShareInfo")
             val s = it.shareInfo.first()
-            assertEquals(receivedAttachment.fileId, s.fileId, "Invalid fileId")
+            assertEquals(receivedAttachment.theirFileId, s.theirFileId, "Invalid fileId")
             assertEquals(receivedAttachment.theirShareKey, s.theirShareKey, "Invalid share key")
         })
     }
@@ -148,7 +149,7 @@ class AttachmentServiceImplTest {
         val conversationId = randomUserConversationId()
         val sender = randomUserId()
         val messageId = randomMessageId()
-        val receivedAttachment = randomReceivedAttachment(conversationId = conversationId, messageId = messageId, fileId = fileId)
+        val receivedAttachment = randomReceivedAttachment(conversationId = conversationId, messageId = messageId, ourFileId = fileId)
 
         service.addNewReceived(conversationId, sender, listOf(receivedAttachment))
 
@@ -185,6 +186,7 @@ class AttachmentServiceImplTest {
     }
 
     //XXX in this case, we need to recreate a job with the remaining attachments depending on error?
+    @Ignore("TODO")
     @Test
     fun `it should handle a subset of accepted attachments failing`() {
         TODO()
@@ -219,19 +221,22 @@ class AttachmentServiceImplTest {
         assertEquals(1, request.shareInfo.size, "Invalid ShareInfo size")
         val s = request.shareInfo.first()
 
-        assertEquals(receivedAttachment2.fileId, s.fileId, "Invalid fileId")
+        assertEquals(receivedAttachment2.theirFileId, s.theirFileId, "Invalid fileId")
     }
 
+    @Ignore("TODO")
     @Test
     fun `it should start queued attachments when network becomes available`() {
         TODO()
     }
 
+    @Ignore("TODO")
     @Test
     fun `it should remove attachments from queue that correspond to deleted messages`() {
         TODO()
     }
 
+    @Ignore("TODO")
     @Test
     fun `it should remove attachments from queue that correspond to deleted conversations`() {
         TODO()
@@ -249,7 +254,7 @@ class AttachmentServiceImplTest {
 
         sendSyncResult(attachment, fileMetadata)
 
-        verify(attachmentCacheManager).requestCache(listOf(attachment.fileId))
+        verify(attachmentCacheManager).requestCache(listOf(attachment.ourFileId))
     }
 
     @Test

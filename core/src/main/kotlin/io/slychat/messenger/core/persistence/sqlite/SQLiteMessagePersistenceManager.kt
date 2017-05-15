@@ -142,9 +142,9 @@ VALUES
         val sql = """
 INSERT INTO
     received_attachments
-    (conversation_id, message_id, n, file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id, state)
+    (conversation_id, message_id, n, their_file_id, our_file_id, their_share_key, file_key, cipher_id, directory, file_name, shared_from_user_id, shared_from_group_id, state)
 VALUES
-    (:conversationId, :messageId, :n, :fileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId, :state)
+    (:conversationId, :messageId, :n, :theirFileId, :ourFileId, :theirShareKey, :fileKey, :cipherId, :directory, :fileName, :sharedFromUserId, :sharedFromGroupId, :state)
 """
 
         connection.withPrepared(sql) { stmt ->
@@ -153,7 +153,8 @@ VALUES
 
             receivedAttachments.forEach {
                 stmt.bind(":n", it.id.n)
-                stmt.bind(":fileId", it.fileId)
+                stmt.bind(":theirFileId", it.theirFileId)
+                stmt.bind(":ourFileId", it.ourFileId)
                 stmt.bind(":theirShareKey", it.theirShareKey)
                 stmt.bind(":fileKey", it.userMetadata.fileKey)
                 stmt.bind(":cipherId", it.userMetadata.cipherId)
@@ -188,17 +189,18 @@ VALUES
             ),
             stmt.columnString(3),
             stmt.columnString(4),
+            stmt.columnString(5),
             UserMetadata(
-                stmt.columnKey(5),
-                stmt.columnCipherId(6),
-                stmt.columnString(7),
+                stmt.columnKey(6),
+                stmt.columnCipherId(7),
                 stmt.columnString(8),
+                stmt.columnString(9),
                 SharedFrom(
-                    stmt.columnUserId(9),
-                    stmt.columnNullableGroupId(10)
+                    stmt.columnUserId(10),
+                    stmt.columnNullableGroupId(11)
                 )
             ),
-            stmt.columnReceivedAttachmentState(11),
+            stmt.columnReceivedAttachmentState(12),
             null
         )
 
@@ -211,7 +213,8 @@ SELECT
     conversation_id,
     message_id,
     n,
-    file_id,
+    their_file_id,
+    our_file_id,
     their_share_key,
     file_key,
     cipher_id,
@@ -237,7 +240,8 @@ SELECT
     conversation_id,
     message_id,
     n,
-    file_id,
+    their_file_id,
+    our_file_id,
     their_share_key,
     file_key,
     cipher_id,
