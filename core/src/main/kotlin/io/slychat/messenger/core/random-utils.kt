@@ -174,6 +174,18 @@ fun randomMessageAttachmentInfo(n: Int): MessageAttachmentInfo {
 
 fun randomSharedFrom(): SharedFrom = SharedFrom(randomUserId(), randomGroupId())
 
+fun randomAttachmentId(
+    n: Int = 0,
+    conversationId: ConversationId? = null,
+    messageId: String? = null
+): AttachmentId {
+    return AttachmentId(
+        conversationId ?: randomUserConversationId(),
+        messageId ?: randomMessageId(),
+        n
+    )
+}
+
 fun randomReceivedAttachment(
     n: Int = 0,
     theirFileId: String? = null,
@@ -184,11 +196,7 @@ fun randomReceivedAttachment(
     state: ReceivedAttachmentState = ReceivedAttachmentState.PENDING
 ): ReceivedAttachment {
     return ReceivedAttachment(
-        AttachmentId(
-            conversationId ?: randomUserConversationId(),
-            messageId ?: randomMessageId(),
-            n
-        ),
+        randomAttachmentId(n, conversationId, messageId),
         theirFileId ?: generateFileId(),
         ourFileId ?: generateFileId(),
         generateShareKey(),

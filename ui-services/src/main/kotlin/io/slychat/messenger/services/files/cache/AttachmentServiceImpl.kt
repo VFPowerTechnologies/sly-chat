@@ -15,7 +15,6 @@ import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.ReceivedAttachment
 import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.auth.AuthTokenManager
-import io.slychat.messenger.services.bindUi
 import io.slychat.messenger.services.files.FileListSyncEvent
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.messaging.MessageService
@@ -24,8 +23,10 @@ import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.slf4j.LoggerFactory
 import rx.Observable
+import rx.subjects.PublishSubject
 import rx.subscriptions.CompositeSubscription
 import java.util.*
+import kotlin.collections.ArrayList
 
 //TODO update quota somehow; maybe quota should be moved to a separate component since it's updated in a few spots?
 //TODO need something to fetch and retry attachments that failed
@@ -50,8 +51,9 @@ class AttachmentServiceImpl(
         internal val INLINE_FILE_SIZE_LIMIT: Long = 6L.mb
     }
 
-    override val events: Observable<AttachmentCacheEvent>
-        get() = attachmentCacheManager.events
+    private val eventSubject = PublishSubject.create<AttachmentEvent>()
+
+    override val events: Observable<AttachmentEvent> = eventSubject.mergeWith(attachmentCacheManager.events)
 
     private class AcceptJob(val sender: UserId, val attachments: List<ReceivedAttachment>)
 
@@ -80,28 +82,19 @@ class AttachmentServiceImpl(
     }
 
     private fun onFileListSyncResult(ev: FileListSyncEvent.Result) {
-        val completed = ArrayList<AttachmentId>()
-        val markInline = ArrayList<AttachmentId>()
+        val markInline = ev.result.mergeResults.added
+            .filterMap { if (shouldInline(it)) it.id else null }
 
-        for (file in ev.result.mergeResults.added) {
-            val attachment = attachments.getWaitingForSync(file.id) ?: continue
-
-            if (shouldInline(file))
-                markInline.add(attachment.id)
-
-            completed.add(attachment.id)
+        messageService.updateAttachmentInlineState(markInline) successUi { inlinedAttachments ->
+            if (inlinedAttachments.isNotEmpty())
+                eventSubject.onNext(AttachmentEvent.InlineUpdate(inlinedAttachments.mapToMap { it to true }))
+        } fail {
+            log.error("Failed to update attachment inline state")
         }
 
-        completed.forEach {
-            val toCache = markInline.map { attachments.get(it)!! }
-            attachments.toComplete(completed)
-
-            messageService.deleteReceivedAttachments(completed, markInline) bindUi {
-                attachmentCacheManager.requestCache(toCache.map { it.ourFileId })
-            } fail {
-                log.error("Failed to remove received attachments: {}", it.message, it)
-            }
-        }
+        //when we add log syncing, we should only precache files from recent messages
+        //TODO precache
+//        attachmentCacheManager.requestCache(toCache.map { it.ourFileId })
     }
 
     private fun shouldInline(file: RemoteFile): Boolean {
@@ -158,26 +151,54 @@ class AttachmentServiceImpl(
     }
 
     private fun completeAcceptJob(acceptJob: AcceptJob, response: AcceptShareResponse) {
-        val all = acceptJob.attachments.mapTo(HashSet()) { it.theirFileId }
+        val all = acceptJob.attachments.mapToMap { it.theirFileId to it }
 
-        //TODO wtf do we do with this
-        val errors = response.errors.keys
-        if (errors.isNotEmpty()) {
-            TODO()
+        val updateFileIds = HashMap<AttachmentId, String>()
+        val idsDiffer = HashSet<AttachmentId>()
+
+        all.forEach { (id, attachment) ->
+            if (id in response.successes) {
+                val ourFileId = response.successes[id]!!
+
+                if (attachment.ourFileId != ourFileId)
+                    idsDiffer.add(attachment.id)
+
+                updateFileIds[attachment.id] = ourFileId
+
+            }
+            else if (id in response.errors) {
+                //TODO wtf do we do with this
+                TODO()
+            }
+            else {
+                //should never occur
+                log.error("Attachment id not in response")
+            }
         }
 
-        //TODO an issue here is that if a sync happens before we process the result here (eg: triggered by something else), we could miss some attachments
-        val successful = all - errors
+        attachments.toComplete(updateFileIds.keys)
 
-        val successfulIds = acceptJob.attachments
-            .filterMap {
-                if (it.theirFileId in successful)
-                    it.id
-                else
-                    null
+        //returns the list of inlineable attachments (occurs if an entry for the file already existed)
+        messageService.completeReceivedAttachments(updateFileIds) successUi { inlineableIds ->
+            val idChanges = HashMap<AttachmentId, String>()
+            val inlineChanges = HashMap<AttachmentId, Boolean>()
+
+            updateFileIds.forEach { (id, fileId) ->
+                if (id in inlineableIds)
+                    inlineChanges[id] = true
+
+                if (id in idsDiffer)
+                    idChanges[id] = fileId
             }
 
-        attachments.toWaitingOnSync(successfulIds)
+            if (inlineChanges.isNotEmpty())
+                eventSubject.onNext(AttachmentEvent.InlineUpdate(inlineChanges))
+
+            if (idChanges.isNotEmpty())
+                eventSubject.onNext(AttachmentEvent.FileIdUpdate(idChanges))
+        } fail {
+            log.error("Failed to update received attachment state: {}", it.message, it)
+        }
 
         storageService.sync()
     }

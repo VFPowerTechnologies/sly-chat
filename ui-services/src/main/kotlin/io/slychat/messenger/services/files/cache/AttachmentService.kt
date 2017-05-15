@@ -7,7 +7,7 @@ import nl.komponents.kovenant.Promise
 import rx.Observable
 
 interface AttachmentService {
-    val events: Observable<AttachmentCacheEvent>
+    val events: Observable<AttachmentEvent>
 
     fun init()
 

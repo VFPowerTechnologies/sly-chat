@@ -5,7 +5,7 @@ import io.slychat.messenger.core.persistence.ConversationDisplayInfo
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.MockUserComponent
 import io.slychat.messenger.services.di.UserComponent
-import io.slychat.messenger.services.files.cache.AttachmentCacheEvent
+import io.slychat.messenger.services.files.cache.AttachmentEvent
 import io.slychat.messenger.services.messaging.ConversationMessage
 import org.junit.Before
 import org.junit.Test
@@ -20,7 +20,7 @@ class UIMessengerServiceImplTest {
     private val conversationInfoUpdates: PublishSubject<ConversationDisplayInfo> = PublishSubject.create()
     private val newMessages: PublishSubject<ConversationMessage> = PublishSubject.create()
     private val clockDiffUpdates: PublishSubject<Long> = PublishSubject.create()
-    private val attachmentCacheEvents = PublishSubject.create<AttachmentCacheEvent>()
+    private val attachmentCacheEvents = PublishSubject.create<AttachmentEvent>()
 
     @Before
     fun before() {

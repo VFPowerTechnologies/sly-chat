@@ -9,10 +9,8 @@ import io.slychat.messenger.core.files.FileMetadata
 import io.slychat.messenger.core.http.api.share.AcceptShareRequest
 import io.slychat.messenger.core.http.api.share.AcceptShareResponse
 import io.slychat.messenger.core.http.api.share.ShareAsyncClient
-import io.slychat.messenger.core.persistence.AttachmentId
 import io.slychat.messenger.core.persistence.FileListMergeResults
 import io.slychat.messenger.core.persistence.ReceivedAttachment
-import io.slychat.messenger.core.persistence.ReceivedAttachmentState
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.files.FileListSyncEvent
@@ -20,14 +18,15 @@ import io.slychat.messenger.services.files.FileListSyncResult
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.testutils.KovenantTestModeRule
+import io.slychat.messenger.testutils.desc
+import io.slychat.messenger.testutils.testSubscriber
 import io.slychat.messenger.testutils.thenResolve
-import io.slychat.messenger.testutils.thenResolveUnit
 import nl.komponents.kovenant.deferred
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Test
-import org.mockito.verification.VerificationMode
 import rx.subjects.BehaviorSubject
 import rx.subjects.PublishSubject
 import kotlin.test.assertEquals
@@ -60,22 +59,23 @@ class AttachmentServiceImplTest {
     @Before
     fun before() {
         whenever(messageService.messageUpdates).thenReturn(messageUpdateEvents)
-        whenever(messageService.deleteReceivedAttachments(any(), any())).thenResolveUnit()
         whenever(messageService.getAllReceivedAttachments()).thenResolve(emptyList())
+        whenever(messageService.completeReceivedAttachments(any())).thenResolve(emptySet())
+        whenever(messageService.updateAttachmentInlineState(any())).thenResolve(emptySet())
 
         whenever(storageService.syncEvents).thenReturn(syncEvents)
-        //TODO
+
         whenever(storageService.downloadFiles(any())).thenResolve(emptyList())
 
-        whenever(shareClient.acceptShare(any(), any())).thenResolve(AcceptShareResponse(emptyMap(), randomQuota()))
+        whenever(shareClient.acceptShare(any(), any())).thenResolve(AcceptShareResponse(emptyMap(), emptyMap(), randomQuota()))
     }
 
-    private fun sendSyncResult(attachment: ReceivedAttachment, fileMetadata: FileMetadata? = null) {
+    private fun sendSyncResult(fileId: String, fileMetadata: FileMetadata? = null) {
         val fm = fileMetadata ?: randomFileMetadata()
         val result = FileListSyncResult(
             1,
             FileListMergeResults(
-                listOf(randomRemoteFile(fileId = attachment.ourFileId, fileMetadata = fm)),
+                listOf(randomRemoteFile(fileId = fileId, fileMetadata = fm)),
                 emptyList(),
                 emptyList()
             ),
@@ -86,7 +86,7 @@ class AttachmentServiceImplTest {
         syncEvents.onNext(FileListSyncEvent.Result(result))
     }
 
-    private fun newService(isNetworkAvailable: Boolean = true): AttachmentServiceImpl {
+    private fun newService(isNetworkAvailable: Boolean = true, init: Boolean = true): AttachmentServiceImpl {
         networkStatus.onNext(isNetworkAvailable)
 
         val service = AttachmentServiceImpl(
@@ -100,15 +100,16 @@ class AttachmentServiceImplTest {
             syncEvents
         )
 
-        service.init()
+        if (init)
+            service.init()
 
         return service
     }
 
-    private fun newServiceWithAttachment(attachment: ReceivedAttachment, isNetworkAvailable: Boolean = true): AttachmentServiceImpl {
+    private fun newServiceWithAttachment(attachment: ReceivedAttachment, isNetworkAvailable: Boolean = true, init: Boolean = true): AttachmentServiceImpl {
         whenever(messageService.getAllReceivedAttachments()).thenResolve(listOf(attachment))
 
-        return newService(isNetworkAvailable)
+        return newService(isNetworkAvailable, init)
     }
 
     @Test
@@ -143,48 +144,6 @@ class AttachmentServiceImplTest {
         verify(shareClient, never()).acceptShare(any(), any())
     }
 
-    private fun testSyncResponse(fileId: String, mergeResults: FileListMergeResults, times: VerificationMode) {
-        val service = newService()
-
-        val conversationId = randomUserConversationId()
-        val sender = randomUserId()
-        val messageId = randomMessageId()
-        val receivedAttachment = randomReceivedAttachment(conversationId = conversationId, messageId = messageId, ourFileId = fileId)
-
-        service.addNewReceived(conversationId, sender, listOf(receivedAttachment))
-
-        syncEvents.onNext(FileListSyncEvent.Result(FileListSyncResult(0, mergeResults, 1, randomQuota())))
-
-        val attachmentId = AttachmentId(conversationId, messageId, receivedAttachment.id.n)
-        verify(messageService, times).deleteReceivedAttachments(listOf(attachmentId), emptyList())
-    }
-
-    @Test
-    fun `it should complete a non-inline received attachment when sync succeeds`() {
-        val fileId = generateFileId()
-
-        val mergeResults = FileListMergeResults(
-            listOf(randomRemoteFile().copy(id = fileId)),
-            emptyList(),
-            emptyList()
-        )
-
-        testSyncResponse(fileId, mergeResults, times(1))
-    }
-
-    @Test
-    fun `it should not complete a non-inline accepted attachment if it doesn't show up in a sync result`() {
-        val fileId = generateFileId()
-
-        val mergeResults = FileListMergeResults(
-            listOf(randomRemoteFile()),
-            emptyList(),
-            emptyList()
-        )
-
-        testSyncResponse(fileId, mergeResults, never())
-    }
-
     //XXX in this case, we need to recreate a job with the remaining attachments depending on error?
     @Ignore("TODO")
     @Test
@@ -193,7 +152,7 @@ class AttachmentServiceImplTest {
     }
 
     @Test
-    fun `it should move to the next attachment once an attachment is complete`() {
+    fun `it should move to accepting the next attachment once an attachment is complete`() {
         val service = newService()
 
         val conversationId = randomUserConversationId()
@@ -202,7 +161,7 @@ class AttachmentServiceImplTest {
         val receivedAttachment2 = randomReceivedAttachment(0)
 
         val d = deferred<AcceptShareResponse, Exception>()
-        val response = AcceptShareResponse(emptyMap(), randomQuota())
+        val response = AcceptShareResponse(emptyMap(), emptyMap(), randomQuota())
 
         whenever(shareClient.acceptShare(any(), any())).thenReturn(d.promise)
 
@@ -224,6 +183,63 @@ class AttachmentServiceImplTest {
         assertEquals(receivedAttachment2.theirFileId, s.theirFileId, "Invalid fileId")
     }
 
+    @Test
+    fun `it should update attachments with the new id upon successfully accepting a request`() {
+        val receivedAttachment = randomReceivedAttachment(0)
+        val fileId = generateFileId()
+
+        whenever(shareClient.acceptShare(any(), any())).thenResolve(AcceptShareResponse(
+            mapOf(receivedAttachment.theirFileId to fileId),
+            emptyMap(),
+            randomQuota()
+        ))
+
+        val service = newServiceWithAttachment(receivedAttachment)
+
+        verify(messageService).completeReceivedAttachments(mapOf(receivedAttachment.id to fileId))
+    }
+
+    @Test
+    fun `it should emit a file id update event if ids differ when new attachments are accepted`() {
+        val receivedAttachment = randomReceivedAttachment(0)
+        val fileId = generateFileId()
+
+        whenever(shareClient.acceptShare(any(), any())).thenResolve(AcceptShareResponse(
+            mapOf(receivedAttachment.theirFileId to fileId),
+            emptyMap(),
+            randomQuota()
+        ))
+
+        val service = newServiceWithAttachment(receivedAttachment, init = false)
+
+        val testSubscriber = service.events.testSubscriber()
+
+        service.init()
+
+        assertThat(testSubscriber.onNextEvents).desc("Should emit a file id update event") {
+            contains(AttachmentEvent.FileIdUpdate(mapOf(receivedAttachment.id to fileId)))
+        }
+    }
+
+    @Test
+    fun `it should not emit a file id update event if ids don't differ when new attachments are accepted`() {
+        val receivedAttachment = randomReceivedAttachment(0)
+
+        whenever(shareClient.acceptShare(any(), any())).thenResolve(AcceptShareResponse(
+            mapOf(receivedAttachment.theirFileId to receivedAttachment.ourFileId),
+            emptyMap(),
+            randomQuota()
+        ))
+
+        val service = newServiceWithAttachment(receivedAttachment, init = false)
+
+        val testSubscriber = service.events.testSubscriber()
+
+        service.init()
+
+        assertThat(testSubscriber.onNextEvents).isEmpty()
+    }
+
     @Ignore("TODO")
     @Test
     fun `it should start queued attachments when network becomes available`() {
@@ -241,50 +257,63 @@ class AttachmentServiceImplTest {
     fun `it should remove attachments from queue that correspond to deleted conversations`() {
         TODO()
     }
+
+    //TODO precaching
     
     @Test
-    fun `it should queue an attachment for download if it meets the inline requirements`() {
-        val attachment = randomReceivedAttachment(0, state = ReceivedAttachmentState.WAITING_ON_SYNC)
+    fun `it should emit an inline update event on sync if files meet the inline requirements`() {
+        val attachmentId = randomAttachmentId()
+        val fileId = generateFileId()
         val fileMetadata = randomFileMetadata(
             fileSize = AttachmentServiceImpl.INLINE_FILE_SIZE_LIMIT,
             mimeType = "image/png"
         )
 
-        val service = newServiceWithAttachment(attachment)
+        val service = newService()
 
-        sendSyncResult(attachment, fileMetadata)
+        val testSubscriber = service.events.testSubscriber()
 
-        verify(attachmentCacheManager).requestCache(listOf(attachment.ourFileId))
+        whenever(messageService.updateAttachmentInlineState(any())).thenResolve(setOf(attachmentId))
+
+        sendSyncResult(fileId, fileMetadata)
+
+        assertThat(testSubscriber.onNextEvents).desc("Should emit an inline update event") {
+            contains(AttachmentEvent.InlineUpdate(mapOf(attachmentId to true)))
+        }
     }
 
     @Test
-    fun `it should not inline an attachment if it doesn't meet the file size requirement`() {
-        val attachment = randomReceivedAttachment(0, state = ReceivedAttachmentState.WAITING_ON_SYNC)
+    fun `it should not emit an inline update event on sync if no files meet the file size requirement`() {
+        val fileId = generateFileId()
         val fileMetadata = randomFileMetadata(
             fileSize = AttachmentServiceImpl.INLINE_FILE_SIZE_LIMIT + 1,
             mimeType = "image/png"
         )
 
-        val service = newServiceWithAttachment(attachment)
+        val service = newService()
 
-        sendSyncResult(attachment, fileMetadata)
+        val testSubscriber = service.events.testSubscriber()
 
-        verify(messageService).deleteReceivedAttachments(listOf(attachment.id), emptyList())
+        sendSyncResult(fileId, fileMetadata)
+
+        assertThat(testSubscriber.onNextEvents).isEmpty()
     }
 
     @Test
-    fun `it should not inline an attachment if it doesn't meet the mime type requirement`() {
-        val attachment = randomReceivedAttachment(0, state = ReceivedAttachmentState.WAITING_ON_SYNC)
+    fun `it should not emit an inline update event on sync if no files meet the mime type requirement`() {
+        val fileId = generateFileId()
         val fileMetadata = randomFileMetadata(
             fileSize = AttachmentServiceImpl.INLINE_FILE_SIZE_LIMIT,
             mimeType = "application/octet-stream"
         )
 
-        val service = newServiceWithAttachment(attachment)
+        val service = newService()
 
-        sendSyncResult(attachment, fileMetadata)
+        val testSubscriber = service.events.testSubscriber()
 
-        verify(messageService).deleteReceivedAttachments(listOf(attachment.id), emptyList())
+        sendSyncResult(fileId, fileMetadata)
+
+        assertThat(testSubscriber.onNextEvents).isEmpty()
     }
 
     //TODO wtf do we do if we're in the middle of accepting an attachment and a file is deleted? we need to delete it after acceptance

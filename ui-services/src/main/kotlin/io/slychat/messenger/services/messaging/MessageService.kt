@@ -48,5 +48,9 @@ interface MessageService {
 
     fun getAllReceivedAttachments(): Promise<List<ReceivedAttachment>, Exception>
 
-    fun deleteReceivedAttachments(completed: List<AttachmentId>, markInline: List<AttachmentId>): Promise<Unit, Exception>
+    //returns inlineable attachments
+    fun completeReceivedAttachments(completed: Map<AttachmentId, String>): Promise<Set<AttachmentId>, Exception>
+
+    //returns any attachments that were made inline
+    fun updateAttachmentInlineState(fileIds: List<String>): Promise<Set<AttachmentId>, Exception>
 }

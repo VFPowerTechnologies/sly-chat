@@ -9,7 +9,7 @@ import rx.Observable
  * Handles downloading files, as well as accessing and generating thumbnails.
  */
 interface AttachmentCacheManager {
-    val events: Observable<AttachmentCacheEvent>
+    val events: Observable<AttachmentEvent>
 
     fun init()
 

@@ -545,7 +545,7 @@ class AttachmentCacheManagerImplTest {
         transferEvents.onNext(TransferEvent.StateChanged(download, TransferState.COMPLETE))
 
         assertThat(testSubscriber.onNextEvents).desc("Should emit an available event") {
-            contains(AttachmentCacheEvent.Available(download.fileId, 0))
+            contains(AttachmentEvent.AvailableInCache(download.fileId, 0))
         }
     }
 
@@ -566,7 +566,7 @@ class AttachmentCacheManagerImplTest {
         manager.getThumbnailStream(fileId, resolution).get()
 
         assertThat(testSubscriber.onNextEvents).desc("Should emit an available event") {
-            contains(AttachmentCacheEvent.Available(fileId, resolution))
+            contains(AttachmentEvent.AvailableInCache(fileId, resolution))
         }
     }
 }

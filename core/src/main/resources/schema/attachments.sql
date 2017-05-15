@@ -17,3 +17,4 @@ CREATE TABLE IF NOT EXISTS attachments (
     PRIMARY KEY (conversation_id, message_id, n)
 );
 
+CREATE INDEX attachments_idx_file_id ON attachments (file_id);

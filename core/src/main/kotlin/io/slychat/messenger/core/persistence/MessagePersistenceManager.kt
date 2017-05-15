@@ -15,7 +15,7 @@ interface MessagePersistenceManager {
 
     fun deleteReceivedAttachments(completed: List<AttachmentId>, markInline: List<AttachmentId>): Promise<Unit, Exception>
 
-    fun updateReceivedAttachmentState(ids: List<AttachmentId>, newState: ReceivedAttachmentState): Promise<Unit, Exception>
+    fun updateReceivedAttachmentState(attachments: Map<AttachmentId, ReceivedAttachmentState>): Promise<Unit, Exception>
 
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
     fun getLastMessages(conversationId: ConversationId, startingAt: Int, count: Int): Promise<List<ConversationMessageInfo>, Exception>

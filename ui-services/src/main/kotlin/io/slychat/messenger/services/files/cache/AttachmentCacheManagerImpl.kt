@@ -33,9 +33,9 @@ class AttachmentCacheManagerImpl(
 ) : AttachmentCacheManager {
     private data class ThumbnailJob(val fileId: String, val resolution: Int)
 
-    private val eventSubject = PublishSubject.create<AttachmentCacheEvent>()
+    private val eventSubject = PublishSubject.create<AttachmentEvent>()
 
-    override val events: Observable<AttachmentCacheEvent>
+    override val events: Observable<AttachmentEvent>
         get() = eventSubject
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -223,7 +223,7 @@ class AttachmentCacheManagerImpl(
 
                 processPendingThumbnailQueue(fileId)
 
-                eventSubject.onNext(AttachmentCacheEvent.Available(fileId, 0))
+                eventSubject.onNext(AttachmentEvent.AvailableInCache(fileId, 0))
             }
 
             //I guess do nothing? we should probably raise some kinda event though
@@ -305,7 +305,7 @@ class AttachmentCacheManagerImpl(
         } successUi {
             currentThumbnailJob = null
             nextThumbnailingJob()
-            eventSubject.onNext(AttachmentCacheEvent.Available(job.fileId, job.resolution))
+            eventSubject.onNext(AttachmentEvent.AvailableInCache(job.fileId, job.resolution))
         } failUi {
             if (it is InvalidFileException) {
                 log.warn("Failed to generate thumbnail for {}, file has disappeared", job.fileId)

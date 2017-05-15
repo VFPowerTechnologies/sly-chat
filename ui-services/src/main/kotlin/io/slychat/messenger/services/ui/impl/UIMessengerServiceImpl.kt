@@ -8,7 +8,7 @@ import io.slychat.messenger.core.persistence.toConversationId
 import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.RelayClock
 import io.slychat.messenger.services.di.UserComponent
-import io.slychat.messenger.services.files.cache.AttachmentCacheEvent
+import io.slychat.messenger.services.files.cache.AttachmentEvent
 import io.slychat.messenger.services.files.cache.AttachmentService
 import io.slychat.messenger.services.messaging.ConversationMessage
 import io.slychat.messenger.services.messaging.MessageService
@@ -75,9 +75,11 @@ class UIMessengerServiceImpl(
         }
     }
 
-    private fun onAttachmentCacheEvent(ev: AttachmentCacheEvent) {
+    private fun onAttachmentCacheEvent(ev: AttachmentEvent) {
         val e = when (ev) {
-            is AttachmentCacheEvent.Available -> UIAttachmentCacheEvent.Available(ev.fileId, ev.resolution)
+            is AttachmentEvent.AvailableInCache -> UIAttachmentCacheEvent.Available(ev.fileId, ev.resolution)
+            is AttachmentEvent.FileIdUpdate -> TODO()
+            is AttachmentEvent.InlineUpdate -> TODO()
         }
 
         attachmentEventListeners.forEach { it(e) }

@@ -329,8 +329,8 @@ AND
             }
     }
 
-    override fun updateReceivedAttachmentState(ids: List<AttachmentId>, newState: ReceivedAttachmentState): Promise<Unit, Exception> {
-        return if (ids.isEmpty()) {
+    override fun updateReceivedAttachmentState(attachments: Map<AttachmentId, ReceivedAttachmentState>): Promise<Unit, Exception> {
+        return if (attachments.isEmpty()) {
             Promise.ofSuccess(Unit)
         }
         else sqlitePersistenceManager.runQuery { connection ->
@@ -348,8 +348,8 @@ AND
     n = :n
 """
             connection.withPrepared(sql) { stmt ->
-                stmt.bind(":state", newState)
-                ids.forEach { id ->
+                attachments.forEach { (id, newState) ->
+                    stmt.bind(":state", newState)
                     stmt.bind(":conversationId", id.conversationId)
                     stmt.bind(":messageId", id.messageId)
                     stmt.bind(":n", id.n)
