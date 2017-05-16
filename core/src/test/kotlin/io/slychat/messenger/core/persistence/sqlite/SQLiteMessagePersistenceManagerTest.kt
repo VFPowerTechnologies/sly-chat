@@ -138,6 +138,8 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         override val groupPersistenceManager = SQLiteGroupPersistenceManager(persistenceManager)
         val conversationInfoTestUtils = ConversationInfoTestUtils(persistenceManager)
 
+        val fileListPersistenceManager = SQLiteFileListPersistenceManager(persistenceManager)
+
         val attachmentCachePersistenceManager = SQLiteAttachmentCachePersistenceManager(persistenceManager)
 
         fun getConversationInfo(conversationId: ConversationId): ConversationInfo {
@@ -467,10 +469,13 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         foreachConvType { conversationId, participants ->
             val speaker = participants.first()
 
+            val file = randomRemoteFile()
+            fileListPersistenceManager.addFile(file).get()
+
             val attachmentInfo = MessageAttachmentInfo(
                 0,
                 "dummy.jpg",
-                generateFileId(),
+                file.id,
                 true
             )
 
@@ -604,53 +609,6 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
         foreachConvType { conversationId, participants ->
             assertThat(messagePersistenceManager.getAllReceivedAttachments().get()).desc("Should be empty") {
                 isEmpty()
-            }
-        }
-    }
-
-    @Test
-    fun `deleteReceivedAttachments should remove attachments`() {
-        foreachConvType { conversationId, participants ->
-            val speaker = participants.first()
-
-            val attachmentInfo = randomMessageAttachmentInfo(0)
-
-            val receivedAttachment = randomReceivedAttachment(0)
-
-            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
-
-            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
-
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
-
-            messagePersistenceManager.deleteReceivedAttachments(listOf(AttachmentId(conversationId, messageInfo.id, 0)), emptyList()).get()
-
-            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, messageInfo.id).get()).isEmpty()
-        }
-    }
-
-    @Test
-    fun `deleteReceivedAttachments should mark inline attachments`() {
-        foreachConvType { conversationId, participants ->
-            val speaker = participants.first()
-
-            val attachmentInfo = randomMessageAttachmentInfo(0)
-
-            val receivedAttachment = randomReceivedAttachment(0)
-
-            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
-
-            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
-
-            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
-
-            val attachmentId = AttachmentId(conversationId, messageInfo.id, 0)
-            messagePersistenceManager.deleteReceivedAttachments(emptyList(), listOf(attachmentId)).get()
-
-            val updated = getMessage(conversationId, messageInfo.id)
-
-            assertThat(updated.info.attachments).desc("Should update inline on attachments") {
-                containsOnly(attachmentInfo.copy(isInline = true))
             }
         }
     }
@@ -1815,5 +1773,128 @@ class SQLiteMessagePersistenceManagerTest : GroupPersistenceManagerTestUtils {
     @Test
     fun `addFailures should update conversation info`() {
         TODO()
+    }
+
+    @Test
+    fun `completeReceivedAttachments should delete entries for the given received attachments`() {
+        foreachConvType { conversationId, participants ->
+            val speaker = participants.first()
+
+            val attachmentInfo = randomMessageAttachmentInfo(0)
+
+            val receivedAttachment = randomReceivedAttachment(0)
+
+            val messageInfo = randomReceivedMessageInfo(attachments = listOf(attachmentInfo))
+
+            val conversationMessageInfo = ConversationMessageInfo(speaker, messageInfo)
+
+            messagePersistenceManager.addMessage(conversationId, conversationMessageInfo, listOf(receivedAttachment)).get()
+
+            messagePersistenceManager.completeReceivedAttachments(mapOf(AttachmentId(conversationId, messageInfo.id, 0) to attachmentInfo.fileId)).get()
+
+            assertThat(messagePersistenceManager.getReceivedAttachments(conversationId, messageInfo.id).get()).isEmpty()
+        }
+    }
+
+    @Test
+    fun `completeReceivedAttachments should update the attachment's file id`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            val attachment = info.messageInfo.attachments.first()
+            val id = AttachmentId(conversationId, info.messageInfo.id, 0)
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            val newFileId = generateFileId()
+
+            messagePersistenceManager.completeReceivedAttachments(mapOf(id to newFileId)).get()
+
+            assertThat(messagePersistenceManager.getAttachmentsForMessage(conversationId, info.messageInfo.id).get()).desc("Should have updated id") {
+                containsOnly(attachment.copy(fileId = newFileId))
+            }
+        }
+    }
+
+    @Test
+    fun `completeReceivedAttachments should return the subset of attachments which should be inlined`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            val file = randomRemoteFile(info.fileId)
+            fileListPersistenceManager.addFile(file).get()
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.updateFileInlineState(listOf(info.fileId)).get()
+
+            val id = AttachmentId(conversationId, info.messageInfo.id, 0)
+
+            assertThat(messagePersistenceManager.completeReceivedAttachments(mapOf(id to info.fileId)).get()).desc("Should contain any attachments with inline files") {
+                containsOnly(id)
+            }
+        }
+    }
+
+    @Test
+    fun `completeReceivedAttachments should return nothing if no attachments use inlined files`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            val id = AttachmentId(conversationId, info.messageInfo.id, 0)
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            assertThat(messagePersistenceManager.completeReceivedAttachments(mapOf(id to info.fileId)).get()).isEmpty()
+        }
+    }
+
+    @Test
+    fun `updateFileInlineState should return any attachments that refer to the given file ids`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            val id = AttachmentId(conversationId, info.messageInfo.id, 0)
+            val file = randomRemoteFile(info.fileId)
+            fileListPersistenceManager.addFile(file).get()
+
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            val actual = messagePersistenceManager.updateFileInlineState(listOf(info.fileId)).get()
+
+            assertThat(actual).desc("Should contain referencing attachment") {
+                containsOnly(id)
+            }
+        }
+    }
+
+    @Test
+    fun `updateFileInlineState should update associated attachments`() {
+        foreachConvType { conversationId, participants ->
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            val id = AttachmentId(conversationId, info.messageInfo.id, 0)
+            val file = randomRemoteFile(info.fileId)
+            fileListPersistenceManager.addFile(file).get()
+
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            messagePersistenceManager.updateFileInlineState(listOf(info.fileId)).get()
+
+            val attachments = messagePersistenceManager.getAttachmentsForMessage(conversationId, info.messageInfo.id).get()
+
+            assertThat(attachments).desc("Should contain referencing attachment") {
+                containsOnly(info.messageInfo.attachments.first().copy(isInline = true))
+            }
+        }
+    }
+
+    @Test
+    fun `updateFileInlineState should return nothing if no attachments that refer to the given file ids exist`() {
+        foreachConvType { conversationId, participants ->
+            val file = randomRemoteFile()
+            fileListPersistenceManager.addFile(file).get()
+
+            val info = randomMessageWithAttachments(conversationId, participants.first())
+            addMessage(conversationId, info.conversationMessageInfo, listOf(info.receivedAttachment))
+
+            val actual = messagePersistenceManager.updateFileInlineState(listOf(file.id)).get()
+
+            assertThat(actual).desc("Should return nothing") {
+                isEmpty()
+            }
+        }
     }
 }

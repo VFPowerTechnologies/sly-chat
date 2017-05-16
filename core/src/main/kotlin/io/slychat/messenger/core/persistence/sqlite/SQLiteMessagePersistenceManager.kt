@@ -266,7 +266,7 @@ AND
         }
     }
 
-    private fun deleteReceivedAttachments(connection: SQLiteConnection, ids: List<AttachmentId>) {
+    private fun deleteReceivedAttachments(connection: SQLiteConnection, ids: Iterable<AttachmentId>) {
         //language=SQLite
         val sql = """
 DELETE FROM
@@ -288,45 +288,6 @@ AND
                 stmt.reset(false)
             }
         }
-    }
-
-    private fun markAttachmentsInline(connection: SQLiteConnection, ids: List<AttachmentId>) {
-        ids.forEach { id ->
-            //language=SQLite
-            val sql = """
-UPDATE
-    attachments
-SET
-    is_inline=1
-WHERE
-    conversation_id = :conversationId
-AND
-    message_id = :messageId
-AND
-    n = :n
-"""
-            connection.withPrepared(sql) { stmt ->
-                ids.forEach { id ->
-                    stmt.bind(":conversationId", id.conversationId)
-                    stmt.bind(":messageId", id.messageId)
-                    stmt.bind(":n", id.n)
-                    stmt.step()
-                    stmt.reset(false)
-                }
-            }
-        }
-    }
-
-    override fun deleteReceivedAttachments(completed: List<AttachmentId>, markInline: List<AttachmentId>): Promise<Unit, Exception> {
-        return if (completed.isEmpty() && markInline.isEmpty())
-            Promise.ofSuccess(Unit)
-        else
-            sqlitePersistenceManager.runQuery { connection ->
-                connection.withTransaction {
-                    deleteReceivedAttachments(connection, completed)
-                    markAttachmentsInline(connection, markInline)
-                }
-            }
     }
 
     override fun updateReceivedAttachmentState(attachments: Map<AttachmentId, ReceivedAttachmentState>): Promise<Unit, Exception> {
@@ -457,15 +418,17 @@ VALUES
         }
     }
 
+    //FIXME
     private fun insertAttachments(connection: SQLiteConnection, conversationId: ConversationId, messageId: String, attachments: List<MessageAttachmentInfo>) {
         //language=SQLite
         val sql = """
 INSERT INTO
     attachments
-    (conversation_id, message_id, n, display_name, is_inline, file_id)
+    (conversation_id, message_id, n, display_name, file_id)
 VALUES
-    (:conversationId, :messageId, :n, :displayName, :isInline, :fileId)
+    (:conversationId, :messageId, :n, :displayName, :fileId)
 """
+        val toInline = ArrayList<String>()
 
         connection.withPrepared(sql) { stmt ->
             attachments.forEach {
@@ -473,15 +436,20 @@ VALUES
                 stmt.bind(":messageId", messageId)
                 stmt.bind(":n", it.n)
                 stmt.bind(":displayName", it.displayName)
-                stmt.bind(":isInline", it.isInline)
                 stmt.bind(":fileId", it.fileId)
                 stmt.step()
 
                 stmt.reset()
 
                 updateAttachmentRefCount(connection, it.fileId, 1)
+
+                if (it.isInline)
+                    toInline.add(it.fileId)
             }
         }
+
+        if (toInline.isNotEmpty())
+            insertInlineState(connection, toInline)
     }
 
     private fun deleteFailures(connection: SQLiteConnection, conversationId: ConversationId, messageIds: Collection<String>) {
@@ -1363,7 +1331,7 @@ AND
         }
     }
 
-    //just used for testing currently, so not part of the internal
+    //just used for testing currently, so not part of the api
     fun getAttachmentsForMessage(conversationId: ConversationId, messageId: String): Promise<List<MessageAttachmentInfo>, Exception> = sqlitePersistenceManager.runQuery {
         selectAttachments(it, conversationId, messageId)
     }
@@ -1372,19 +1340,24 @@ AND
         //language=SQLite
         val sql = """
 SELECT
-    n,
-    display_name,
-    file_id,
-    is_inline
+    a.n,
+    a.display_name,
+    a.file_id,
+    s.is_inline
 FROM
-    attachments
+    attachments a
+LEFT JOIN
+    file_inline_states s
+ON
+    a.file_id = s.file_id
 WHERE
-    conversation_id = :conversationId
+    a.conversation_id = :conversationId
 AND
-    message_id = :messageId
+    a.message_id = :messageId
 ORDER BY
-    n
+    a.n
 """
+
         return connection.withPrepared(sql) { stmt ->
             stmt.bind(":conversationId", conversationId)
             stmt.bind(":messageId", messageId)
@@ -1436,6 +1409,124 @@ ORDER BY
             ),
             failures
         )
+    }
+
+    override fun completeReceivedAttachments(completed: Map<AttachmentId, String>): Promise<Set<AttachmentId>, Exception> {
+        return if (completed.isEmpty())
+            Promise.of(emptySet())
+        else
+            sqlitePersistenceManager.runQuery {
+                deleteReceivedAttachments(it, completed.keys)
+                updateAttachmentFileIds(it, completed)
+                selectInlineAttachmentsReferencingFiles(it, completed.values)
+            }
+    }
+
+    private fun updateAttachmentFileIds(connection: SQLiteConnection, info: Map<AttachmentId, String>) {
+        //language=SQLite
+        val sql = """
+UPDATE
+    attachments
+SET
+    file_id = :fileId
+WHERE
+    conversation_id = :conversationId
+AND
+    message_id = :messageId
+AND
+    n = :n
+"""
+        connection.withPrepared(sql) { stmt ->
+            info.forEach { (id, fileId) ->
+                stmt.bind(":fileId", fileId)
+                stmt.bind(":conversationId", id.conversationId)
+                stmt.bind(":messageId", id.messageId)
+                stmt.bind(":n", id.n)
+                stmt.step()
+                stmt.reset(true)
+            }
+        }
+    }
+
+    override fun updateFileInlineState(fileIds: List<String>): Promise<Set<AttachmentId>, Exception> {
+        return if (fileIds.isEmpty())
+            Promise.of(emptySet())
+        else
+            sqlitePersistenceManager.runQuery {
+                insertInlineState(it, fileIds)
+                selectInlineAttachmentsReferencingFiles(it, fileIds)
+            }
+    }
+
+    private fun selectInlineAttachmentsReferencingFiles(connection: SQLiteConnection, fileIds: Iterable<String>): Set<AttachmentId> {
+        //language=SQLite
+        val sql = """
+SELECT
+    a.conversation_id,
+    a.message_id,
+    a.n
+FROM
+    attachments a
+JOIN
+    file_inline_states i
+ON
+    a.file_id = i.file_id
+WHERE
+    a.file_id IN (${getPlaceholders(fileIds.count())})
+AND
+    i.is_inline = 1
+"""
+        return connection.withPrepared(sql) { stmt ->
+            fileIds.forEachIndexed { index, fileId ->
+                stmt.bind(index + 1, fileId)
+            }
+
+            stmt.mapToSet {
+                AttachmentId(
+                    it.columnConversationId(0),
+                    it.columnString(1),
+                    it.columnInt(2)
+                )
+            }
+        }
+    }
+
+    private fun insertInlineState(connection: SQLiteConnection, fileIds: List<String>) {
+        //language=SQLite
+        val sql = """
+INSERT OR REPLACE INTO
+    file_inline_states
+    (file_id, is_inline)
+VALUES
+    (:fileId, 1)
+"""
+        connection.withPrepared(sql) { stmt ->
+            fileIds.forEach {
+                stmt.bind(":fileId", it)
+                stmt.step()
+                stmt.reset()
+            }
+        }
+    }
+
+    //defaults to false if not available
+    private fun getInlineStateFor(connection: SQLiteConnection, fileId: String): Boolean {
+        //language=SQLite
+        val sql = """
+SELECT
+    is_inline
+FROM
+    file_inline_states
+WHERE
+    file_id = :fileId
+"""
+        return connection.withPrepared(sql) { stmt ->
+            stmt.bind(":fileId", fileId)
+            if (stmt.step())
+                return stmt.columnBool(0)
+            else
+                false
+        }
     }
 
     /* test use only */

@@ -187,7 +187,7 @@ internal fun SQLiteStatement.bind(index: Int, logEventType: LogEventType) {
     bind(index, logEventType.toString())
 }
 
-internal inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (SQLiteStatement) -> R): R {
+internal inline fun <R> SQLiteConnection.withPrepared(sql: String, body: (stmt: SQLiteStatement) -> R): R {
     return this.prepare(sql).use { body(it) }
 }
 

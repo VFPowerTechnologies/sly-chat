@@ -37,7 +37,8 @@ class DatabaseMigrationInitial : DatabaseMigration(1) {
             "attachments",
             "received_attachments",
             "attachment_cache_requests",
-            "attachment_cache_refcounts"
+            "attachment_cache_refcounts",
+            "file_inline_states"
         )
     }
 

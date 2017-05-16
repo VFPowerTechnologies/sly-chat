@@ -85,7 +85,7 @@ class AttachmentServiceImpl(
         val markInline = ev.result.mergeResults.added
             .filterMap { if (shouldInline(it)) it.id else null }
 
-        messageService.updateAttachmentInlineState(markInline) successUi { inlinedAttachments ->
+        messageService.updateFileInlineState(markInline) successUi { inlinedAttachments ->
             if (inlinedAttachments.isNotEmpty())
                 eventSubject.onNext(AttachmentEvent.InlineUpdate(inlinedAttachments.mapToMap { it to true }))
         } fail {

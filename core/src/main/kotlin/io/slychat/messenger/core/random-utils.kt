@@ -163,12 +163,12 @@ fun randomMessageText(): String {
     return shuffleString("random message")
 }
 
-fun randomMessageAttachmentInfo(n: Int): MessageAttachmentInfo {
+fun randomMessageAttachmentInfo(n: Int, isInline: Boolean = false): MessageAttachmentInfo {
     return MessageAttachmentInfo(
         n,
         shuffleString("dummy.jpg"),
         generateFileId(),
-        true
+        isInline
     )
 }
 

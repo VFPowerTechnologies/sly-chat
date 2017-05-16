@@ -141,11 +141,11 @@ class MessageServiceImpl(
     }
 
     override fun completeReceivedAttachments(completed: Map<AttachmentId, String>): Promise<Set<AttachmentId>, Exception> {
-        TODO()
+        return messagePersistenceManager.completeReceivedAttachments(completed)
     }
 
-    override fun updateAttachmentInlineState(fileIds: List<String>): Promise<Set<AttachmentId>, Exception> {
-        TODO()
+    override fun updateFileInlineState(fileIds: List<String>): Promise<Set<AttachmentId>, Exception> {
+        return messagePersistenceManager.updateFileInlineState(fileIds)
     }
 
     private fun startMessageExpiration(conversationId: ConversationId, messageId: String, conversationMessageInfo: ConversationMessageInfo?): Promise<Unit, Exception> {

@@ -13,8 +13,6 @@ interface MessagePersistenceManager {
 
     fun getReceivedAttachments(conversationId: ConversationId, messageId: String): Promise<List<ReceivedAttachment>, Exception>
 
-    fun deleteReceivedAttachments(completed: List<AttachmentId>, markInline: List<AttachmentId>): Promise<Unit, Exception>
-
     fun updateReceivedAttachmentState(attachments: Map<AttachmentId, ReceivedAttachmentState>): Promise<Unit, Exception>
 
     /** Retrieve the last n messages for the given contact starting backwards at the given index. */
@@ -66,4 +64,8 @@ interface MessagePersistenceManager {
     fun getMessagesAwaitingExpiration(): Promise<List<ExpiringMessage>, Exception>
 
     fun getConversationDisplayInfo(conversationId: ConversationId): Promise<ConversationDisplayInfo, Exception>
+
+    fun completeReceivedAttachments(completed: Map<AttachmentId, String>): Promise<Set<AttachmentId>, Exception>
+
+    fun updateFileInlineState(fileIds: List<String>): Promise<Set<AttachmentId>, Exception>
 }

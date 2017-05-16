@@ -52,5 +52,5 @@ interface MessageService {
     fun completeReceivedAttachments(completed: Map<AttachmentId, String>): Promise<Set<AttachmentId>, Exception>
 
     //returns any attachments that were made inline
-    fun updateAttachmentInlineState(fileIds: List<String>): Promise<Set<AttachmentId>, Exception>
+    fun updateFileInlineState(fileIds: List<String>): Promise<Set<AttachmentId>, Exception>
 }

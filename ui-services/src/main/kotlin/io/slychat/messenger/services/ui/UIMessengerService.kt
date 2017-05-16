@@ -24,7 +24,7 @@ interface UIMessengerService {
 
     fun addClockDifferenceUpdateListener(listener: (Long) -> Unit)
 
-    fun addAttachmentCacheEventListener(listener: (UIAttachmentCacheEvent) -> Unit)
+    fun addAttachmentCacheEventListener(listener: (UIAttachmentEvent) -> Unit)
 
     /**
      * Retrieve the last n messages for the given contact starting backwards at the given index.

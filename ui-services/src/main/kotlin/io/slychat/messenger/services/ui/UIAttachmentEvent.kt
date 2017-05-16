@@ -4,10 +4,10 @@ enum class UIAttachmentCacheEventType {
     AVAILABLE
 }
 
-sealed class UIAttachmentCacheEvent {
+sealed class UIAttachmentEvent {
     abstract val type: UIAttachmentCacheEventType
 
-    class Available(val fileId: String, val resolution: Int) : UIAttachmentCacheEvent() {
+    class Available(val fileId: String, val resolution: Int) : UIAttachmentEvent() {
         override val type: UIAttachmentCacheEventType
             get() = UIAttachmentCacheEventType.AVAILABLE
     }

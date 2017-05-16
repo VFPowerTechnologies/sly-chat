@@ -31,7 +31,7 @@ class UIMessengerServiceImpl(
     private val messageStatusUpdateListeners = ArrayList<(UIMessageUpdateEvent) -> Unit>()
     private val conversationInfoUpdateListeners = ArrayList<(UIConversationDisplayInfo) -> Unit>()
     private val clockDifferenceUpdateListeners = ArrayList<(Long) -> Unit>()
-    private val attachmentEventListeners = ArrayList<(UIAttachmentCacheEvent) -> Unit>()
+    private val attachmentEventListeners = ArrayList<(UIAttachmentEvent) -> Unit>()
 
     private var relayClockDiff = 0L
 
@@ -77,7 +77,7 @@ class UIMessengerServiceImpl(
 
     private fun onAttachmentCacheEvent(ev: AttachmentEvent) {
         val e = when (ev) {
-            is AttachmentEvent.AvailableInCache -> UIAttachmentCacheEvent.Available(ev.fileId, ev.resolution)
+            is AttachmentEvent.AvailableInCache -> UIAttachmentEvent.Available(ev.fileId, ev.resolution)
             is AttachmentEvent.FileIdUpdate -> TODO()
             is AttachmentEvent.InlineUpdate -> TODO()
         }
@@ -215,7 +215,7 @@ class UIMessengerServiceImpl(
         listener(relayClockDiff)
     }
 
-    override fun addAttachmentCacheEventListener(listener: (UIAttachmentCacheEvent) -> Unit) {
+    override fun addAttachmentCacheEventListener(listener: (UIAttachmentEvent) -> Unit) {
         attachmentEventListeners.add(listener)
     }
 

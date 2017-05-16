@@ -61,7 +61,7 @@ class AttachmentServiceImplTest {
         whenever(messageService.messageUpdates).thenReturn(messageUpdateEvents)
         whenever(messageService.getAllReceivedAttachments()).thenResolve(emptyList())
         whenever(messageService.completeReceivedAttachments(any())).thenResolve(emptySet())
-        whenever(messageService.updateAttachmentInlineState(any())).thenResolve(emptySet())
+        whenever(messageService.updateFileInlineState(any())).thenResolve(emptySet())
 
         whenever(storageService.syncEvents).thenReturn(syncEvents)
 
@@ -273,7 +273,7 @@ class AttachmentServiceImplTest {
 
         val testSubscriber = service.events.testSubscriber()
 
-        whenever(messageService.updateAttachmentInlineState(any())).thenResolve(setOf(attachmentId))
+        whenever(messageService.updateFileInlineState(any())).thenResolve(setOf(attachmentId))
 
         sendSyncResult(fileId, fileMetadata)
 
