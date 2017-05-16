@@ -11,7 +11,7 @@ ChatController.prototype = {
     init : function () {
         this.addMessageUpdateListener();
         this.addNewMessageListener();
-        this.addAttachmentCacheEventListener();
+        this.addAttachmentEventListener();
     },
 
     addMessageUpdateListener : function () {
@@ -65,8 +65,8 @@ ChatController.prototype = {
         messengerService.addNewMessageListener(this.handleNewMessageDisplay.bind(this));
     },
 
-    addAttachmentCacheEventListener : function () {
-        messengerService.addAttachmentCacheEventListener(this.handleAttachmentCacheEvent.bind(this));
+    addAttachmentEventListener : function () {
+        messengerService.addAttachmentEventListener(this.handleAttachmentCacheEvent.bind(this));
     },
 
     clearCache : function () {
@@ -159,9 +159,13 @@ ChatController.prototype = {
             //FIXME
             if (message.attachments.length > 0) {
                 var attachment = message.attachments[0];
+
+                // if (attachment.isInline) {
                 messageCore.append('<div>');
+                //TODO can't use custom protocols under ios, so we can't inline stuff here
                 messageCore.append('<img id="attachment_' + attachment.fileId + '_200" src="attachment://' + attachment.fileId + '?res=200" alt="' + attachment.displayName + '">');
                 messageCore.append('<span style="text-align: center;">' + attachment.displayName + '</span></div>');
+                // }
             }
         }
 
@@ -1061,6 +1065,12 @@ ChatController.prototype = {
                     e.setAttribute('src', e.getAttribute('src') + '&t=' + Date.now());
                 });
 
+                break;
+
+            case 'FILE_ID_UPDATE':
+                break;
+
+            case 'INLINE_UPDATE':
                 break;
         }
     }

@@ -57,7 +57,7 @@ class UIMessengerServiceImpl(
 
             val attachmentService = userComponent.attachmentService
 
-            subscriptions.add(attachmentService.events.subscribe { onAttachmentCacheEvent(it) })
+            subscriptions.add(attachmentService.events.subscribe { onAttachmentEvent(it) })
 
             messengerService = userComponent.messengerService
             relayClock = userComponent.relayClock
@@ -75,11 +75,11 @@ class UIMessengerServiceImpl(
         }
     }
 
-    private fun onAttachmentCacheEvent(ev: AttachmentEvent) {
+    private fun onAttachmentEvent(ev: AttachmentEvent) {
         val e = when (ev) {
             is AttachmentEvent.AvailableInCache -> UIAttachmentEvent.Available(ev.fileId, ev.resolution)
-            is AttachmentEvent.FileIdUpdate -> TODO()
-            is AttachmentEvent.InlineUpdate -> TODO()
+            is AttachmentEvent.FileIdUpdate -> UIAttachmentEvent.FileIdUpdate(ev.updates)
+            is AttachmentEvent.InlineUpdate -> UIAttachmentEvent.InlineUpdate(ev.updates)
         }
 
         attachmentEventListeners.forEach { it(e) }
@@ -215,7 +215,7 @@ class UIMessengerServiceImpl(
         listener(relayClockDiff)
     }
 
-    override fun addAttachmentCacheEventListener(listener: (UIAttachmentEvent) -> Unit) {
+    override fun addAttachmentEventListener(listener: (UIAttachmentEvent) -> Unit) {
         attachmentEventListeners.add(listener)
     }
 

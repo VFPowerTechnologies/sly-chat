@@ -191,11 +191,11 @@ class AttachmentServiceImpl(
                     idChanges[id] = fileId
             }
 
-            if (inlineChanges.isNotEmpty())
-                eventSubject.onNext(AttachmentEvent.InlineUpdate(inlineChanges))
-
             if (idChanges.isNotEmpty())
                 eventSubject.onNext(AttachmentEvent.FileIdUpdate(idChanges))
+
+            if (inlineChanges.isNotEmpty())
+                eventSubject.onNext(AttachmentEvent.InlineUpdate(inlineChanges))
         } fail {
             log.error("Failed to update received attachment state: {}", it.message, it)
         }
