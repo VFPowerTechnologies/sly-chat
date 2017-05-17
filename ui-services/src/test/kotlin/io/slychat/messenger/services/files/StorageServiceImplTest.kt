@@ -69,6 +69,7 @@ class StorageServiceImplTest {
     private val syncJobFactory: StorageSyncJobFactory = mock()
     private val syncJob = MockStorageSyncJob()
     private val attachmentCache: AttachmentCache = mock()
+    private val quotaManager: QuotaManager = mock()
 
     private val dummyCachePath = File("/cachePath")
 
@@ -80,11 +81,11 @@ class StorageServiceImplTest {
         whenever(fileListPersistenceManager.deleteFiles(any())).thenResolve(emptyList())
         whenever(syncJobFactory.create(any())).thenReturn(syncJob)
         whenever(transferManager.events).thenReturn(transferEvents)
-        whenever(transferManager.quota).thenReturn(quotaEvents)
         whenever(transferManager.transfers).thenReturn(emptyList())
         whenever(transferManager.remove(any())).thenResolveUnit()
         whenever(transferManager.upload(any())).thenResolveUnit()
         whenever(transferManager.download(any())).thenResolveUnit()
+        whenever(quotaManager.quota).thenReturn(quotaEvents)
         whenever(fileAccess.getFileInfo(any())).thenReturn(FileInfo("displayName", randomLong(), "*/*"))
 
         whenever(attachmentCache.getFinalPathForFile(any())).thenReturn(dummyCachePath)
@@ -99,6 +100,7 @@ class StorageServiceImplTest {
             transferManager,
             fileAccess,
             attachmentCache,
+            quotaManager,
             networkStatus
         )
     }
@@ -280,18 +282,16 @@ class StorageServiceImplTest {
     fun `it should update quota after completing a successful sync`() {
         val service = newService(true)
 
-        val testSubscriber = service.quota.testSubscriber()
-
         service.sync()
 
         val quota = randomQuota()
         syncJob.d.resolve(FileListSyncResult(0, FileListMergeResults.empty, 0, quota))
 
-        testSubscriber.assertReceivedOnNext(listOf(quota))
+        verify(quotaManager).update(quota)
     }
 
     @Test
-    fun `it should proxy quota info emitted by TransferManager`() {
+    fun `it should proxy quota info emitted by QuotaManager`() {
         val service = newService(true)
 
         val testSubscriber = service.quota.testSubscriber()

@@ -11,8 +11,6 @@ interface TransferManager {
 
     val transfers: List<TransferStatus>
 
-    val quota: Observable<Quota>
-
     fun init()
 
     fun shutdown()

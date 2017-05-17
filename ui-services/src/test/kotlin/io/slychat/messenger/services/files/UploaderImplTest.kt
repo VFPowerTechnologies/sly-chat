@@ -41,6 +41,7 @@ class UploaderImplTest {
     private val uploadPersistenceManager: UploadPersistenceManager = mock()
     private val scheduler = TestScheduler()
     private val uploadOperations = MockUploadOperations(scheduler)
+    private val quotaManager: QuotaManager = mock()
 
     @Before
     fun before() {
@@ -59,6 +60,7 @@ class UploaderImplTest {
             uploadOperations,
             scheduler,
             scheduler,
+            quotaManager,
             isNetworkAvailable
         )
     }
@@ -354,7 +356,7 @@ class UploaderImplTest {
     }
 
     @Test
-    fun `creation should emit quota info when not enough quota is available`() {
+    fun `creation should update quota info when not enough quota is available`() {
         val uploader = newUploader()
 
         val info = randomUploadInfo()
@@ -362,16 +364,14 @@ class UploaderImplTest {
         uploader.upload(info).get()
 
         val quota = randomQuota()
-
-        val testSubscriber = uploader.quota.testSubscriber()
 
         uploadOperations.resolveCreateOperation(info.upload.id, NewUploadResponse(NewUploadError.INSUFFICIENT_QUOTA, quota))
 
-        testSubscriber.assertReceivedOnNext(listOf(quota))
+        verify(quotaManager).update(quota)
     }
 
     @Test
-    fun `creation should emit quota info when creation was successful`() {
+    fun `creation should update quota info when creation was successful`() {
         val uploader = newUploader()
 
         val info = randomUploadInfo()
@@ -380,11 +380,9 @@ class UploaderImplTest {
 
         val quota = randomQuota()
 
-        val testSubscriber = uploader.quota.testSubscriber()
-
         uploadOperations.resolveCreateOperation(info.upload.id, NewUploadResponse(null, quota))
 
-        testSubscriber.assertReceivedOnNext(listOf(quota))
+        verify(quotaManager).update(quota)
     }
 
     @Test

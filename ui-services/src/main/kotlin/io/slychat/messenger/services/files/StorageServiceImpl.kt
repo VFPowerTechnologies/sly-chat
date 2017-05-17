@@ -31,14 +31,13 @@ class StorageServiceImpl(
     private val transferManager: TransferManager,
     private val fileAccess: PlatformFileAccess,
     private val attachmentCache: AttachmentCache,
+    private val quotaManager: QuotaManager,
     networkStatus: Observable<Boolean>
 ) : StorageService {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val quotaSubject = BehaviorSubject.create<Quota>()
-
     override val quota: Observable<Quota>
-        get() = quotaSubject
+        get() = quotaManager.quota
 
     private val syncEventsSubject = BehaviorSubject.create<FileListSyncEvent>()
 
@@ -68,7 +67,6 @@ class StorageServiceImpl(
     init {
         subscriptions += networkStatus.subscribe { onNetworkStatusChange(it) }
         subscriptions += transferEvents.ofType(TransferEvent.StateChanged::class.java).subscribe { onTransferEvent(it) }
-        subscriptions += transferManager.quota.subscribe { quotaSubject.onNext(it) }
     }
 
     private fun onTransferEvent(event: TransferEvent.StateChanged) {
@@ -115,7 +113,7 @@ class StorageServiceImpl(
     }
 
     private fun onSyncSuccess(result: FileListSyncResult) {
-        quotaSubject.onNext(result.quota)
+        quotaManager.update(result.quota)
         syncEventsSubject.onNext(FileListSyncEvent.Result(result))
 
         val mergeResults = result.mergeResults

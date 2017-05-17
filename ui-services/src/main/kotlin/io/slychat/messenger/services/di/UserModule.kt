@@ -547,6 +547,12 @@ class UserModule(
 
     @UserScope
     @Provides
+    fun providesQuotaManager(): QuotaManager {
+        return QuotaManagerImpl()
+    }
+
+    @UserScope
+    @Provides
     fun providesUploader(
         serverUrls: ServerUrls,
         @SlyHttp httpClientFactory: HttpClientFactory,
@@ -555,7 +561,8 @@ class UserModule(
         mainScheduler: Scheduler,
         keyVault: KeyVault,
         fileAccess: PlatformFileAccess,
-        attachmentCache: AttachmentCache
+        attachmentCache: AttachmentCache,
+        quotaManager: QuotaManager
     ): Uploader {
         val operations = UploadOperationsImpl(
             fileAccess,
@@ -572,6 +579,7 @@ class UserModule(
             operations,
             Schedulers.computation(),
             mainScheduler,
+            quotaManager,
             false
         )
     }
@@ -655,7 +663,8 @@ class UserModule(
         fileAccess: PlatformFileAccess,
         @NetworkStatus networkStatus: Observable<Boolean>,
         keyVault: KeyVault,
-        attachmentCache: AttachmentCache
+        attachmentCache: AttachmentCache,
+        quotaManager: QuotaManager
     ): StorageService {
         val storageClient = StorageAsyncClientImpl(serverUrls.API_SERVER, serverUrls.FILE_SERVER, httpClientFactory)
         val syncJobFactory = StorageSyncJobFactoryImpl(keyVault, fileListPersistenceManager, storageClient)
@@ -667,6 +676,7 @@ class UserModule(
             transferManager,
             fileAccess,
             attachmentCache,
+            quotaManager,
             networkStatus
         )
     }

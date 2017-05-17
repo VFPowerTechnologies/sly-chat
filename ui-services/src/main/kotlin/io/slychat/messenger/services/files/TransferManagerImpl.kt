@@ -55,9 +55,6 @@ class TransferManagerImpl(
             return statuses
         }
 
-    override val quota: Observable<Quota>
-        get() = uploader.quota
-
     init {
         subscriptions += networkStatus.subscribe {
             uploader.isNetworkAvailable = it

@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.files
 
-import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.condError
 import io.slychat.messenger.core.enforceExhaustive
 import io.slychat.messenger.core.http.api.ServiceUnavailableException
@@ -29,6 +28,7 @@ class UploaderImpl(
     private val uploadOperations: UploadOperations,
     private val timerScheduler: Scheduler,
     private val mainScheduler: Scheduler,
+    private val quotaManager: QuotaManager,
     initialNetworkStatus: Boolean
 ) : Uploader {
     companion object {
@@ -54,11 +54,6 @@ class UploaderImpl(
             if (value)
                 startNextUpload()
         }
-
-    private val quotaSubject = PublishSubject.create<Quota>()
-
-    override val quota: Observable<Quota>
-        get() = quotaSubject
 
     override val uploads: List<UploadStatus>
         get() = list.all.values.toList()
@@ -448,7 +443,7 @@ class UploaderImpl(
         val file = status.file
 
         uploadOperations.create(status.upload, file!!) bindUi {
-            quotaSubject.onNext(it.quota)
+            quotaManager.update(it.quota)
 
             when (it.error) {
                 NewUploadError.INSUFFICIENT_QUOTA ->
