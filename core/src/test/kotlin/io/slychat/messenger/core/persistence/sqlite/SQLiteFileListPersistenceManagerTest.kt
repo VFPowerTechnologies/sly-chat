@@ -427,6 +427,16 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
+    fun `mergeUpdates should not insert deleted files`() {
+        val file = randomRemoteFile(isDeleted = true)
+        val updates = listOf(file)
+
+        fileListPersistenceManager.mergeUpdates(updates, 1).get()
+
+        assertNull(fileListPersistenceManager.getFile(file.id).get(), "Deleted file should not be added")
+    }
+
+    @Test
     fun `remoteRemoteUpdates should remove the given updates`() {
         val file = insertFile()
         val file2 = insertFile()

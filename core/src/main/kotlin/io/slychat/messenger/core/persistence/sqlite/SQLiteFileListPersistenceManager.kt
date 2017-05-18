@@ -262,8 +262,10 @@ WHERE
                     }
                 }
                 else {
-                    fileUtils.insertFile(connection, remote)
-                    added.add(remote)
+                    if (!remote.isDeleted) {
+                        fileUtils.insertFile(connection, remote)
+                        added.add(remote)
+                    }
                 }
             }
 
