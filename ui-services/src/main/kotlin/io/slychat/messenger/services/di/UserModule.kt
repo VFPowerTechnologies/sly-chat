@@ -646,7 +646,8 @@ class UserModule(
             downloader,
             scheduler,
             Schedulers.computation(),
-            networkStatus
+            networkStatus,
+            true
         )
 
         return manager

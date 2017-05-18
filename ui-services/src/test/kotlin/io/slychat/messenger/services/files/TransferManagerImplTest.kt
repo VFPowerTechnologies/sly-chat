@@ -31,7 +31,7 @@ class TransferManagerImplTest {
     private val networkStatus: PublishSubject<Boolean> = PublishSubject.create()
     private val scheduler = TestScheduler()
 
-    private fun newManager(): TransferManagerImpl {
+    private fun newManager(autoRemoveCompletedTransfers: Boolean = false): TransferManagerImpl {
         userConfigService.withEditor {
             transfersSimulDownloads = 1
             transfersSimulUploads = 2
@@ -43,7 +43,8 @@ class TransferManagerImplTest {
             downloader,
             scheduler,
             scheduler,
-            networkStatus
+            networkStatus,
+            autoRemoveCompletedTransfers
         )
     }
 
@@ -392,5 +393,99 @@ class TransferManagerImplTest {
         assertThat(testSubscriber.onNextEvents).desc("Should contain a terminating event") {
             contains(TransferEvent.UntilRetry(updated, 0))
         }
+    }
+
+    private fun testAutoRemovalSendEvent(transfer: Transfer, state: TransferState, isStateChange: Boolean) {
+        val manager = newManager(autoRemoveCompletedTransfers = true)
+
+        val ev = if (isStateChange)
+            TransferEvent.StateChanged(transfer, state)
+        else
+            TransferEvent.Added(transfer, state)
+
+        when (transfer) {
+            is Transfer.U -> uploadTransferEvents.onNext(ev)
+            is Transfer.D -> downloadTransferEvents.onNext(ev)
+        }
+    }
+
+    private fun testAutoRemoval(transfer: Transfer, state: TransferState, isStateChange: Boolean) {
+        testAutoRemovalSendEvent(transfer, state, isStateChange)
+
+        val transferIds = listOf(transfer.id)
+
+        when (transfer) {
+            is Transfer.U -> verify(uploader).remove(transferIds)
+            is Transfer.D -> verify(downloader).remove(transferIds)
+        }
+    }
+
+    private fun testAutoRemovalIgnore(transfer: Transfer, state: TransferState, isStateChange: Boolean) {
+        testAutoRemovalSendEvent(transfer, state, isStateChange)
+
+        when (transfer) {
+            is Transfer.U -> verify(uploader, never()).remove(any())
+            is Transfer.D -> verify(downloader, never()).remove(any())
+        }
+    }
+
+    @Test
+    fun `it should remove completed uploads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.U(randomUpload()), TransferState.COMPLETE, true)
+    }
+
+    @Test
+    fun `it should remove cancelled uploads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.U(randomUpload()), TransferState.CANCELLED, true)
+    }
+
+    @Test
+    fun `it should ignore non-completion state changes for uploads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemovalIgnore(Transfer.U(randomUpload()), TransferState.ERROR, true)
+    }
+
+    @Test
+    fun `it should ignore non-completion state changes for downloads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemovalIgnore(Transfer.D(randomDownload()), TransferState.ERROR, true)
+    }
+
+    @Test
+    fun `it should remove completed downloads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.D(randomDownload()), TransferState.COMPLETE, true)
+    }
+
+    @Test
+    fun `it should remove cancelled downloads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.D(randomDownload()), TransferState.CANCELLED, true)
+    }
+
+    @Test
+    fun `it should remove added uploads in completion state when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.U(randomUpload()), TransferState.COMPLETE, false)
+    }
+
+    @Test
+    fun `it should remove added uploads in cancellation state when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.U(randomUpload()), TransferState.COMPLETE, false)
+    }
+
+    @Test
+    fun `it should remove added downloads in completion state when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.D(randomDownload()), TransferState.COMPLETE, false)
+    }
+
+    @Test
+    fun `it should remove added downloads in cancellation state when autoRemoveCompletedTransfers is true`() {
+        testAutoRemoval(Transfer.D(randomDownload()), TransferState.COMPLETE, false)
+    }
+
+    @Test
+    fun `it should ignore non-completion added uploads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemovalIgnore(Transfer.U(randomUpload()), TransferState.ERROR, false)
+    }
+
+    @Test
+    fun `it should ignore non-completion added downloads when autoRemoveCompletedTransfers is true`() {
+        testAutoRemovalIgnore(Transfer.D(randomDownload()), TransferState.ERROR, false)
     }
 }

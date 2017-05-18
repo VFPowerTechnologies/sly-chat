@@ -54,7 +54,7 @@ interface StorageService {
     /** Create downloads for the given files. */
     fun downloadFiles(requests: List<DownloadRequest>): Promise<List<DownloadInfo>, Exception>
 
-    /** Remote the given transfers from the transfer list. */
+    /** Remote the given completed transfers from the transfer list. */
     fun remove(transferIds: List<String>): Promise<Unit, Exception>
 
     /** Manually retry the given transfer. */

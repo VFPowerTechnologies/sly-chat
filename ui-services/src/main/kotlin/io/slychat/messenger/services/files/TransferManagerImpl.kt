@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.files
 
-import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
 import io.slychat.messenger.core.rx.plusAssign
@@ -24,7 +23,8 @@ class TransferManagerImpl(
     private val downloader: Downloader,
     private val scheduler: Scheduler,
     private val timerScheduler: Scheduler,
-    networkStatus: Observable<Boolean>
+    networkStatus: Observable<Boolean>,
+    autoRemoveCompletedTransfers: Boolean
 ) : TransferManager {
     private class ByType(val uploadIds: List<String>, val downloadIds: List<String>)
 
@@ -43,6 +43,7 @@ class TransferManagerImpl(
     private val previousTransferState = HashMap<String, Any>()
 
     private val eventsSubject = PublishSubject.create<TransferEvent>()
+
     override val events: Observable<TransferEvent> = Observable.merge(uploader.events, downloader.events, eventsSubject)
 
     override val transfers: List<TransferStatus>
@@ -53,6 +54,13 @@ class TransferManagerImpl(
             downloader.downloads.mapTo(statuses) { TransferStatus(Transfer.D(it.download), it.file, it.state, it.progress) }
 
             return statuses
+        }
+
+    var autoRemoveCompletedTransfers: Boolean = autoRemoveCompletedTransfers
+        set(value) {
+            field = value
+            if (value)
+                removeCompleted()
         }
 
     init {
@@ -69,6 +77,26 @@ class TransferManagerImpl(
 
         subscriptions += uploader.events.subscribe { onTransferEvent(it) }
         subscriptions += downloader.events.subscribe { onTransferEvent(it) }
+
+        subscriptions += events
+            .ofType(TransferEvent.StateChanged::class.java)
+            .filter { it.state == TransferState.COMPLETE || it.state == TransferState.CANCELLED }
+            .subscribe { removeTransfer(it.transfer) }
+
+        subscriptions += events
+            .ofType(TransferEvent.Added::class.java)
+            .filter { it.state == TransferState.COMPLETE || it.state == TransferState.CANCELLED }
+            .subscribe { removeTransfer(it.transfer) }
+    }
+
+    private fun removeTransfer(transfer: Transfer) {
+        val transferIds = listOf(transfer.id)
+
+        when (transfer) {
+            is Transfer.U -> uploader.remove(transferIds)
+
+            is Transfer.D -> downloader.remove(transferIds)
+        }
     }
 
     private fun clearRetryData(transfer: Transfer) {

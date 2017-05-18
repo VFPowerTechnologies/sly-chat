@@ -300,12 +300,15 @@ class TransferIntegrationTest {
             attachmentCache
         )
 
+        val quotaManager = mock<QuotaManager>()
+
         val uploader = UploaderImpl(
             1,
             uploaderPersistenceManager,
             uploadOperations,
             Schedulers.computation(),
             mainScheduler,
+            quotaManager,
             true
         )
 
@@ -336,7 +339,8 @@ class TransferIntegrationTest {
             downloader,
             mainScheduler,
             Schedulers.computation(),
-            networkStatus
+            networkStatus,
+            false
         )
 
         val userId = UserId(1)
@@ -355,6 +359,7 @@ class TransferIntegrationTest {
             transferManager,
             fileAccess,
             attachmentCache,
+            quotaManager,
             networkStatus
         )
 
