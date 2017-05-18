@@ -293,7 +293,8 @@ class IOSApp private constructor(peer: Pointer) : NSObject(peer), UIApplicationD
             IOSMainScheduler.instance,
             UserConfig(),
             PushNotificationService.APN,
-            IOSFileAccess()
+            IOSFileAccess(),
+            IOSThumbnailGenerator()
         )
 
         Sentry.setIOSDeviceName(UIDevice.currentDevice().model())
