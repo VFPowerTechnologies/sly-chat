@@ -234,7 +234,7 @@ WHERE
             val updated = ArrayList<RemoteFile>()
 
             var isIndexModified = false
-            updates.forEach { remote ->
+            updates.sortedBy { it.lastUpdateVersion }.forEach { remote ->
                 //kinda bad but w/e
                 val local = fileUtils.selectFile(connection, remote.id)
 

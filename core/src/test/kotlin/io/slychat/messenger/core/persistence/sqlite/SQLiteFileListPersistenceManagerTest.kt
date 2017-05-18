@@ -411,6 +411,22 @@ class SQLiteFileListPersistenceManagerTest {
     }
 
     @Test
+    fun `mergeUpdates should process updates in order`() {
+        val base = insertFile()
+        //delete file, then reupload with a diff version
+        val newFile = base.copy(id = generateFileId(), lastUpdateVersion = 2)
+
+        val updates = listOf(
+            newFile,
+            base.copy(isDeleted = true,  lastUpdateVersion = 1)
+        )
+
+        fileListPersistenceManager.mergeUpdates(updates, 2).get()
+
+        assertEquals(newFile, getFile(newFile.id), "Invalid file")
+    }
+
+    @Test
     fun `remoteRemoteUpdates should remove the given updates`() {
         val file = insertFile()
         val file2 = insertFile()
