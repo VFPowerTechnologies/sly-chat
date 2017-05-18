@@ -362,6 +362,12 @@ class SlyApplicationTest {
         verify(userComponent.relayClock).setDifference(sessionData.relayClockDifference)
     }
 
+    @Test
+    fun `it should init the quota manager during login`() {
+        val app = auth()
+        verify(userComponent.quotaManager).init()
+    }
+
     fun testNoRelayConnection(relayClientState: RelayClientState) {
         val app = auth()
 

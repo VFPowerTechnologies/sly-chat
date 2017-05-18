@@ -483,6 +483,8 @@ class SlyApplication {
             }
             else
                 Promise.ofSuccess<Unit, Exception>(Unit)
+        } map {
+            userComponent.quotaManager.init()
         } bind {
             persistenceManager.initAsync()
         } bind {

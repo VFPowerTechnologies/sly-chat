@@ -7,6 +7,7 @@ import io.slychat.messenger.core.crypto.DerivedKeyType
 import io.slychat.messenger.core.crypto.KeyVault
 import io.slychat.messenger.core.crypto.signal.SQLiteSignalProtocolStore
 import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.json.JSONQuotaPersistenceManager
 import io.slychat.messenger.core.persistence.json.JsonAccountLocalInfoPersistenceManager
 import io.slychat.messenger.core.persistence.sqlite.*
 import io.slychat.messenger.services.LocalAccountDirectory
@@ -175,5 +176,14 @@ class UserPersistenceModule {
         sqlitePersistenceManager: SQLitePersistenceManager
     ): AttachmentCachePersistenceManager {
         return SQLiteAttachmentCachePersistenceManager(sqlitePersistenceManager)
+    }
+
+    @UserScope
+    @Provides
+    fun providesQuotaPersistenceManager(
+        accountLocalInfo: AccountLocalInfo,
+        userPaths: UserPaths
+    ): QuotaPersistenceManager {
+        return JSONQuotaPersistenceManager(userPaths.quotaCachePath, accountLocalInfo.getDerivedKeySpec(LocalDerivedKeyType.GENERIC))
     }
 }

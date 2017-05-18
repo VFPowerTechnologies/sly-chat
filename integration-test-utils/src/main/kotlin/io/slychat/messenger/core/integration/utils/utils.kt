@@ -5,7 +5,7 @@ import io.slychat.messenger.core.SlyAddress
 import io.slychat.messenger.core.UserCredentials
 import io.slychat.messenger.core.http.JavaHttpClient
 import io.slychat.messenger.core.http.get
-import io.slychat.messenger.core.persistence.sqlite.JSONMapper
+import io.slychat.messenger.core.persistence.json.JSONMapper
 import java.net.ConnectException
 
 val serverBaseUrl = "http://localhost:8000"

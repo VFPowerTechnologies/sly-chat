@@ -11,5 +11,6 @@ data class UserPaths(
     val sessionDataPath: File,
     val databasePath: File,
     val configPath: File,
-    val fileCacheDir: File
+    val fileCacheDir: File,
+    val quotaCachePath: File
 )

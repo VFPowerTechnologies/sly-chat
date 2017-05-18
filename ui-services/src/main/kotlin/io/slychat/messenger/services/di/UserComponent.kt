@@ -10,6 +10,7 @@ import io.slychat.messenger.services.contacts.AddressBookOperationManager
 import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.di.annotations.EmptyReadMessageQueue
+import io.slychat.messenger.services.files.QuotaManager
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.files.TransferManager
 import io.slychat.messenger.services.files.cache.AttachmentCache
@@ -97,4 +98,6 @@ interface UserComponent {
     val attachmentCache: AttachmentCache
 
     val attachmentService: AttachmentService
+
+    val quotaManager: QuotaManager
 }

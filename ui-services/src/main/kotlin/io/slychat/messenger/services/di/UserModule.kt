@@ -547,8 +547,8 @@ class UserModule(
 
     @UserScope
     @Provides
-    fun providesQuotaManager(): QuotaManager {
-        return QuotaManagerImpl()
+    fun providesQuotaManager(quotaPersistenceManager: QuotaPersistenceManager): QuotaManager {
+        return QuotaManagerImpl(quotaPersistenceManager)
     }
 
     @UserScope

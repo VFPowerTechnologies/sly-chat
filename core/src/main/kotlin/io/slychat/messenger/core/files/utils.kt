@@ -8,7 +8,7 @@ import io.slychat.messenger.core.crypto.ciphers.decryptBulkData
 import io.slychat.messenger.core.crypto.ciphers.encryptBulkData
 import io.slychat.messenger.core.hexify
 import io.slychat.messenger.core.http.api.contacts.md5
-import io.slychat.messenger.core.persistence.sqlite.JSONMapper
+import io.slychat.messenger.core.persistence.json.JSONMapper
 import java.util.*
 
 fun encryptUserMetadata(keyVault: KeyVault, userMetadata: UserMetadata): ByteArray {

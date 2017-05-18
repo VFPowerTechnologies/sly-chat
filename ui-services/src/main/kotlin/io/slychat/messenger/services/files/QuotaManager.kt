@@ -7,4 +7,7 @@ interface QuotaManager {
     val quota: Observable<Quota>
 
     fun update(quota: Quota)
+
+    /** Occurs disk IO. */
+    fun init()
 }

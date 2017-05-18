@@ -14,6 +14,7 @@ import io.slychat.messenger.services.contacts.ContactsService
 import io.slychat.messenger.services.crypto.MessageCipherService
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.di.UserComponent
+import io.slychat.messenger.services.files.QuotaManager
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.files.TransferManager
 import io.slychat.messenger.services.files.cache.AttachmentCache
@@ -108,6 +109,8 @@ class MockUserComponent : UserComponent {
     override val fileListSyncWatcher: FileListSyncWatcher = mock()
 
     override val attachmentCache: AttachmentCache = mock()
+
+    override val quotaManager: QuotaManager = mock()
 
     override val attachmentService: AttachmentService = mock()
 }

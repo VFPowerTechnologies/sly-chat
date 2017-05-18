@@ -1,4 +1,4 @@
-package io.slychat.messenger.core.persistence.sqlite
+package io.slychat.messenger.core.persistence.json
 
 import com.fasterxml.jackson.databind.ObjectMapper
 
