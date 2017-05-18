@@ -17,9 +17,6 @@ interface FileListPersistenceManager {
 
     fun getFileCount(): Promise<Int, Exception>
 
-    //filters fileIds which match files you already own; used as a simple optimization for attachment fetching
-    fun filterOwnedFiles(fileIds: List<String>): Promise<List<String>, Exception>
-
     //generates remote updates
     fun deleteFiles(fileIds: List<String>): Promise<List<RemoteFile>, Exception>
 

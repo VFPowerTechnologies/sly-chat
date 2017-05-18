@@ -311,8 +311,4 @@ class StorageServiceImpl(
     override fun cancel(transferIds: List<String>) {
         transferManager.cancel(transferIds)
     }
-
-    override fun filterOwnedFiles(fileIds: List<String>): Promise<List<String>, Exception> {
-        return fileListPersistenceManager.filterOwnedFiles(fileIds)
-    }
 }

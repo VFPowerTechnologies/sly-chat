@@ -180,34 +180,6 @@ VALUES
         }
     }
 
-    override fun filterOwnedFiles(fileIds: List<String>): Promise<List<String>, Exception> {
-        return if (fileIds.isEmpty())
-            Promise.ofSuccess(emptyList())
-        else {
-            sqlitePersistenceManager.runQuery {
-                //language=SQLite
-                val sql = """
-SELECT
-    id
-FROM
-    files
-WHERE
-    id IN (${getPlaceholders(fileIds.size)})
-"""
-
-                val owned = it.withPrepared(sql) { stmt ->
-                    fileIds.forEachIndexed { i, s ->
-                        stmt.bind(i + 1, s)
-                    }
-
-                    stmt.mapToSet { it.columnString(0) }
-                }
-
-                (HashSet(fileIds) - owned).toList()
-            }
-        }
-    }
-
     override fun deleteFiles(fileIds: List<String>): Promise<List<RemoteFile>, Exception> {
         if (fileIds.isEmpty())
             return Promise.ofSuccess(emptyList())
