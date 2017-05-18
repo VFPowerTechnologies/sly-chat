@@ -1,6 +1,7 @@
 package io.slychat.messenger.android
 
 import io.slychat.messenger.services.ui.SoftKeyboardInfo
+import io.slychat.messenger.services.ui.UISelectUploadFileResult
 import io.slychat.messenger.services.ui.UISelectionDialogResult
 import io.slychat.messenger.services.ui.UIWindowService
 import nl.komponents.kovenant.Promise
@@ -25,7 +26,7 @@ class AndroidUIWindowService : UIWindowService {
 
     override fun clearListeners() {}
 
-    override fun selectFileForUpload(): Promise<UISelectionDialogResult<String?>, Exception> {
+    override fun selectFileForUpload(): Promise<UISelectionDialogResult<UISelectUploadFileResult?>, Exception> {
         TODO()
     }
 
