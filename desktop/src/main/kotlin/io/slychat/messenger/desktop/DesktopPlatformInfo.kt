@@ -32,4 +32,6 @@ private fun getUserAppDataDir(appName: String): File {
 
 class DesktopPlatformInfo : PlatformInfo {
     override val appFileStorageDirectory: File = getUserAppDataDir("sly")
+
+    override val cacheDirectory: File = appFileStorageDirectory / "cache"
 }

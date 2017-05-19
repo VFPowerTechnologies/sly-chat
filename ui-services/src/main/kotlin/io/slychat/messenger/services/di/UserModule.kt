@@ -542,7 +542,7 @@ class UserModule(
     fun providesAttachmentCache(
         userPaths: UserPaths
     ): AttachmentCache {
-        return AttachmentCacheImpl(userPaths.fileCacheDir)
+        return AttachmentCacheImpl(userPaths.attachmentCacheDir)
     }
 
     @UserScope

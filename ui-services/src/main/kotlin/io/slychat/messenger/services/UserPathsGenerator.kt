@@ -5,13 +5,17 @@ import io.slychat.messenger.core.UserId
 import io.slychat.messenger.core.div
 import java.io.File
 
+/** Responsible for generating user-specific paths used by the application. */
 class UserPathsGenerator(platformInfo: PlatformInfo) {
     companion object {
         private val ACCOUNT_INFO_FILENAME = "account-info.json"
     }
 
     val accountsDir = platformInfo.appFileStorageDirectory / "accounts"
+
     val startupInfoPath = platformInfo.appFileStorageDirectory / "startup-info.json"
+
+    private val cacheDir = platformInfo.cacheDirectory
 
     /** Return the account info file path for the given user id. */
     fun getAccountInfoPath(userId: UserId): File {
@@ -25,6 +29,7 @@ class UserPathsGenerator(platformInfo: PlatformInfo) {
 
     fun getPaths(userId: UserId): UserPaths {
         val userAccountDir = accountsDir / userId.long.toString()
+        val userCacheDir = cacheDir / userId.long.toString()
 
         return UserPaths(
             userAccountDir,
@@ -34,7 +39,7 @@ class UserPathsGenerator(platformInfo: PlatformInfo) {
             userAccountDir / "session-data.json",
             userAccountDir / "db.sqlite3",
             userAccountDir / "user-conf.json",
-            userAccountDir / "cache",
+            userCacheDir / "attachments",
             userAccountDir / "quota.json"
         )
     }

@@ -98,7 +98,7 @@ class FileSystemLocalAccountDirectory(
     override fun createUserDirectories(userId: UserId) {
         val paths = userPathsGenerator.getPaths(userId)
         paths.accountDir.mkdirs()
-        paths.fileCacheDir.mkdirs()
+        paths.attachmentCacheDir.mkdirs()
     }
 
     override fun deleteAccountData(userId: UserId) {

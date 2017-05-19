@@ -6,4 +6,7 @@ import java.io.File
 interface PlatformInfo {
     /** Location for the app to store its data */
     val appFileStorageDirectory: File
+
+    /** Location of cache data. */
+    val cacheDirectory: File
 }

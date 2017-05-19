@@ -6,4 +6,5 @@ import java.io.File
 
 class AndroidPlatformInfo(context: Context) : PlatformInfo {
     override val appFileStorageDirectory: File = File(context.applicationInfo.dataDir)
+    override val cacheDirectory: File = context.cacheDir
 }

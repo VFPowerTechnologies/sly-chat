@@ -5,7 +5,18 @@ import io.slychat.messenger.core.PlatformInfo
 import io.slychat.messenger.core.div
 import java.io.File
 
+//https://developer.apple.com/library/content/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html
 class IOSPlatformInfo : PlatformInfo {
     override val appFileStorageDirectory: File
-        get() = File(Foundation.NSHomeDirectory()) / "Library" / "Application Support"
+
+    override val cacheDirectory: File
+
+    init {
+        val home = File(Foundation.NSHomeDirectory())
+
+        val library = home / "Library"
+
+        appFileStorageDirectory = library / "Application Support"
+        cacheDirectory = library / "Caches"
+    }
 }
