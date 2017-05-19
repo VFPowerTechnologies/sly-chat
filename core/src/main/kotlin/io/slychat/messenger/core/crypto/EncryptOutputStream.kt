@@ -4,6 +4,7 @@ import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.crypto.ciphers.Key
 import java.io.OutputStream
 
+/** Encrypts written data and writes it to the given [OutputStream]. */
 class EncryptOutputStream(
     private val cipher: Cipher,
     private val key: Key,
@@ -18,6 +19,7 @@ class EncryptOutputStream(
     }
 
     override fun write(b: Int) {
+        //unused
         TODO()
     }
 

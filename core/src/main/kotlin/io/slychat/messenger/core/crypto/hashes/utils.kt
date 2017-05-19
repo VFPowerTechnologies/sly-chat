@@ -3,6 +3,7 @@ package io.slychat.messenger.core.crypto.hashes
 
 import org.spongycastle.crypto.generators.SCrypt
 
+/** The type of password hash to generate. */
 enum class HashType {
     LOCAL,
     REMOTE

@@ -20,9 +20,15 @@ object CipherList {
         ciphers[cipher.id] = cipher
     }
 
+    /** Default encryption cipher to be used when encrypting data. */
     val defaultDataEncryptionCipher: Cipher
         get() = getCipher(AES256CBCHMACCipher.id)
 
+    /**
+     * Returns the [Cipher] for the given id.
+     *
+     * @throws UnknownCipherException if id doesn't match any registered ciphers.
+     */
     fun getCipher(cipherId: CipherId): Cipher {
         return ciphers[cipherId] ?: throw UnknownCipherException(cipherId)
     }

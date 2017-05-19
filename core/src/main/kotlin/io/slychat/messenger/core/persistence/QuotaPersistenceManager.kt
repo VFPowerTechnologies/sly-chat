@@ -2,6 +2,7 @@ package io.slychat.messenger.core.persistence
 
 import io.slychat.messenger.core.Quota
 
+/** Manages storing and retrieving cached quota data. */
 interface QuotaPersistenceManager {
     fun store(quota: Quota)
 

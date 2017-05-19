@@ -17,6 +17,7 @@ import io.slychat.messenger.core.unhexify
 import org.spongycastle.crypto.digests.MD5Digest
 import org.spongycastle.crypto.digests.SHA256Digest
 
+/** Serialize UserId to bytes. */
 private fun UserId.toByteArray(): ByteArray =
     long.toString().toByteArray(Charsets.UTF_8)
 
@@ -34,6 +35,7 @@ private fun getEmailHash(keyVault: KeyVault, userId: UserId): ByteArray {
     return digest
 }
 
+/** Returns the SHA256 hash of the given GroupId and the account's anonymizing data. */
 private fun getGroupHash(keyVault: KeyVault, groupId: GroupId): ByteArray {
     val digester = SHA256Digest()
     val digest = ByteArray(digester.digestSize)
@@ -81,6 +83,7 @@ fun decryptRemoteAddressBookEntries(keyVault: KeyVault, entries: List<RemoteAddr
     }
 }
 
+/** Return an MD5 hash resulting from the concated ByteArrays. */
 fun md5(vararg byteArrays: ByteArray): ByteArray {
     val digester = MD5Digest()
     val digest = ByteArray(digester.digestSize)
@@ -94,7 +97,8 @@ fun md5(vararg byteArrays: ByteArray): ByteArray {
     return digest
 }
 
-inline fun md5Fold(body: ((ByteArray) -> Unit) -> Unit): ByteArray {
+/** Generate an MD5 hash from all data passed to callback. */
+inline fun md5Fold(body: ((input: ByteArray) -> Unit) -> Unit): ByteArray {
     val digester = MD5Digest()
     val digest = ByteArray(digester.digestSize)
 
@@ -109,6 +113,7 @@ inline fun md5Fold(body: ((ByteArray) -> Unit) -> Unit): ByteArray {
     return digest
 }
 
+/** Hash the current address book entries. */
 fun hashFromRemoteAddressBookEntries(remoteAddressBookEntries: Collection<RemoteAddressBookEntry>): String {
     return md5Fold { updater ->
         remoteAddressBookEntries.sortedBy { it.idHash }.forEach {

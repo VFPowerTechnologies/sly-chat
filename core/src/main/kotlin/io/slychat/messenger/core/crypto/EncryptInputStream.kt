@@ -4,6 +4,7 @@ import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.crypto.ciphers.Key
 import java.io.InputStream
 
+/** Encrypts data from the given [InputStream] and returns it to the caller. */
 class EncryptInputStream(
     private val cipher: Cipher,
     private val key: Key,

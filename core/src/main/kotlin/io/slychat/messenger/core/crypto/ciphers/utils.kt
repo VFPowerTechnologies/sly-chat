@@ -7,6 +7,7 @@ import org.spongycastle.crypto.digests.SHA512Digest
 import org.spongycastle.crypto.generators.HKDFBytesGenerator
 import org.spongycastle.crypto.params.HKDFParameters
 
+/** Derive a subkey using HKDF's expand stage. Keys are expected to have sufficient entropy as the extract stage is skipped. */
 fun deriveKey(masterKey: Key, info: HKDFInfo, outputKeySizeBits: Int): Key {
     require(outputKeySizeBits > 0) { "outputKeySize should be >= 0, got $outputKeySizeBits" }
 
@@ -22,10 +23,12 @@ fun deriveKey(masterKey: Key, info: HKDFInfo, outputKeySizeBits: Int): Key {
     return Key(okm)
 }
 
+/** Encrypt a [ByteArray] using the given [DerivedKeySpec] and the default data encryption cipher. */
 fun encryptBulkData(derivedKeySpec: DerivedKeySpec, data: ByteArray): ByteArray {
     return encryptBulkData(CipherList.defaultDataEncryptionCipher, derivedKeySpec, data)
 }
 
+/** Encrypt a [ByteArray] using the given [Key] and [Cipher]. */
 fun encryptBulkData(cipher: Cipher, key: Key, data: ByteArray): ByteArray {
     val cipherText = cipher.encrypt(key, data)
 
@@ -43,6 +46,7 @@ fun encryptBulkData(cipher: Cipher, key: Key, data: ByteArray): ByteArray {
     return output
 }
 
+/** Encrypt a [ByteArray] using the given [DerivedKeySpec] and the given [Cipher]. */
 fun encryptBulkData(cipher: Cipher, derivedKeySpec: DerivedKeySpec, data: ByteArray): ByteArray {
     if (data.isEmpty())
         return emptyByteArray()
@@ -52,7 +56,7 @@ fun encryptBulkData(cipher: Cipher, derivedKeySpec: DerivedKeySpec, data: ByteAr
     return encryptBulkData(cipher, derivedKey, data)
 }
 
-//TODO add a no cipherId variant
+/** Decrypt the given [ByteArray] using the given [DerivedKeySpec]. */
 fun decryptBulkData(derivedKeySpec: DerivedKeySpec, ciphertext: ByteArray): ByteArray {
     if (ciphertext.isEmpty())
         return emptyByteArray()

@@ -18,15 +18,24 @@ private val LATEST_DATABASE_VERSION = 19
 class SQLitePersistenceManagerErrorException(e: Error) : RuntimeException("Uncaught Error in job", e)
 
 /**
+ * Provides a promise-based access to querying an SQLCipher database, as well as database versioning and schema migration services.
+ *
  * Must be initialized prior to use. Once initialized, methods may be called from any thread.
  *
  * @param path Pass in null for an in-memory database.
+ * @param cipherParams Crypto control parameters. If null, database is not encrypted.
  */
 class SQLitePersistenceManager(
     private val path: File?,
     private val cipherParams: SQLCipherParams?
 ) : PersistenceManager {
-    private data class InitializationResult(val initWasRequired: Boolean, val freshDatabase: Boolean)
+    /**
+     * Indicates the outcome of worker and database initialization.
+     *
+     * @property wasInitWasRequired False if worker was already initialized.
+     * @property isFreshDatabase If database file is newly created.
+     */
+    private data class InitializationResult(val wasInitWasRequired: Boolean, val isFreshDatabase: Boolean)
 
     private lateinit var sqliteQueue: SQLiteQueue
     private var initialized = false
@@ -64,8 +73,6 @@ class SQLitePersistenceManager(
 
     /**
      * Initialize the worker queue.
-     *
-     * @return False if already initialized, true otherwise.
      */
     private fun initQueue(): InitializationResult {
         if (initialized)
@@ -91,9 +98,9 @@ class SQLitePersistenceManager(
     }
 
     /** Initialize new database or migrate existing database. Should be run off the main thread. */
-    private fun initContents(freshDatabase: Boolean, latestVersion: Int): Promise<Unit, Exception> {
+    private fun initContents(isFreshDatabase: Boolean, latestVersion: Int): Promise<Unit, Exception> {
         return realRunQuery { connection ->
-            if (!freshDatabase) {
+            if (!isFreshDatabase) {
                 val version = getCurrentDatabaseVersion(connection)
                 if (version == latestVersion) {
                     logger.debug("Database is up to date")
@@ -114,6 +121,7 @@ class SQLitePersistenceManager(
         }
     }
 
+    /** Return the DatabaseMigration object for a specific version. */
     private fun getMigrationObject(version: Int): DatabaseMigration {
         try {
             val cls = Class.forName("io.slychat.messenger.core.persistence.sqlite.migrations.DatabaseMigration$version")
@@ -151,18 +159,18 @@ class SQLitePersistenceManager(
     /** Used to cause migrations to only be run up to a certain version. Used in tests only. */
     internal fun init(latestVersion: Int) {
         val initResult = initQueue()
-        if (!initResult.initWasRequired)
+        if (!initResult.wasInitWasRequired)
             return
-        initContents(initResult.freshDatabase, latestVersion).get()
+        initContents(initResult.isFreshDatabase, latestVersion).get()
     }
 
     override fun initAsync(): Promise<Unit, Exception> {
         val initResult = initQueue()
 
-        if (!initResult.initWasRequired)
+        if (!initResult.wasInitWasRequired)
             return Promise.ofSuccess(Unit)
 
-        return initContents(initResult.freshDatabase, LATEST_DATABASE_VERSION)
+        return initContents(initResult.isFreshDatabase, LATEST_DATABASE_VERSION)
     }
 
     override fun shutdown() {

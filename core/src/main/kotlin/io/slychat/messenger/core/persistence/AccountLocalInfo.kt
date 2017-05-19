@@ -11,7 +11,11 @@ import io.slychat.messenger.core.crypto.hashes.HashParams
 import io.slychat.messenger.core.persistence.sqlite.SQLCipherCipher
 
 /**
- * @property localMasterKey Used as the root key for all device local data encryption.
+ * Account device-specific encryption data.
+ *
+ * @property sqlCipherCipher Encryption cipher used by current SQLCipher database.
+ * @property remoteHashParams Local copy of remote hash parameters for authentication.
+ * @property localMasterKey Used as the root key for all device local data encryption. This is only public so jackson can serialize it; use getDerivedKeySpec instead of accessing this directly.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AccountLocalInfo(
@@ -19,11 +23,11 @@ data class AccountLocalInfo(
     val sqlCipherCipher: SQLCipherCipher,
     @JsonProperty("remoteHashParams")
     val remoteHashParams: HashParams,
-    //this is just public so jackson can serialize it; never use this directly
     @JsonProperty("localMasterKey")
     val localMasterKey: Key
 ) {
     companion object {
+        /** Generate AccountLocalInfo for a new account. */
         fun generate(remoteHashParams: HashParams): AccountLocalInfo =
             AccountLocalInfo(
                 SQLCipherCipher.defaultCipher,
@@ -37,6 +41,7 @@ data class AccountLocalInfo(
         LocalDerivedKeyType.SQLCIPHER -> HKDFInfoList.sqlcipher()
     }
 
+    /** Returns a [io.slychat.messenger.core.crypto.DerivedKeySpec] for the given type of data. */
     fun getDerivedKeySpec(type: LocalDerivedKeyType): DerivedKeySpec {
         return DerivedKeySpec(localMasterKey, infoForType(type))
     }

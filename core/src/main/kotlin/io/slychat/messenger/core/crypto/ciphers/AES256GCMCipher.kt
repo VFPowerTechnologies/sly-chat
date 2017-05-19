@@ -7,7 +7,6 @@ import org.spongycastle.crypto.modes.GCMBlockCipher
 import org.spongycastle.crypto.params.AEADParameters
 import org.spongycastle.crypto.params.KeyParameter
 
-//as this is usually used as a singleton, it must NOT contain any state, as it can be called from multiple threads simulatenously
 class AES256GCMCipher : Cipher {
     companion object {
         val id: CipherId = CipherId(1)

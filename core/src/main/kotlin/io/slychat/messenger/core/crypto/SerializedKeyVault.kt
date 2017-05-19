@@ -12,6 +12,13 @@ import org.spongycastle.crypto.InvalidCipherTextException
 import org.whispersystems.libsignal.IdentityKeyPair
 import java.util.*
 
+/**
+ * Represents an encrypted and serialized [KeyVault].
+ *
+ * @property version Format version.
+ * @property localPasswordHashParams HashParams used for generating the decryption key from the user's password.
+ * @property encryptedSecrets The encrypted [SerializedKeyVaultSecrets].
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 class SerializedKeyVault(
     @JsonProperty("version")

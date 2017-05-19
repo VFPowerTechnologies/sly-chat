@@ -4,7 +4,7 @@ import io.slychat.messenger.core.crypto.ciphers.Cipher
 import io.slychat.messenger.core.crypto.ciphers.Key
 import java.io.InputStream
 
-//TODO convert to FilterInputStream
+/** Decrypts the given [InputStream] on the fly using the given key and cipher. */
 class DecryptInputStream(
     private val cipher: Cipher,
     private val key: Key,

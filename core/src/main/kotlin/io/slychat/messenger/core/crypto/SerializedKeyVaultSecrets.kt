@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import io.slychat.messenger.core.crypto.ciphers.Key
 import java.util.*
 
+/** Serialized KeyVault data. Serialized to a ByteArray and then encrypted and wrapped inside a [SerializedKeyVault]. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 class SerializedKeyVaultSecrets(
     @JsonProperty("serializedIdentityKeyPair")
