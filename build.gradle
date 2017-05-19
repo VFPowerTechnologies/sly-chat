@@ -13,7 +13,7 @@ buildscript {
             libsignal: '2.4.0',
             jodaTime: '2.9.2',
             sqlite4java: '1.0.392',
-            spongycastle: '1.54.0.0',
+            spongycastle: '1.56.0.0',
             dagger: '2.6',
             rxjava: '1.1.8',
             rxjavafx: '0.1.4',
