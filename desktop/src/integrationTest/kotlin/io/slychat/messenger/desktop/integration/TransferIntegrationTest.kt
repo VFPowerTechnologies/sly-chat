@@ -15,7 +15,6 @@ import io.slychat.messenger.core.persistence.*
 import io.slychat.messenger.desktop.DesktopFileAccess
 import io.slychat.messenger.services.StorageClientFactoryImpl
 import io.slychat.messenger.services.UploadClientFactoryImpl
-import io.slychat.messenger.services.UserPathsGenerator
 import io.slychat.messenger.services.config.DummyConfigBackend
 import io.slychat.messenger.services.config.UserConfigService
 import io.slychat.messenger.services.files.*
@@ -79,6 +78,7 @@ class TransferIntegrationTest {
         whenever(uploaderPersistenceManager.completePart(any(), any())).thenResolveUnit()
         whenever(uploaderPersistenceManager.setError(any(), any())).thenResolveUnit()
         whenever(uploaderPersistenceManager.setState(any(), any())).thenResolveUnit()
+        whenever(uploaderPersistenceManager.remove(any())).thenResolveUnit()
 
         return uploaderPersistenceManager
     }
@@ -90,6 +90,7 @@ class TransferIntegrationTest {
         whenever(downloadPersistenceManager.getAll()).thenResolve(emptyList())
         whenever(downloadPersistenceManager.setError(any(), any())).thenResolveUnit()
         whenever(downloadPersistenceManager.setState(any(), any())).thenResolveUnit()
+        whenever(downloadPersistenceManager.remove(any())).thenResolveUnit()
 
         return downloadPersistenceManager
     }
@@ -342,13 +343,6 @@ class TransferIntegrationTest {
             networkStatus,
             false
         )
-
-        val userId = UserId(1)
-
-        val userPaths = UserPathsGenerator(object : PlatformInfo {
-            override val appFileStorageDirectory: File
-                get() = accountDir
-        }).getPaths(userId)
 
         val fileListPersistenceManager = mock<FileListPersistenceManager>()
 
