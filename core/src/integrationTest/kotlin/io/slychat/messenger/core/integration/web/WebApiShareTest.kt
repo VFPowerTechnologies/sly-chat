@@ -40,14 +40,8 @@ class WebApiShareTest {
         devClient.clear()
     }
 
-    @Test
-    fun `acceptShare should accept a file`() {
-        val sendingUser = devClient.newNamedAuthUser(userManagement, "a@a.com")
-        val receivingUser = devClient.newNamedAuthUser(userManagement, "b@a.com")
-
-        val client = newClient()
-
-        val fileInfo = FileInfo(
+    private fun randomFileInfo(): FileInfo {
+        return FileInfo(
             generateFileId(),
             generateShareKey(),
             false,
@@ -58,6 +52,16 @@ class WebApiShareTest {
             emptyByteArray(),
             10
         )
+    }
+
+    @Test
+    fun `acceptShare should accept a file`() {
+        val sendingUser = devClient.newNamedAuthUser(userManagement, "a@a.com")
+        val receivingUser = devClient.newNamedAuthUser(userManagement, "b@a.com")
+
+        val client = newClient()
+
+        val fileInfo = randomFileInfo()
         devClient.addFile(sendingUser.user.id, fileInfo)
 
         val ourFileId = generateFileId()
@@ -82,7 +86,7 @@ class WebApiShareTest {
             isEmpty()
         }
 
-        val ourFileInfo = assertNotNull(devClient.getFileInfo(receivingUser.user.id, fileInfo.id), "File not added to list")
+        val ourFileInfo = assertNotNull(devClient.getFileInfo(receivingUser.user.id, ourFileId), "File not added to list")
 
         assertEquals(ourShareKey, ourFileInfo.shareKey, "Invalid share key")
         Assertions.assertThat(ourFileInfo.userMetadata).desc("Invalid file info") {
@@ -93,6 +97,49 @@ class WebApiShareTest {
 
     @Test
     fun `acceptShare should be idempotent`() {
-        TODO()
+        val sendingUser = devClient.newNamedAuthUser(userManagement, "a@a.com")
+        val receivingUser = devClient.newNamedAuthUser(userManagement, "b@a.com")
+
+        val client = newClient()
+
+        val fileInfo = randomFileInfo()
+        devClient.addFile(sendingUser.user.id, fileInfo)
+
+        val ourFileId = generateFileId()
+        val shareInfo = ShareInfo(
+            fileInfo.id,
+            ourFileId,
+            fileInfo.shareKey,
+            generateShareKey(),
+            byteArrayOf(0x77),
+            randomPathHash()
+        )
+
+        val request = AcceptShareRequest(
+            sendingUser.user.id,
+            listOf(shareInfo)
+        )
+        val resp = client.acceptShare(receivingUser.userCredentials, request)
+
+        assertThat(resp.errors).desc("Should not have any errors") {
+            isEmpty()
+        }
+
+        val request2 = AcceptShareRequest(
+            sendingUser.user.id,
+            listOf(shareInfo.copy(ourFileId = generateFileId()))
+        )
+
+        val resp2 = client.acceptShare(receivingUser.userCredentials, request2)
+
+        assertThat(resp.errors).desc("Should not have any errors") {
+            isEmpty()
+        }
+
+        assertThat(resp2.successes).desc("Should return the original fileId") {
+            containsEntry(shareInfo.theirFileId, ourFileId)
+        }
+
+        assertNotNull(devClient.getFileInfo(receivingUser.user.id, ourFileId), "File not added to list")
     }
 }
