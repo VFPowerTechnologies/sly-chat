@@ -71,7 +71,7 @@ class JavaHttpClient(
     }
 
     private fun readResponse(connection: HttpURLConnection): HttpResponse {
-        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+        val headers = lowercaseHeaders(connection.headerFields ?: emptyMap())
         val data = readStreamResponse(connection, headers)
 
         return HttpResponse(connection.responseCode, headers, data)
@@ -158,7 +158,7 @@ class JavaHttpClient(
         catch (e: ProtocolException) {
             //XXX I can't seem to get it to read the body on error; errorStream is null and inputStream throws an exception
             //also only ProtocolException is thrown here when an error occurs (see expect100Continue in the HttpURLConnection src)
-            val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+            val headers = lowercaseHeaders(connection.headerFields ?: emptyMap())
             val code = connection.responseCode
 
             val data = readStreamResponse(connection, headers)
@@ -169,7 +169,7 @@ class JavaHttpClient(
             writeMultipartParts(it, boundary, parts, isCancelled)
         }
 
-        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+        val headers = lowercaseHeaders(connection.headerFields ?: emptyMap())
         val code = connection.responseCode
 
         val data = readStreamResponse(connection, headers)
@@ -188,7 +188,7 @@ class JavaHttpClient(
             connection.setRequestProperty(header.first, header.second)
 
         val responseCode = connection.responseCode
-        val headers = lowercaseHeaders(connection.headerFields ?: mapOf())
+        val headers = lowercaseHeaders(connection.headerFields ?: emptyMap())
 
         val body = try {
             connection.inputStream
