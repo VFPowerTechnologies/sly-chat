@@ -5,12 +5,20 @@ import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import io.slychat.messenger.core.persistence.QuotaPersistenceManager
 import io.slychat.messenger.core.randomQuota
+import io.slychat.messenger.testutils.KovenantTestModeRule
 import io.slychat.messenger.testutils.desc
 import io.slychat.messenger.testutils.testSubscriber
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.ClassRule
 import org.junit.Test
 
 class QuotaManagerImplTest {
+    companion object {
+        @JvmField
+        @ClassRule
+        val kovenantTestMode = KovenantTestModeRule()
+    }
+
     private val persistenceManager = mock<QuotaPersistenceManager>()
     private val manager = QuotaManagerImpl(persistenceManager)
 
