@@ -2,7 +2,8 @@ package io.slychat.messenger.services.di
 
 import dagger.Subcomponent
 import io.slychat.messenger.core.crypto.KeyVault
-import io.slychat.messenger.core.persistence.*
+import io.slychat.messenger.core.persistence.KeyVaultPersistenceManager
+import io.slychat.messenger.core.persistence.PersistenceManager
 import io.slychat.messenger.services.*
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.config.UserConfigService
@@ -25,12 +26,6 @@ interface UserComponent {
     val keyVaultPersistenceManager: KeyVaultPersistenceManager
 
     val persistenceManager: PersistenceManager
-
-    val contactsPersistenceManager: ContactsPersistenceManager
-
-    val messagePersistenceManager: MessagePersistenceManager
-
-    val preKeyPersistenceManager: PreKeyPersistenceManager
 
     val contactsService: ContactsService
 

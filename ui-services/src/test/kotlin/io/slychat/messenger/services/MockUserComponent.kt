@@ -38,13 +38,7 @@ class MockUserComponent : UserComponent {
 
     override val persistenceManager: PersistenceManager = mock()
 
-    override val contactsPersistenceManager: ContactsPersistenceManager = mock()
-
-    override val messagePersistenceManager: MessagePersistenceManager = mock()
-
     override val sessionDataManager: SessionDataManager = mock()
-
-    override val preKeyPersistenceManager: PreKeyPersistenceManager = mock()
 
     override val contactsService: ContactsService = mock()
 
