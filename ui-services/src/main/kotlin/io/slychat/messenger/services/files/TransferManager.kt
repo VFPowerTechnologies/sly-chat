@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.files
 
-import io.slychat.messenger.core.Quota
 import io.slychat.messenger.core.persistence.DownloadInfo
 import io.slychat.messenger.core.persistence.UploadInfo
 import nl.komponents.kovenant.Promise
