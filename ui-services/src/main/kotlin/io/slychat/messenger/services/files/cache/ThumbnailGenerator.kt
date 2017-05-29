@@ -1,6 +1,5 @@
 package io.slychat.messenger.services.files.cache
 
-import nl.komponents.kovenant.Promise
 import java.io.InputStream
 import java.io.OutputStream
 

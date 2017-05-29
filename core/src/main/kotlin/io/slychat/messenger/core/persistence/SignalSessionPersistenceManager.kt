@@ -13,7 +13,7 @@ interface SignalSessionPersistenceManager {
     /**
      * Returns all devices for the given name which have existing sessions.
      *
-     * Note that unlike Signal, we don't have the concept of a master device, thus return all devices (ie: we include deviceId=0)
+     * Note that unlike Signal, we don't have the concept of a master device, thus return all devices (ie: we include deviceId=1)
      */
     fun getSubDeviceSessions(name: String): Promise<List<Int>, Exception>
 
