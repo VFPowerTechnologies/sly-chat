@@ -594,6 +594,7 @@ class UserModule(
         messageService: MessageService,
         storageService: StorageService,
         attachmentCacheManager: AttachmentCacheManager,
+        quotaManager: QuotaManager,
         @NetworkStatus networkStatus: Observable<Boolean>
     ): AttachmentService {
         val shareClient = ShareAsyncClientImpl(serverUrls.API_SERVER, httpClientFactory)
@@ -605,6 +606,7 @@ class UserModule(
             messageService,
             storageService,
             attachmentCacheManager,
+            quotaManager,
             networkStatus,
             storageService.syncEvents
         )

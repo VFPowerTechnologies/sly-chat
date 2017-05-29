@@ -15,6 +15,7 @@ import io.slychat.messenger.services.MessageUpdateEvent
 import io.slychat.messenger.services.crypto.MockAuthTokenManager
 import io.slychat.messenger.services.files.FileListSyncEvent
 import io.slychat.messenger.services.files.FileListSyncResult
+import io.slychat.messenger.services.files.QuotaManager
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.messaging.MessageService
 import io.slychat.messenger.testutils.KovenantTestModeRule
@@ -56,6 +57,8 @@ class AttachmentServiceImplTest {
 
     private val syncEvents = PublishSubject.create<FileListSyncEvent>()
 
+    private val quotaManager: QuotaManager = mock()
+
     @Before
     fun before() {
         whenever(messageService.messageUpdates).thenReturn(messageUpdateEvents)
@@ -96,6 +99,7 @@ class AttachmentServiceImplTest {
             messageService,
             storageService,
             attachmentCacheManager,
+            quotaManager,
             networkStatus,
             syncEvents
         )
@@ -181,6 +185,21 @@ class AttachmentServiceImplTest {
         val s = request.shareInfo.first()
 
         assertEquals(receivedAttachment2.theirFileId, s.theirFileId, "Invalid fileId")
+    }
+
+    @Test
+    fun `it should update the system quota when receiving an accept response`() {
+        val fileId = generateFileId()
+        val receivedAttachment = randomReceivedAttachment(0, ourFileId = fileId)
+        val successes = mapOf(fileId to fileId)
+        val quota = randomQuota()
+        val response = AcceptShareResponse(successes, emptyMap(), quota)
+
+        whenever(shareClient.acceptShare(any(), any())).thenResolve(response)
+
+        val service = newServiceWithAttachment(receivedAttachment)
+
+        verify(quotaManager).update(quota)
     }
 
     @Test

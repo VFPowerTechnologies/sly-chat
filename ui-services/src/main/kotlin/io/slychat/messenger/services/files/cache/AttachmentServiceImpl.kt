@@ -16,6 +16,7 @@ import io.slychat.messenger.core.persistence.ReceivedAttachment
 import io.slychat.messenger.core.rx.plusAssign
 import io.slychat.messenger.services.auth.AuthTokenManager
 import io.slychat.messenger.services.files.FileListSyncEvent
+import io.slychat.messenger.services.files.QuotaManager
 import io.slychat.messenger.services.files.StorageService
 import io.slychat.messenger.services.messaging.MessageService
 import nl.komponents.kovenant.Promise
@@ -28,7 +29,6 @@ import rx.subscriptions.CompositeSubscription
 import java.util.*
 import kotlin.collections.ArrayList
 
-//TODO update quota somehow; maybe quota should be moved to a separate component since it's updated in a few spots?
 //TODO need something to fetch and retry attachments that failed
 //TODO htf do we notify the ui of non-transient errors/state updates?
 //TODO we actually need to make sure to wait until after sync to notify that something is available
@@ -44,6 +44,7 @@ class AttachmentServiceImpl(
     private val messageService: MessageService,
     private val storageService: StorageService,
     private val attachmentCacheManager: AttachmentCacheManager,
+    private val quotaManager: QuotaManager,
     networkStatus: Observable<Boolean>,
     syncEvents: Observable<FileListSyncEvent>
 ) : AttachmentService {
@@ -151,6 +152,8 @@ class AttachmentServiceImpl(
     }
 
     private fun completeAcceptJob(acceptJob: AcceptJob, response: AcceptShareResponse) {
+        quotaManager.update(response.quota)
+
         val all = acceptJob.attachments.mapToMap { it.theirFileId to it }
 
         val updateFileIds = HashMap<AttachmentId, String>()
