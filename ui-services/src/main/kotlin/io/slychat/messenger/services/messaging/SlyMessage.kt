@@ -5,12 +5,12 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.slychat.messenger.core.UserId
-import io.slychat.messenger.services.messaging.TextMessageAttachment
 import io.slychat.messenger.core.http.api.authentication.DeviceInfo
 import io.slychat.messenger.core.persistence.ConversationId
 import io.slychat.messenger.core.persistence.GroupId
 import io.slychat.messenger.core.persistence.MessageId
 
+/** Represents a sent or received message by category. */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
     JsonSubTypes.Type(SlyMessage.GroupEvent::class, name = "g"),
@@ -120,6 +120,7 @@ data class TextMessage(
     val attachments: List<TextMessageAttachment> = emptyList()
 )
 
+/** Group-related actions. */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
     JsonSubTypes.Type(GroupEventMessage.Join::class, name = "j"),
@@ -224,6 +225,7 @@ sealed class GroupEventMessage {
     }
 }
 
+/** Messages sent between a user's devices. Any SyncMessages received from a different user ID are dropped. */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
     JsonSubTypes.Type(SyncMessage.NewDevice::class, name = "d"),
@@ -236,6 +238,7 @@ sealed class GroupEventMessage {
     JsonSubTypes.Type(SyncMessage.FileListSync::class, name = "f")
 )
 sealed class SyncMessage {
+    /** A new device has been activated. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class NewDevice(
         @JsonProperty("deviceInfo")
@@ -261,6 +264,7 @@ sealed class SyncMessage {
         }
     }
 
+    /** A message has expired on a different device. The current device must delete the message. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class MessageExpired(
         @JsonProperty("conversationId")
@@ -291,6 +295,7 @@ sealed class SyncMessage {
         }
     }
 
+    /** Represents a message the user has sent to a conversation. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class SelfMessage(
         @JsonProperty("sentMessageInfo")
@@ -316,6 +321,11 @@ sealed class SyncMessage {
         }
     }
 
+    /**
+     * Address book has been updated, so a sync must be performed.
+     *
+     * The exact updates are not sent to other devices, as other devices should just sync to be brought up to date.
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class AddressBookSync : SyncMessage() {
         override fun equals(other: Any?): Boolean {
@@ -333,6 +343,7 @@ sealed class SyncMessage {
         }
     }
 
+    /** Messages have been read on a different device. This will result in the same messages being read on this device. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class MessagesRead(
         @JsonProperty("conversationId")
@@ -363,6 +374,7 @@ sealed class SyncMessage {
         }
     }
 
+    /** A set of messages were deleted on a different device. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class MessagesDeleted(
         @JsonProperty("conversationId")
@@ -393,6 +405,7 @@ sealed class SyncMessage {
         }
     }
 
+    /** All messages for the given conversation were deleted on another device. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class MessagesDeletedAll(
         @JsonProperty("conversationId")
@@ -423,6 +436,7 @@ sealed class SyncMessage {
         }
     }
 
+    /** The remote file list was modified on another device, so a sync should be performed to bring the local list up to date. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     class FileListSync : SyncMessage() {
         override fun equals(other: Any?): Boolean {
@@ -441,6 +455,7 @@ sealed class SyncMessage {
     }
 }
 
+/** Represents some form of action that was taken by another user. This category can be used for things like typing notifications. */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "t")
 @JsonSubTypes(
     JsonSubTypes.Type(ControlMessage.WasAdded::class, name = "a")
@@ -448,7 +463,7 @@ sealed class SyncMessage {
 sealed class ControlMessage {
     /** Sender added you as a contact. */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    class WasAdded() : ControlMessage() {
+    class WasAdded : ControlMessage() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
 
